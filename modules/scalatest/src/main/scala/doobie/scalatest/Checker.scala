@@ -34,7 +34,6 @@ trait Checker[M[_]] extends CheckerBase[M] { self: Assertions =>
 
   def check[A: Analyzable](a: A) = checkImpl(Analyzable.unpack(a))
 
-  @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
   def checkOutput[A: TypeName](q: Query0[A]) =
     checkImpl(AnalysisArgs(
       s"Query0[${typeName[A]}]",
@@ -43,7 +42,6 @@ trait Checker[M[_]] extends CheckerBase[M] { self: Assertions =>
       q.outputAnalysis
     ))
 
-  @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
   def checkOutput[A: TypeName, B: TypeName](q: Query[A, B]) =
     checkImpl(AnalysisArgs(
       s"Query[${typeName[A]}, ${typeName[B]}]",
@@ -52,7 +50,6 @@ trait Checker[M[_]] extends CheckerBase[M] { self: Assertions =>
       q.outputAnalysis
     ))
 
-  @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
   def checkOutput[A: TypeName](u: Update[A]) =
     checkImpl(AnalysisArgs(
       s"Update[${typeName[A]}]",
@@ -61,7 +58,6 @@ trait Checker[M[_]] extends CheckerBase[M] { self: Assertions =>
       u.analysis
     ))
 
-  @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
   def checkOutput(u: Update0) =
     checkImpl(AnalysisArgs(
       "Update0",

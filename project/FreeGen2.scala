@@ -75,7 +75,7 @@ class FreeGen2(
         s"${toScalaType(t.getRawType)}${t.getActualTypeArguments.map(toScalaType).mkString("[", ", ", "]")}"
       case t: WildcardType =>
         t.getUpperBounds.toList.filterNot(_ == classOf[Object]) match {
-          case (c: Class[_]) :: Nil => s"_ <: ${c.getName}"
+          case (c: Class[_]) :: Nil => s"? <: ${c.getName}"
           case Nil                  => "?"
           case cs                   => sys.error("unhandled upper bounds: " + cs.toList)
         }

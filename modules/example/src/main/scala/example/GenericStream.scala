@@ -21,11 +21,6 @@ object GenericStream extends IOApp {
   type Row = Map[String, Any]
 
   // This escapes to raw JDBC for efficiency.
-  @SuppressWarnings(Array(
-    "org.wartremover.warts.Var",
-    "org.wartremover.warts.While",
-    "org.wartremover.warts.NonUnitStatements"
-  ))
   def getNextChunkGeneric(chunkSize: Int): ResultSetIO[Seq[Row]] =
     FRS.raw { rs =>
       val md = rs.getMetaData

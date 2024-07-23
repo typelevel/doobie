@@ -19,7 +19,6 @@ trait PgisGeographyInstances {
   implicit val PGgeographyType: Meta[PGgeography] = Meta.Advanced.other[PGgeography]("geography")
 
   // Constructor for geometry types via the `Geometry` member of PGgeography
-  @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf", "org.wartremover.warts.Throw"))
   private def geometryType[A >: Null <: Geometry: TypeName](implicit A: ClassTag[A]): Meta[A] =
     PGgeographyType.timap[A](g =>
       try A.runtimeClass.cast(g.getGeometry).asInstanceOf[A]

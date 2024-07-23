@@ -29,7 +29,6 @@ class StrategySuite extends munit.FunSuite {
   )
 
   // an instrumented interpreter
-  @SuppressWarnings(Array("org.wartremover.warts.Var"))
   class Interp extends KleisliInterpreter[IO](LogHandler.noop) {
 
     object Connection {

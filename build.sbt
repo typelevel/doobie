@@ -100,14 +100,13 @@ lazy val compilerFlags = Seq(
 //  Test / scalacOptions --= Seq(
 //    "-Xfatal-warnings"
 //  ),
-  scalacOptions ++= (if (tlIsScala3.value) Seq.empty
+  scalacOptions ++= (if (tlIsScala3.value)
+                       // Handle irrefutable patterns in for comprehensions
+                       Seq("-source:future", "-language:adhocExtensions")
                      else
                        Seq(
                          "-Xsource:3"
                        ))
-  //  scalacOptions ++= Seq(
-  //    "-source:future" // Allow irrefutable patterns in for comprehension without withFilter
-  //  ).filter(_ => tlIsScala3.value)
 )
 
 lazy val buildSettings = Seq(
@@ -138,10 +137,8 @@ lazy val commonSettings =
 
       // Kind Projector (Scala 2 only)
       libraryDependencies ++= Seq(
-        compilerPlugin("org.typelevel" %% "kind-projector" % "0.13.3" cross CrossVersion.full)
-        // Enable this once we can enable "-source:future" on Scala 3
-        // (We need "-source:future" for for comprehension irrefutable pattern on Scala 3)
-        // compilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1"),
+        compilerPlugin("org.typelevel" %% "kind-projector" % "0.13.3" cross CrossVersion.full),
+        compilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1")
       ).filterNot(_ => tlIsScala3.value),
 
       // MUnit
@@ -398,8 +395,7 @@ lazy val h2 = project
   .settings(
     name := "doobie-h2",
     description := "H2 support for doobie.",
-    libraryDependencies += "com.h2database" % "h2" % h2Version,
-    scalacOptions -= "-Xfatal-warnings" // we need to do deprecated things
+    libraryDependencies += "com.h2database" % "h2" % h2Version
   )
 
 lazy val `h2-circe` = project
@@ -425,7 +421,6 @@ lazy val hikari = project
   .settings(
     name := "doobie-hikari",
     description := "Hikari support for doobie.",
-    scalacOptions --= Seq("-Xlint:unused", "-Wunused:nowarn"),
     libraryDependencies ++= Seq(
       // needs to be excluded, otherwise coursier may resolve slf4j-api 2 if > Java 11
       "com.zaxxer" % "HikariCP" % hikariVersion exclude ("org.slf4j", "slf4j-api"),

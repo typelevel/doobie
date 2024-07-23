@@ -15,18 +15,15 @@ object largeobjectmanager {
   val createLO: LargeObjectManagerIO[Long] =
     IPFLOM.createLO
 
-  @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
   def createLO(a: Int): LargeObjectManagerIO[Long] =
     IPFLOM.createLO(a)
 
   def delete(a: Long): LargeObjectManagerIO[Unit] =
     IPFLOM.delete(a)
 
-  @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
   def open[A](a: Long, b: Int)(k: LargeObjectIO[A]): LargeObjectManagerIO[A] =
     IPFLOM.open(a, b) >>= (IPFLOM.embed(_, k <* IPFLO.close))
 
-  @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
   def open[A](a: Long)(k: LargeObjectIO[A]): LargeObjectManagerIO[A] =
     IPFLOM.open(a) >>= (IPFLOM.embed(_, k <* IPFLO.close))
 

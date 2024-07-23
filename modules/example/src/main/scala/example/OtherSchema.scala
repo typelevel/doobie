@@ -39,12 +39,10 @@ object OtherSchema extends IOApp.Simple {
       }
     )
 
-  @SuppressWarnings(Array("org.wartremover.warts.Enumeration"))
   object ReturnStatus extends Enumeration {
     val INITIAL, IN_PROGRESS, FINISHED = Value
   }
 
-  @SuppressWarnings(Array("org.wartremover.warts.ToString"))
   implicit val meta: Meta[ReturnStatus.Value] =
     wackyPostgresMapping(""""returns_data"."return_status"""").timap(ReturnStatus.withName)(_.toString)
 

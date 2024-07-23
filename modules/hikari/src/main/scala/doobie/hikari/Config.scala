@@ -27,7 +27,6 @@ import scala.concurrent.duration.Duration
 //
 // The default values in the constructor are not actually applied (defaults from `apply` are).
 // But they still need to be present to enable tools like PureConfig.
-@nowarn("msg=(never used|unused)")
 final case class Config private (
     jdbcUrl: String,
     catalog: Option[String] = None,

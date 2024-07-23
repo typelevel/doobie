@@ -120,10 +120,14 @@ object Write {
   }
 
   implicit val unitComposite: Write[Unit] =
-    Write[Unit](Nil, empty _, doNothing _, doNothing _)
+    Write[Unit](Nil, empty[Unit](_), doNothing[PreparedStatement, Unit](_, _, _), doNothing[ResultSet, Unit](_, _, _))
 
   implicit val optionUnit: Write[Option[Unit]] =
-    Write[Option[Unit]](Nil, empty _, doNothing _, doNothing _)
+    Write[Option[Unit]](
+      Nil,
+      empty[Option[Unit]](_),
+      doNothing[PreparedStatement, Option[Unit]](_, _, _),
+      doNothing[ResultSet, Option[Unit]](_, _, _))
 
   implicit def fromPut[A](implicit P: Put[A]): Write[A] =
     new Write[A](
