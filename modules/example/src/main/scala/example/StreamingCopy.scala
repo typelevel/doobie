@@ -111,7 +111,6 @@ object StreamingCopy extends IOApp.Simple {
     """.query[City].stream
 
   // A consumer of cities, to be run on database 2
-  @SuppressWarnings(Array("org.wartremover.warts.ToString"))
   def write(c: City): ConnectionIO[Unit] =
     printBefore("write", c.toString)(
       sql"""

@@ -328,7 +328,7 @@ class KleisliInterpreter[M[_]](logHandler: LogHandler[M])(implicit val asyncM: W
     override def fromFutureCancelable[A](fut: PGConnectionIO[(Future[A], PGConnectionIO[Unit])]): Kleisli[M, PGConnection, A] = outer.fromFutureCancelable(this)(fut)
 
     // domain-specific operations are implemented in terms of `primitive`
-    override def addDataType(a: String, b: Class[_ <: org.postgresql.util.PGobject]) = primitive(_.addDataType(a, b))
+    override def addDataType(a: String, b: Class[? <: org.postgresql.util.PGobject]) = primitive(_.addDataType(a, b))
     override def alterUserPassword(a: String, b: Array[Char], c: String) = primitive(_.alterUserPassword(a, b, c))
     override def cancelQuery: Kleisli[M, PGConnection, Unit] = primitive(_.cancelQuery)
     override def createArrayOf(a: String, b: AnyRef) = primitive(_.createArrayOf(a, b))

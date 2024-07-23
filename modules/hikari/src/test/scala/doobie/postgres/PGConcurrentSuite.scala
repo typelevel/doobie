@@ -18,7 +18,7 @@ class PGConcurrentSuite extends munit.FunSuite {
 
   import cats.effect.unsafe.implicits.global
 
-  private var dataSource: HikariDataSource = _
+  private var dataSource: HikariDataSource = null
 
   private def createDataSource() = {
 

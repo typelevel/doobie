@@ -55,7 +55,6 @@ object FreeUsage extends IOApp.Simple {
       }(FPS.embed(_, FRS.close))
     } yield l
 
-  @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
   def unroll[A](a: ResultSetIO[A]): ResultSetIO[List[A]] = {
     def unroll0(as: List[A]): ResultSetIO[List[A]] =
       FRS.next >>= {

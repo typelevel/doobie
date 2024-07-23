@@ -32,7 +32,6 @@ sealed abstract class Get[A](
     val get: Coyoneda[(ResultSet, Int) => *, A]
 ) {
 
-  @SuppressWarnings(Array("org.wartremover.warts.Throw"))
   final def unsafeGetNonNullable(rs: ResultSet, n: Int): A = {
     val i = get.fi(rs, n)
     if (rs.wasNull)
@@ -69,7 +68,6 @@ sealed abstract class Get[A](
 
   /** Equivalent to `tmap`, but allows the conversion to fail with an error message.
     */
-  @SuppressWarnings(Array("org.wartremover.warts.Throw"))
   final def temap[B](f: A => Either[String, B])(implicit sA: Show[A], evA: TypeName[A], evB: TypeName[B]): Get[B] =
     tmap { a =>
       f(a) match {
@@ -155,7 +153,6 @@ object Get extends GetInstances {
     )(implicit ev: TypeName[A]): Get[A] =
       Advanced(NonEmptyList.of(Some(ev.value)), NonEmptyList.of(jdbcSource), vendorTypeNames, Coyoneda.lift(get))
 
-    @SuppressWarnings(Array("org.wartremover.warts.Equals", "org.wartremover.warts.AsInstanceOf"))
     def array[A >: Null <: AnyRef](vendorTypeNames: NonEmptyList[String]): Get[Array[A]] =
       one(
         JdbcType.Array,
@@ -166,7 +163,6 @@ object Get extends GetInstances {
         }
       )
 
-    @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf", "org.wartremover.warts.Throw"))
     def other[A >: Null <: AnyRef: TypeName](vendorTypeNames: NonEmptyList[String])(
         implicit A: ClassTag[A]
     ): Get[A] =

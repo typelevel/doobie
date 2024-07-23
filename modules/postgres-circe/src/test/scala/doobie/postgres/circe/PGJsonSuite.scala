@@ -27,7 +27,6 @@ class PGJsonSuite extends munit.FunSuite {
       a0 <- Update[A](s"INSERT INTO TEST VALUES (?)", None).withUniqueGeneratedKeys[A]("value")(a)
     } yield a0
 
-  @SuppressWarnings(Array("org.wartremover.warts.StringPlusAny"))
   def testInOut[A](col: String, a: A, t: Transactor[IO])(implicit m: Get[A], p: Put[A]) = {
     test(s"Mapping for $col as ${m.typeStack} - write+read $col as ${m.typeStack}") {
       assertEquals(inOut(col, a).transact(t).attempt.unsafeRunSync(), Right(a))

@@ -219,7 +219,6 @@ object update {
       * and/or `LogHandler` for diagnostics. The normal mechanism for construction is the `sql/fr/fr0` interpolators.
       * @group Constructors
       */
-    @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
     def apply[A](sql: String, pos: Option[Pos] = None, label: String = unlabeled)(
         implicit W: Write[A]
     ): Update[A] = {

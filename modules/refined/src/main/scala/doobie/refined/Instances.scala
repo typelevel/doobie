@@ -53,7 +53,6 @@ trait Instances {
   ): T =
     refType.unwrap(ftp)
 
-  @SuppressWarnings(Array("org.wartremover.warts.Throw"))
   private def rightOrException[T](either: Either[String, T])(
       implicit manifest: TypeName[T]
   ): T =

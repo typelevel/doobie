@@ -42,7 +42,6 @@ object analysismatchers {
 
       val items = r.items.foldMap(itemToBlock)
 
-      @SuppressWarnings(Array("org.wartremover.warts.ToString"))
       val message =
         Block.fromString(r.header)
           .above(Block.fromString(""))

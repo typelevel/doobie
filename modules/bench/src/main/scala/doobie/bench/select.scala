@@ -25,7 +25,6 @@ class bench {
   import cats.effect.unsafe.implicits.global
 
   // Baseline hand-written JDBC code
-  @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements", "org.wartremover.warts.While"))
   def jdbcBench(n: Int): Int = {
     Class.forName("org.postgresql.Driver")
     val co = DriverManager.getConnection("jdbc:postgresql:world", "postgres", "password")

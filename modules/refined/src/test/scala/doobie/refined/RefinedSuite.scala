@@ -99,7 +99,7 @@ class RefinedSuite extends munit.FunSuite {
     )
   }
 
-  private[this] def secondaryValidationFailedCaught_?(query: => Unit) =
+  private def secondaryValidationFailedCaught_?(query: => Unit) =
     intercept[SecondaryValidationFailed[?]](query)
 
 }

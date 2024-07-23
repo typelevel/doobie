@@ -77,7 +77,6 @@ object resultset {
     * standard library collection via `CanBuildFrom`.
     * @group Results
     */
-  @SuppressWarnings(Array("org.wartremover.warts.While", "org.wartremover.warts.NonUnitStatements"))
   def build[F[_], A](implicit F: FactoryCompat[A, F[A]], A: Read[A]): ResultSetIO[F[A]] =
     IFRS.raw { rs =>
       val b = F.newBuilder
@@ -103,7 +102,6 @@ object resultset {
     * CanBuildFrom not having a sensible contravariant functor instance.
     * @group Results
     */
-  @SuppressWarnings(Array("org.wartremover.warts.While", "org.wartremover.warts.NonUnitStatements"))
   def buildMap[F[_], A, B](f: A => B)(implicit F: FactoryCompat[B, F[B]], A: Read[A]): ResultSetIO[F[B]] =
     IFRS.raw { rs =>
       val b = F.newBuilder
@@ -165,10 +163,6 @@ object resultset {
     * non-positive `chunkSize` yields an empty `Vector` and consumes no rows.
     * @group Results
     */
-  @SuppressWarnings(Array(
-    "org.wartremover.warts.Var",
-    "org.wartremover.warts.While",
-    "org.wartremover.warts.NonUnitStatements"))
   def getNextChunkV[A](chunkSize: Int)(implicit A: Read[A]): ResultSetIO[Vector[A]] =
     IFRS.raw { rs =>
       var n = chunkSize

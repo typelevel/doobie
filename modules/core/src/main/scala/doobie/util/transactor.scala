@@ -238,7 +238,6 @@ object transactor {
           Kleisli(f.run(_).foldMap(interpret).run(c))
       }
 
-    @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
     def copy(
         kernel0: A = self.kernel,
         connect0: A => Resource[M, Connection] = self.connect,
@@ -367,10 +366,8 @@ object transactor {
       */
     def fromDriverManager[M[_]] = new FromDriverManagerUnapplied[M]
 
-    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
     class FromDriverManagerUnapplied[M[_]] {
 
-      @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
       private def create(
           driver: String,
           conn: () => Connection,
