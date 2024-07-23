@@ -6,9 +6,10 @@ package doobie.util
 
 import doobie.Transactor
 import doobie.Update
-import doobie.util.TestTypes._
+import doobie.util.TestTypes.*
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
+import doobie.testutils.VoidExtensions
 
 class WriteSuite extends munit.FunSuite with WriteSuitePlatform {
 
@@ -21,13 +22,13 @@ class WriteSuite extends munit.FunSuite with WriteSuitePlatform {
   )
 
   test("Write should exist for some fancy types") {
-    import doobie.generic.auto._
+    import doobie.generic.auto.*
 
-    Write[Int]
-    Write[(Int, Int)]
-    Write[(Int, Int, String)]
-    Write[(Int, (Int, String))]
-    Write[ComplexCaseClass]
+    Write[Int].void
+    Write[(Int, Int)].void
+    Write[(Int, Int, String)].void
+    Write[(Int, (Int, String))].void
+    Write[ComplexCaseClass].void
   }
 
   test("Write is not auto derived for tuples without an import") {
@@ -46,35 +47,35 @@ class WriteSuite extends munit.FunSuite with WriteSuitePlatform {
   }
 
   test("Write can be manually derived") {
-    Write.derived[LenStr1]
+    Write.derived[LenStr1].void
   }
 
   test("Write should exist for Unit") {
-    import doobie.generic.auto._
+    import doobie.generic.auto.*
 
-    Write[Unit]
+    Write[Unit].void
     assertEquals(Write[(Int, Unit)].length, 1)
   }
 
   test("Write should exist for option of some fancy types") {
-    import doobie.generic.auto._
+    import doobie.generic.auto.*
 
-    Write[Option[Int]]
-    Write[Option[(Int, Int)]]
-    Write[Option[(Int, Int, String)]]
-    Write[Option[(Int, (Int, String))]]
-    Write[Option[(Int, Option[(Int, String)])]]
+    Write[Option[Int]].void
+    Write[Option[(Int, Int)]].void
+    Write[Option[(Int, Int, String)]].void
+    Write[Option[(Int, (Int, String))]].void
+    Write[Option[(Int, Option[(Int, String)])]].void
   }
 
   test("Write should exist for option of Unit") {
-    import doobie.generic.auto._
+    import doobie.generic.auto.*
 
-    Write[Option[Unit]]
+    Write[Option[Unit]].void
     assertEquals(Write[Option[(Int, Unit)]].length, 1)
   }
 
   test("Write should select multi-column instance by default") {
-    import doobie.generic.auto._
+    import doobie.generic.auto.*
 
     assertEquals(Write[LenStr1].length, 2)
   }
@@ -84,7 +85,7 @@ class WriteSuite extends munit.FunSuite with WriteSuitePlatform {
   }
 
   test("Write should correct set parameters for Option instances ") {
-    import doobie.implicits._
+    import doobie.implicits.*
     (for {
       _ <- sql"create temp table t1 (a int, b int)".update.run
       _ <- Update[Option[(Int, Int)]]("insert into t1 (a, b) values (?, ?)").run(Some((1, 2)))

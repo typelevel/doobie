@@ -143,6 +143,14 @@ pull_request_rules:
       add:
       - specs2
       remove: []
+- name: Label testutils PRs
+  conditions:
+  - files~=^modules/testutils/
+  actions:
+    label:
+      add:
+      - testutils
+      remove: []
 - name: Label weaver PRs
   conditions:
   - files~=^modules/weaver/

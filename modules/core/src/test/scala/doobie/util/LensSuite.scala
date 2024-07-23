@@ -4,7 +4,7 @@
 
 package doobie.util
 
-import doobie.util.lens._
+import doobie.util.lens.*
 
 import cats.data.State
 
@@ -26,10 +26,10 @@ class LensSuite extends munit.FunSuite {
 
   val bob = Address(Name("Bob", "Dole"), "123 Foo St.")
 
-  def exec[S](st: State[S, _], s: S): S =
+  def exec[S](st: State[S, ?], s: S): S =
     st.runS(s).value
 
-  import Address._
+  import Address.*
 
   test("Lens should modify ok") {
     val prog: State[Address, Unit] =

@@ -6,9 +6,9 @@ package doobie
 package util
 
 import cats.data.NonEmptyList
-import cats.syntax.all._
+import cats.syntax.all.*
 import cats.{Foldable, Functor, Reducible}
-import doobie.implicits._
+import doobie.implicits.*
 
 /** Module of `Fragment` constructors. */
 object fragments {

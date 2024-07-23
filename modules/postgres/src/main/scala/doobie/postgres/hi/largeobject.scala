@@ -4,13 +4,13 @@
 
 package doobie.postgres.hi
 
-import cats.syntax.all._
+import cats.syntax.all.*
 import doobie.util.io.IOActions
 import java.io.{File, InputStream, OutputStream}
-import doobie.postgres.free.{largeobject => IPFLO}
+import doobie.postgres.free.{largeobject as IPFLO}
 
 object largeobject {
-  import implicits._
+  import implicits.*
 
   lazy val io = new IOActions[LargeObjectIO]
 

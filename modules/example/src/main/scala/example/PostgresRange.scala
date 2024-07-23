@@ -5,9 +5,9 @@
 package example
 
 import cats.effect.{IO, IOApp}
-import doobie._
-import doobie.implicits._
-import doobie.postgres.rangeimplicits._
+import doobie.*
+import doobie.implicits.*
+import doobie.postgres.rangeimplicits.*
 import doobie.postgres.types.Range
 
 import java.time.{LocalDate, LocalDateTime, OffsetDateTime}

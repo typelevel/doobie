@@ -4,15 +4,15 @@
 
 package example
 
-import cats.syntax.all._
+import cats.syntax.all.*
 import cats.effect.{IO, IOApp}
-import doobie._
-import doobie.implicits._
-import doobie.postgres._
+import doobie.*
+import doobie.implicits.*
+import doobie.postgres.*
 import java.io.ByteArrayInputStream
 import java.nio.charset.StandardCharsets
 import java.io.InputStream
-import fs2._
+import fs2.*
 import fs2.text.utf8
 
 object PostgresCopyInCsv extends IOApp.Simple {

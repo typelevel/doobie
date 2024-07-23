@@ -4,11 +4,11 @@
 
 package doobie.postgres.hi
 
-import cats.syntax.functor._
+import cats.syntax.functor.*
 import doobie.ConnectionIO
-import doobie.implicits._
-import doobie.postgres.free.{largeobjectmanager => IIPFLOM, largeobject => IPFLO}
-import doobie.postgres.hi.{connection => IPHC}
+import doobie.implicits.*
+import doobie.postgres.free.{largeobjectmanager as IIPFLOM, largeobject as IPFLO}
+import doobie.postgres.hi.{connection as IPHC}
 import fs2.Stream
 import java.io.{InputStream, OutputStream}
 import org.postgresql.largeobject.LargeObject

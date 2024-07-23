@@ -11,7 +11,7 @@ import org.scalatest._
 
 class AnalysisTestScalaTest extends funsuite.AnyFunSuite with matchers.must.Matchers with IOChecker {
 
-  val transactor = Transactor.fromDriverManager[IO](
+  val transactor: Transactor[IO] = Transactor.fromDriverManager[IO](
     driver = "org.postgresql.Driver",
     url = "jdbc:postgresql:world",
     user = "postgres",

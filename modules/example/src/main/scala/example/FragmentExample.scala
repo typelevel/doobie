@@ -5,8 +5,8 @@
 package example
 
 import cats.effect.{IO, IOApp}
-import cats.syntax.all._
-import doobie._, doobie.implicits._
+import cats.syntax.all.*
+import doobie.*, doobie.implicits.*
 
 object FragmentExample extends IOApp.Simple {
 
@@ -53,7 +53,7 @@ object FragmentExample extends IOApp.Simple {
     select(Some("U%"), Some(100000000), List("USA", "GBR", "FRA"), 10)
   ).traverse { q =>
     val y = xa.yolo
-    import y._
+    import y.*
     q.check *> q.quick
   }
 

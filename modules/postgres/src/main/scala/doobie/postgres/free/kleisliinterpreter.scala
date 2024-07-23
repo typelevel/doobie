@@ -25,9 +25,9 @@ import java.lang.Class
 import java.lang.String
 import org.postgresql.PGConnection
 import org.postgresql.PGNotification
-import org.postgresql.copy.{ CopyIn => PGCopyIn }
-import org.postgresql.copy.{ CopyManager => PGCopyManager }
-import org.postgresql.copy.{ CopyOut => PGCopyOut }
+import org.postgresql.copy.{ CopyIn as PGCopyIn }
+import org.postgresql.copy.{ CopyManager as PGCopyManager }
+import org.postgresql.copy.{ CopyOut as PGCopyOut }
 import org.postgresql.jdbc.AutoSave
 import org.postgresql.jdbc.PreferQueryMode
 import org.postgresql.largeobject.LargeObject
@@ -50,7 +50,6 @@ object KleisliInterpreter {
 
 // Family of interpreters into Kleisli arrows for some monad M.
 class KleisliInterpreter[M[_]](logHandler: LogHandler[M])(implicit val asyncM: WeakAsync[M]) { outer =>
-  import WeakAsync._
 
   // The 6 interpreters, with definitions below. These can be overridden to customize behavior.
   lazy val CopyInInterpreter: CopyInOp ~> Kleisli[M, PGCopyIn, *] = new CopyInInterpreter { }

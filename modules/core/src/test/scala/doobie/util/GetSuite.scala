@@ -5,12 +5,10 @@
 package doobie.util
 
 import cats.effect.IO
-import doobie._
 import doobie.enumerated.JdbcType
+import doobie.testutils.VoidExtensions
+import doobie.util.transactor.Transactor
 
-import scala.annotation.nowarn
-
-@nowarn("msg=.*pure expression does nothing in statement position.*")
 class GetSuite extends munit.FunSuite with GetSuitePlatform {
 
   case class X(x: Int)
@@ -20,31 +18,31 @@ class GetSuite extends munit.FunSuite with GetSuitePlatform {
   object S
 
   test("Get should exist for primitive types") {
-    Get[Int]
-    Get[String]
+    Get[Int].void
+    Get[String].void
   }
 
   test("Get should be auto derived for unary products") {
-    import doobie.generic.auto._
+    import doobie.generic.auto.*
 
-    Get[X]
-    Get[Q]
+    Get[X].void
+    Get[Q].void
   }
 
   test("Get is not auto derived without an import") {
-    compileErrors("Get[X]")
-    compileErrors("Get[Q]")
+    compileErrors("Get[X]").void
+    compileErrors("Get[Q]").void
   }
 
   test("Get can be manually derived for unary products") {
-    Get.derived[X]
-    Get.derived[Q]
+    Get.derived[X].void
+    Get.derived[Q].void
   }
 
   test("Get should not be derived for non-unary products") {
-    compileErrors("Get[Z]")
-    compileErrors("Get[(Int, Int)]")
-    compileErrors("Get[S.type]")
+    compileErrors("Get[Z]").void
+    compileErrors("Get[(Int, Int)]").void
+    compileErrors("Get[S.type]").void
   }
 
 }
@@ -54,7 +52,7 @@ final case class Bar(n: Int)
 
 class GetDBSuite extends munit.FunSuite {
   import cats.effect.unsafe.implicits.global
-  import doobie.syntax.all._
+  import doobie.syntax.all.*
 
   lazy val xa = Transactor.fromDriverManager[IO](
     driver = "org.h2.Driver",

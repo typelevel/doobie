@@ -6,18 +6,18 @@ package doobie
 
 import cats.data.NonEmptyList
 import doobie.hikari.HikariTransactor
-import doobie.implicits._
-import cats.syntax.all._
+import doobie.implicits.*
+import cats.syntax.all.*
 import cats.effect.IO
 import cats.effect.std.Random
 import com.zaxxer.hikari.HikariConfig
-import doobie.hi.{connection => IHC, resultset => IHRS}
-import doobie.free.{connection => IFC, preparedstatement => IFPS, resultset => IFRS}
+import doobie.hi.{connection as IHC, resultset as IHRS}
+import doobie.free.{connection as IFC, preparedstatement as IFPS, resultset as IFRS}
 import doobie.util.log.{Parameters, LoggingInfo}
 import org.postgresql.util.PSQLException
 import cats.effect.unsafe.implicits.global
 
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 class ResourceCleanupSuite extends munit.FunSuite {
 

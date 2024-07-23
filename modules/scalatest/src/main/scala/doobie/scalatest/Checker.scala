@@ -6,11 +6,11 @@ package doobie.scalatest
 
 import cats.effect.{Async, IO}
 import doobie.{Update, Update0}
-import doobie.syntax.connectionio._
+import doobie.syntax.connectionio.*
 import doobie.util.query.{Query, Query0}
-import doobie.util.testing._
+import doobie.util.testing.*
 import org.scalatest.Assertions
-import org.tpolecat.typename._
+import org.tpolecat.typename.*
 
 /** Mix-in trait for specifications that enables checking of doobie `Query` and `Update` values. Users must provide an
   * effect type `M` as well as a `Transactor[M]` and instances. As a convenience doobie provides specializations for

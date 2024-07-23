@@ -5,12 +5,12 @@
 package doobie.h2.circe
 
 import cats.Show
-import cats.syntax.all._
+import cats.syntax.all.*
 import doobie.enumerated.JdbcType
-import io.circe._
-import io.circe.jawn._
-import io.circe.syntax._
-import doobie.util._
+import io.circe.*
+import io.circe.jawn.*
+import io.circe.syntax.*
+import doobie.util.*
 
 import java.nio.charset.StandardCharsets.UTF_8
 

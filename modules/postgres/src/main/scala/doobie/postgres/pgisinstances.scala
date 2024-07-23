@@ -4,13 +4,13 @@
 
 package doobie.postgres
 
-import doobie._
-import doobie.util.invariant._
+import doobie.*
+import doobie.util.invariant.*
 import net.postgis.jdbc.{PGbox2d, PGbox3d, PGgeometry}
-import net.postgis.jdbc.geometry._
+import net.postgis.jdbc.geometry.*
 
 import scala.reflect.ClassTag
-import org.tpolecat.typename._
+import org.tpolecat.typename.*
 
 trait PgisInstances {
 

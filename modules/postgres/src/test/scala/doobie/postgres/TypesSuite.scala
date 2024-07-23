@@ -4,32 +4,30 @@
 
 package doobie.postgres
 
-import java.math.{BigDecimal => JBigDecimal}
+import java.math.{BigDecimal as JBigDecimal}
 import java.net.InetAddress
 import java.time.{LocalDate, LocalDateTime, OffsetDateTime, ZoneOffset}
 import java.util.UUID
-import doobie._
-import doobie.implicits._
-import doobie.postgres.enums._
-import doobie.postgres.implicits._
-import doobie.postgres.pgisimplicits._
-import doobie.postgres.rangeimplicits._
+import doobie.*
+import doobie.implicits.*
+import doobie.postgres.enums.*
+import doobie.postgres.implicits.*
+import doobie.postgres.pgisimplicits.*
+import doobie.postgres.rangeimplicits.*
 import doobie.postgres.types.{EmptyRange, NonEmptyRange, Range}
-import doobie.postgres.types.Range.Edge._
-import doobie.postgres.util.arbitraries.SQLArbitraries._
-import doobie.postgres.util.arbitraries.TimeArbitraries._
-import doobie.util.arbitraries.StringArbitraries._
-import net.postgis.jdbc.geometry._
-import org.postgresql.geometric._
-import org.postgresql.util._
+import doobie.postgres.types.Range.Edge.*
+import doobie.postgres.util.arbitraries.SQLArbitraries.*
+import doobie.postgres.util.arbitraries.TimeArbitraries.*
+import doobie.util.arbitraries.StringArbitraries.*
+import net.postgis.jdbc.geometry.*
+import org.postgresql.geometric.*
+import org.postgresql.util.*
 import org.scalacheck.Arbitrary
 import org.scalacheck.Gen
 import org.scalacheck.Prop.forAll
-
-import scala.annotation.nowarn
+import scala.collection.compat.immutable.LazyList
 
 // Establish that we can write and read various types.
-@nowarn("msg=.*Stream in package scala is deprecated.*")
 class TypesSuite extends munit.ScalaCheckSuite {
   import cats.effect.unsafe.implicits.global
   import PostgresTestTransactor.xa
@@ -170,7 +168,7 @@ class TypesSuite extends munit.ScalaCheckSuite {
       p
     }
 
-    import doobie.postgres.pgisgeographyimplicits._
+    import doobie.postgres.pgisgeographyimplicits.*
     val point1 = createPoint(1, 2)
     val point2 = createPoint(1, 3)
     val lineString = new LineString(Array[Point](point1, point2))
@@ -252,21 +250,21 @@ class TypesSuite extends munit.ScalaCheckSuite {
   // PostGIS geometry types
 
   // Random streams of geometry values
-  lazy val rnd: Iterator[Double] = Stream.continually(scala.util.Random.nextDouble()).iterator
-  lazy val pts: Iterator[Point] = Stream.continually(new Point(rnd.next(), rnd.next())).iterator
+  lazy val rnd: Iterator[Double] = LazyList.continually(scala.util.Random.nextDouble()).iterator
+  lazy val pts: Iterator[Point] = LazyList.continually(new Point(rnd.next(), rnd.next())).iterator
   lazy val lss: Iterator[LineString] =
-    Stream.continually(new LineString(Array(pts.next(), pts.next(), pts.next()))).iterator
-  lazy val lrs: Iterator[LinearRing] = Stream.continually(new LinearRing({
+    LazyList.continually(new LineString(Array(pts.next(), pts.next(), pts.next()))).iterator
+  lazy val lrs: Iterator[LinearRing] = LazyList.continually(new LinearRing({
     lazy val p = pts.next();
     Array(p, pts.next(), pts.next(), pts.next(), p)
   })).iterator
-  lazy val pls: Iterator[Polygon] = Stream.continually(new Polygon(lras.next())).iterator
+  lazy val pls: Iterator[Polygon] = LazyList.continually(new Polygon(lras.next())).iterator
 
   // Streams of arrays of random geometry values
-  lazy val ptas: Iterator[Array[Point]] = Stream.continually(Array(pts.next(), pts.next(), pts.next())).iterator
-  lazy val plas: Iterator[Array[Polygon]] = Stream.continually(Array(pls.next(), pls.next(), pls.next())).iterator
-  lazy val lsas: Iterator[Array[LineString]] = Stream.continually(Array(lss.next(), lss.next(), lss.next())).iterator
-  lazy val lras: Iterator[Array[LinearRing]] = Stream.continually(Array(lrs.next(), lrs.next(), lrs.next())).iterator
+  lazy val ptas: Iterator[Array[Point]] = LazyList.continually(Array(pts.next(), pts.next(), pts.next())).iterator
+  lazy val plas: Iterator[Array[Polygon]] = LazyList.continually(Array(pls.next(), pls.next(), pls.next())).iterator
+  lazy val lsas: Iterator[Array[LineString]] = LazyList.continually(Array(lss.next(), lss.next(), lss.next())).iterator
+  lazy val lras: Iterator[Array[LinearRing]] = LazyList.continually(Array(lrs.next(), lrs.next(), lrs.next())).iterator
 
   // All these types map to `geometry`
   def testInOutGeom[A <: Geometry: Meta](a: A) =

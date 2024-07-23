@@ -33,7 +33,7 @@ trait WritePlatform:
 
   // Derivation base case for product types (1-element)
   given productBase[H](
-      using H: Write[H] OrElse MkWrite[H]
+      using H: Write[H] `OrElse` MkWrite[H]
   ): MkWrite[H *: EmptyTuple] = {
     val head = H.unify
     MkWrite(
@@ -47,7 +47,7 @@ trait WritePlatform:
   // Derivation inductive case for product types
   given product[H, T <: Tuple](
       using
-      H: Write[H] OrElse MkWrite[H],
+      H: Write[H] `OrElse` MkWrite[H],
       T: MkWrite[T]
   ): MkWrite[H *: T] = {
     val head = H.unify
@@ -62,7 +62,7 @@ trait WritePlatform:
 
   // Derivation base case for Option of product types (1-element)
   given optProductBase[H](
-      using H: Write[Option[H]] OrElse MkWrite[Option[H]]
+      using H: Write[Option[H]] `OrElse` MkWrite[Option[H]]
   ): MkWrite[Option[H *: EmptyTuple]] = {
     val head = H.unify
 
@@ -77,7 +77,7 @@ trait WritePlatform:
   // Write[Option[H]], Write[Option[T]] implies Write[Option[H *: T]]
   given optProduct[H, T <: Tuple](
       using
-      H: Write[Option[H]] OrElse MkWrite[Option[H]],
+      H: Write[Option[H]] `OrElse` MkWrite[Option[H]],
       T: MkWrite[Option[T]]
   ): MkWrite[Option[H *: T]] =
     val head = H.unify
@@ -100,7 +100,7 @@ trait WritePlatform:
 
   // Derivation base case for Option of product types (where the head element is Option)
   given optProductOptBase[H](
-      using H: Write[Option[H]] OrElse MkWrite[Option[H]]
+      using H: Write[Option[H]] `OrElse` MkWrite[Option[H]]
   ): MkWrite[Option[Option[H] *: EmptyTuple]] = {
     val head = H.unify
 
@@ -115,7 +115,7 @@ trait WritePlatform:
   // Write[Option[H]], Write[Option[T]] implies Write[Option[Option[H] *: T]]
   given optProductOpt[H, T <: Tuple](
       using
-      H: Write[Option[H]] OrElse MkWrite[Option[H]],
+      H: Write[Option[H]] `OrElse` MkWrite[Option[H]],
       T: MkWrite[Option[T]]
   ): MkWrite[Option[Option[H] *: T]] =
     val head = H.unify

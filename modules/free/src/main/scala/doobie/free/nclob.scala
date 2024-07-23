@@ -8,7 +8,7 @@ package doobie.free
 
 import cats.{~>, Applicative, Semigroup, Monoid}
 import cats.effect.kernel.{ CancelScope, Poll, Sync }
-import cats.free.{ Free => FF } // alias because some algebras have an op called Free
+import cats.free.{ Free as FF } // alias because some algebras have an op called Free
 import doobie.util.log.LogEvent
 import doobie.WeakAsync
 import scala.concurrent.Future
@@ -39,7 +39,7 @@ object nclob { module =>
     // Given a NClob we can embed a NClobIO program in any algebra that understands embedding.
     implicit val NClobOpEmbeddable: Embeddable[NClobOp, NClob] =
       new Embeddable[NClobOp, NClob] {
-        def embed[A](j: NClob, fa: FF[NClobOp, A]) = Embedded.NClob(j, fa)
+        def embed[A](j: NClob, fa: FF[NClobOp, A]): Embedded.NClob[A] = Embedded.NClob(j, fa)
       }
 
     // Interface for a natural transformation NClobOp ~> F encoded via the visitor pattern.
@@ -171,7 +171,7 @@ object nclob { module =>
     }
 
   }
-  import NClobOp._
+  import NClobOp.*
 
   // Smart constructors for operations common to all algebras.
   val unit: NClobIO[Unit] = FF.pure[NClobOp, Unit](())
@@ -214,8 +214,8 @@ object nclob { module =>
   implicit val WeakAsyncNClobIO: WeakAsync[NClobIO] =
     new WeakAsync[NClobIO] {
       val monad = FF.catsFreeMonadForFree[NClobOp]
-      override val applicative = monad
-      override val rootCancelScope = CancelScope.Cancelable
+      override val applicative: Applicative[NClobIO] = monad
+      override val rootCancelScope: CancelScope = CancelScope.Cancelable
       override def pure[A](x: A): NClobIO[A] = monad.pure(x)
       override def flatMap[A, B](fa: NClobIO[A])(f: A => NClobIO[B]): NClobIO[B] = monad.flatMap(fa)(f)
       override def tailRecM[A, B](a: A)(f: A => NClobIO[Either[A, B]]): NClobIO[B] = monad.tailRecM(a)(f)

@@ -4,14 +4,16 @@
 
 package doobie.util
 
-import cats._
+import cats.*
 import cats.data.Chain
-import cats.syntax.all._
-
-import doobie._, doobie.implicits._
-import doobie.enumerated.Nullability._
+import doobie.enumerated.Nullability.*
+import doobie.free.connection.ConnectionIO
+import doobie.free.preparedstatement.PreparedStatementIO
 import doobie.util.pos.Pos
-import doobie.hi.{connection => IHC}
+import doobie.hi.connection as IHC
+import doobie.util.query.{Query, Query0}
+import doobie.util.update.{Update, Update0}
+
 import java.sql.{PreparedStatement, ResultSet}
 import scala.Predef.{augmentString, implicitly}
 
@@ -31,9 +33,9 @@ object fragment {
     // Unfortunately we need to produce a Write for our list of elems, which is a bit of a grunt
     // but straightforward nonetheless. And it's stacksafe!
     private implicit lazy val write: Write[elems.type] = {
-      import Elem._
+      import Elem.*
 
-      val puts: List[(Put[_], NullabilityKnown)] =
+      val puts: List[(Put[?], NullabilityKnown)] =
         elems.map {
           case Arg(_, p) => (p, NoNulls)
           case Opt(_, p) => (p, Nullable)
@@ -77,7 +79,7 @@ object fragment {
       * delegated to the provided program.
       */
     def execWith[B](fa: PreparedStatementIO[B]): ConnectionIO[B] =
-      IHC.prepareStatement(sql)(write.set(1, elems) *> fa)
+      IHC.prepareStatement(sql)(write.set(1, elems).flatMap(_ => fa))
 
     /** Concatenate this fragment with another, yielding a larger fragment. */
     def ++(fb: Fragment): Fragment =

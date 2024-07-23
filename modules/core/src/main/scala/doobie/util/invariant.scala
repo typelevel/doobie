@@ -5,9 +5,9 @@
 package doobie.util
 
 import cats.Show
-import cats.syntax.show._
+import cats.syntax.show.*
 import doobie.enumerated.JdbcType
-import org.tpolecat.typename._
+import org.tpolecat.typename.*
 
 /** Module defining the type of exceptions representing unmet expectations. These typically indicate a problem with the
   * schema, with type mapping, with driver compliance, and so on. The intent is that they be as fine-grained as

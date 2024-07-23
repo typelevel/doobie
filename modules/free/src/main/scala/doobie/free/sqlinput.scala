@@ -8,7 +8,7 @@ package doobie.free
 
 import cats.{~>, Applicative, Semigroup, Monoid}
 import cats.effect.kernel.{ CancelScope, Poll, Sync }
-import cats.free.{ Free => FF } // alias because some algebras have an op called Free
+import cats.free.{ Free as FF } // alias because some algebras have an op called Free
 import doobie.util.log.LogEvent
 import doobie.WeakAsync
 import scala.concurrent.Future
@@ -30,7 +30,7 @@ import java.sql.SQLInput
 import java.sql.SQLXML
 import java.sql.Time
 import java.sql.Timestamp
-import java.sql.{ Array => SqlArray }
+import java.sql.{ Array as SqlArray }
 
 // This file is Auto-generated using FreeGen2.scala
 object sqlinput { module =>
@@ -49,7 +49,7 @@ object sqlinput { module =>
     // Given a SQLInput we can embed a SQLInputIO program in any algebra that understands embedding.
     implicit val SQLInputOpEmbeddable: Embeddable[SQLInputOp, SQLInput] =
       new Embeddable[SQLInputOp, SQLInput] {
-        def embed[A](j: SQLInput, fa: FF[SQLInputOp, A]) = Embedded.SQLInput(j, fa)
+        def embed[A](j: SQLInput, fa: FF[SQLInputOp, A]): Embedded.SQLInput[A] = Embedded.SQLInput(j, fa)
       }
 
     // Interface for a natural transformation SQLInputOp ~> F encoded via the visitor pattern.
@@ -241,7 +241,7 @@ object sqlinput { module =>
     }
 
   }
-  import SQLInputOp._
+  import SQLInputOp.*
 
   // Smart constructors for operations common to all algebras.
   val unit: SQLInputIO[Unit] = FF.pure[SQLInputOp, Unit](())
@@ -299,8 +299,8 @@ object sqlinput { module =>
   implicit val WeakAsyncSQLInputIO: WeakAsync[SQLInputIO] =
     new WeakAsync[SQLInputIO] {
       val monad = FF.catsFreeMonadForFree[SQLInputOp]
-      override val applicative = monad
-      override val rootCancelScope = CancelScope.Cancelable
+      override val applicative: Applicative[SQLInputIO] = monad
+      override val rootCancelScope: CancelScope = CancelScope.Cancelable
       override def pure[A](x: A): SQLInputIO[A] = monad.pure(x)
       override def flatMap[A, B](fa: SQLInputIO[A])(f: A => SQLInputIO[B]): SQLInputIO[B] = monad.flatMap(fa)(f)
       override def tailRecM[A, B](a: A)(f: A => SQLInputIO[Either[A, B]]): SQLInputIO[B] = monad.tailRecM(a)(f)

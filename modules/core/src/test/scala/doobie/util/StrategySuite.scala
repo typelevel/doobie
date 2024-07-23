@@ -4,15 +4,23 @@
 
 package doobie.util
 
+import cats.data.Kleisli
 import cats.effect.IO
-import cats.syntax.apply._
-import doobie._, doobie.implicits._
+import cats.syntax.apply.*
+import cats.~>
+import doobie.*
+import doobie.free.{connection, preparedstatement, resultset}
+import doobie.implicits.*
+import doobie.util.transactor.Transactor.Aux
+
+import java.sql.{Connection, PreparedStatement, ResultSet}
+import java.util
 
 class StrategySuite extends munit.FunSuite {
 
   import cats.effect.unsafe.implicits.global
 
-  val baseXa = Transactor.fromDriverManager[IO](
+  val baseXa: Aux[IO, Unit] = Transactor.fromDriverManager[IO](
     driver = "org.h2.Driver",
     url = "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
     user = "sa",
@@ -39,36 +47,43 @@ class StrategySuite extends munit.FunSuite {
       var close: Option[Unit] = None
     }
 
-    override lazy val ConnectionInterpreter = new ConnectionInterpreter {
-      override val close = delay(Connection.close = Some(())) *> super.close
-      override val rollback = delay(Connection.rollback = Some(())) *> super.rollback
-      override val commit = delay(Connection.commit = Some(())) *> super.commit
-      override def setAutoCommit(b: Boolean) = delay(Connection.autoCommit = Option(b)) *> super.setAutoCommit(b)
-      override def getTypeMap = super.getTypeMap.asInstanceOf // No idea. Type error on Java 8 if we don't do this.
-    }
+    override lazy val ConnectionInterpreter: connection.ConnectionOp ~> Kleisli[IO, Connection, *] =
+      new ConnectionInterpreter {
+        override val close: Kleisli[IO, Connection, Unit] = delay(Connection.close = Some(())) *> super.close
+        override val rollback: Kleisli[IO, Connection, Unit] = delay(Connection.rollback = Some(())) *> super.rollback
+        override val commit: Kleisli[IO, Connection, Unit] = delay(Connection.commit = Some(())) *> super.commit
+        override def setAutoCommit(b: Boolean): Kleisli[IO, Connection, Unit] =
+          delay(Connection.autoCommit = Option(b)) *> super.setAutoCommit(b)
+        override def getTypeMap: Kleisli[IO, Connection, util.Map[String, Class[?]]] =
+          super.getTypeMap.asInstanceOf // No idea. Type error on Java 8 if we don't do this.
+      }
 
-    override lazy val PreparedStatementInterpreter = new PreparedStatementInterpreter {
-      override val close = delay(PreparedStatement.close = Some(())) *> super.close
-    }
+    override lazy val PreparedStatementInterpreter
+        : preparedstatement.PreparedStatementOp ~> Kleisli[IO, PreparedStatement, *] =
+      new PreparedStatementInterpreter {
+        override val close: Kleisli[IO, PreparedStatement, Unit] =
+          delay(PreparedStatement.close = Some(())) *> super.close
+      }
 
-    override lazy val ResultSetInterpreter = new ResultSetInterpreter {
-      override val close = delay(ResultSet.close = Some(())) *> super.close
-    }
+    override lazy val ResultSetInterpreter: resultset.ResultSetOp ~> Kleisli[IO, ResultSet, *] =
+      new ResultSetInterpreter {
+        override val close: Kleisli[IO, ResultSet, Unit] = delay(ResultSet.close = Some(())) *> super.close
+      }
 
   }
 
-  def xa(i: KleisliInterpreter[IO]) =
+  def xa(i: KleisliInterpreter[IO]): Transactor[IO] =
     Transactor.interpret.set(baseXa, i.ConnectionInterpreter)
 
   test("Connection.autoCommit should be set to false") {
     val i = new Interp
-    sql"select 1".query[Int].unique.transact(xa(i)).unsafeRunSync()
+    val _ = sql"select 1".query[Int].unique.transact(xa(i)).unsafeRunSync()
     assertEquals(i.Connection.autoCommit, Some(false))
   }
 
   test("Connection.commit should be called on success") {
     val i = new Interp
-    sql"select 1".query[Int].unique.transact(xa(i)).unsafeRunSync()
+    val _ = sql"select 1".query[Int].unique.transact(xa(i)).unsafeRunSync()
     assertEquals(i.Connection.commit, Some(()))
   }
 
@@ -80,7 +95,7 @@ class StrategySuite extends munit.FunSuite {
 
   test("Connection.rollback should NOT be called on success") {
     val i = new Interp
-    sql"select 1".query[Int].unique.transact(xa(i)).unsafeRunSync()
+    val _ = sql"select 1".query[Int].unique.transact(xa(i)).unsafeRunSync()
     assertEquals(i.Connection.rollback, None)
   }
 
@@ -92,13 +107,13 @@ class StrategySuite extends munit.FunSuite {
 
   test("[Streaming] Connection.autoCommit should be set to false") {
     val i = new Interp
-    sql"select 1".query[Int].stream.compile.toList.transact(xa(i)).unsafeRunSync()
+    val _ = sql"select 1".query[Int].stream.compile.toList.transact(xa(i)).unsafeRunSync()
     assertEquals(i.Connection.autoCommit, Some(false))
   }
 
   test("[Streaming] Connection.commit should be called on success") {
     val i = new Interp
-    sql"select 1".query[Int].stream.compile.toList.transact(xa(i)).unsafeRunSync()
+    val _ = sql"select 1".query[Int].stream.compile.toList.transact(xa(i)).unsafeRunSync()
     assertEquals(i.Connection.commit, Some(()))
   }
 
@@ -110,7 +125,7 @@ class StrategySuite extends munit.FunSuite {
 
   test("[Streaming] Connection.rollback should NOT be called on success") {
     val i = new Interp
-    sql"select 1".query[Int].stream.compile.toList.transact(xa(i)).unsafeRunSync()
+    val _ = sql"select 1".query[Int].stream.compile.toList.transact(xa(i)).unsafeRunSync()
     assertEquals(i.Connection.rollback, None)
   }
 
@@ -122,7 +137,7 @@ class StrategySuite extends munit.FunSuite {
 
   test("PreparedStatement.close should be called on success") {
     val i = new Interp
-    sql"select 1".query[Int].unique.transact(xa(i)).unsafeRunSync()
+    val _ = sql"select 1".query[Int].unique.transact(xa(i)).unsafeRunSync()
     assertEquals(i.PreparedStatement.close, Some(()))
   }
 
@@ -134,7 +149,7 @@ class StrategySuite extends munit.FunSuite {
 
   test("[Streaming] PreparedStatement.close should be called on success") {
     val i = new Interp
-    sql"select 1".query[Int].stream.compile.toList.transact(xa(i)).unsafeRunSync()
+    val _ = sql"select 1".query[Int].stream.compile.toList.transact(xa(i)).unsafeRunSync()
     assertEquals(i.PreparedStatement.close, Some(()))
   }
 
@@ -148,7 +163,7 @@ class StrategySuite extends munit.FunSuite {
 
   test("ResultSet.close should be called on success") {
     val i = new Interp
-    sql"select 1".query[Int].unique.transact(xa(i)).unsafeRunSync()
+    val _ = sql"select 1".query[Int].unique.transact(xa(i)).unsafeRunSync()
     assertEquals(i.ResultSet.close, Some(()))
   }
 
@@ -160,7 +175,7 @@ class StrategySuite extends munit.FunSuite {
 
   test("[Streaming] ResultSet.close should be called on success") {
     val i = new Interp
-    sql"select 1".query[Int].stream.compile.toList.transact(xa(i)).unsafeRunSync()
+    val _ = sql"select 1".query[Int].stream.compile.toList.transact(xa(i)).unsafeRunSync()
     assertEquals(i.ResultSet.close, Some(()))
   }
 

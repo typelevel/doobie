@@ -5,8 +5,8 @@
 package doobie.log4cats
 
 import doobie.LogHandler
-import doobie.util.log._
-import org.typelevel.log4cats._
+import doobie.util.log.*
+import org.typelevel.log4cats.*
 
 /** A LogHandler that writes a default format to a log4cats MessageLogger. This is provided for debugging purposes and
   * is not intended for production use, because it could log sensitive data.

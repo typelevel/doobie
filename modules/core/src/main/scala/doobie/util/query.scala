@@ -4,21 +4,23 @@
 
 package doobie.util
 
-import cats._
+import cats.*
 import cats.arrow.Profunctor
 import cats.data.NonEmptyList
-import doobie._
+import doobie.free.connection.ConnectionIO
+import doobie.free.preparedstatement.PreparedStatementIO
+import doobie.free.resultset.ResultSetIO
 import doobie.util.analysis.Analysis
 import doobie.util.compat.FactoryCompat
-import doobie.util.log.{Parameters, LoggingInfo}
+import doobie.util.log.{LoggingInfo, Parameters}
 import doobie.util.pos.Pos
-import doobie.free.{preparedstatement => IFPS, connection => IFC}
-import doobie.hi.{connection => IHC, preparedstatement => IHPS, resultset => IHRS}
-
+import doobie.free.{connection as IFC, preparedstatement as IFPS}
+import doobie.hi.{connection as IHC, preparedstatement as IHPS, resultset as IHRS}
 import fs2.Stream
 
 import scala.collection.immutable.Map
 import doobie.util.MultiVersionTypeSupport.=:=
+import doobie.util.fragment.Fragment
 
 /** Module defining queries parameterized by input and output types. */
 object query {
@@ -357,7 +359,7 @@ object query {
     /** @group Typeclass Instances */
     implicit val queryFunctor: Functor[Query0] =
       new Functor[Query0] {
-        def map[A, B](fa: Query0[A])(f: A => B) = fa map f
+        def map[A, B](fa: Query0[A])(f: A => B) = fa `map` f
       }
 
   }

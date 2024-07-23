@@ -8,7 +8,7 @@ package doobie.postgres.free
 
 import cats.{~>, Applicative, Semigroup, Monoid}
 import cats.effect.kernel.{ CancelScope, Poll, Sync }
-import cats.free.{ Free => FF } // alias because some algebras have an op called Free
+import cats.free.{ Free as FF } // alias because some algebras have an op called Free
 import doobie.util.log.LogEvent
 import doobie.WeakAsync
 import scala.concurrent.Future
@@ -19,10 +19,10 @@ import java.io.OutputStream
 import java.io.Reader
 import java.io.Writer
 import java.lang.String
-import org.postgresql.copy.{ CopyDual => PGCopyDual }
-import org.postgresql.copy.{ CopyIn => PGCopyIn }
-import org.postgresql.copy.{ CopyManager => PGCopyManager }
-import org.postgresql.copy.{ CopyOut => PGCopyOut }
+import org.postgresql.copy.{ CopyDual as PGCopyDual }
+import org.postgresql.copy.{ CopyIn as PGCopyIn }
+import org.postgresql.copy.{ CopyManager as PGCopyManager }
+import org.postgresql.copy.{ CopyOut as PGCopyOut }
 import org.postgresql.util.ByteStreamWriter
 
 // This file is Auto-generated using FreeGen2.scala
@@ -42,7 +42,7 @@ object copymanager { module =>
     // Given a PGCopyManager we can embed a CopyManagerIO program in any algebra that understands embedding.
     implicit val CopyManagerOpEmbeddable: Embeddable[CopyManagerOp, PGCopyManager] =
       new Embeddable[CopyManagerOp, PGCopyManager] {
-        def embed[A](j: PGCopyManager, fa: FF[CopyManagerOp, A]) = Embedded.CopyManager(j, fa)
+        def embed[A](j: PGCopyManager, fa: FF[CopyManagerOp, A]): Embedded.CopyManager[A] = Embedded.CopyManager(j, fa)
       }
 
     // Interface for a natural transformation CopyManagerOp ~> F encoded via the visitor pattern.
@@ -162,7 +162,7 @@ object copymanager { module =>
     }
 
   }
-  import CopyManagerOp._
+  import CopyManagerOp.*
 
   // Smart constructors for operations common to all algebras.
   val unit: CopyManagerIO[Unit] = FF.pure[CopyManagerOp, Unit](())
@@ -202,8 +202,8 @@ object copymanager { module =>
   implicit val WeakAsyncCopyManagerIO: WeakAsync[CopyManagerIO] =
     new WeakAsync[CopyManagerIO] {
       val monad = FF.catsFreeMonadForFree[CopyManagerOp]
-      override val applicative = monad
-      override val rootCancelScope = CancelScope.Cancelable
+      override val applicative: Applicative[CopyManagerIO] = monad
+      override val rootCancelScope: CancelScope = CancelScope.Cancelable
       override def pure[A](x: A): CopyManagerIO[A] = monad.pure(x)
       override def flatMap[A, B](fa: CopyManagerIO[A])(f: A => CopyManagerIO[B]): CopyManagerIO[B] = monad.flatMap(fa)(f)
       override def tailRecM[A, B](a: A)(f: A => CopyManagerIO[Either[A, B]]): CopyManagerIO[B] = monad.tailRecM(a)(f)

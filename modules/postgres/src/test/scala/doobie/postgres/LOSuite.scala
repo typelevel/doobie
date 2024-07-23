@@ -4,9 +4,9 @@
 
 package doobie.postgres
 
-import cats.syntax.all._
-import doobie.implicits._
-import doobie.postgres.implicits._
+import cats.syntax.all.*
+import doobie.implicits.*
+import doobie.postgres.implicits.*
 import java.io.{File, FileInputStream, FileOutputStream}
 
 class LOSuite extends munit.FunSuite with FileEquality {

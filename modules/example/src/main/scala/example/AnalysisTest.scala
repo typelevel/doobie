@@ -4,10 +4,10 @@
 
 package example
 
-import doobie._
-import doobie.implicits._
-import org.postgresql.geometric._
-import doobie.postgres.implicits._
+import doobie.*
+import doobie.implicits.*
+import org.postgresql.geometric.*
+import doobie.postgres.implicits.*
 
 // Some queries to test using the AnalysisTestSpec in src/test
 object AnalysisTest {

@@ -4,11 +4,11 @@
 
 package doobie.enumerated
 
-import java.sql.Types._
+import java.sql.Types.*
 
 import cats.Show
 import cats.kernel.Order
-import cats.kernel.instances.int._
+import cats.kernel.instances.int.*
 
 /** @group Types */
 sealed abstract class JdbcType(val toInt: Int) extends Product with Serializable

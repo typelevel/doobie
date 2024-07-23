@@ -4,13 +4,13 @@
 
 package doobie.hi
 
-import cats.effect.kernel.syntax.monadCancel._
+import cats.effect.kernel.syntax.monadCancel.*
 import doobie.enumerated.Holdability
 import doobie.enumerated.FetchDirection
 import doobie.enumerated.ResultSetConcurrency
 import doobie.enumerated.ResultSetType
-import doobie.implicits._
-import doobie.free.{statement => IFS, resultset => IFRS}
+import doobie.implicits.*
+import doobie.free.{statement as IFS, resultset as IFRS}
 
 import java.sql.SQLWarning
 

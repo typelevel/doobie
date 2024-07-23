@@ -7,11 +7,11 @@ package doobie.util
 import doobie.WeakAsync
 import doobie.free.connection.{ConnectionIO, ConnectionOp, commit, rollback, setAutoCommit, unit}
 import doobie.free.KleisliInterpreter
-import doobie.implicits._
-import doobie.util.lens._
+import doobie.implicits.*
+import doobie.util.lens.*
 import doobie.util.log.LogHandler
 import doobie.util.yolo.Yolo
-import doobie.free.{connection => IFC}
+import doobie.free.{connection as IFC}
 import cats.{Monad, ~>}
 import cats.data.Kleisli
 import cats.effect.kernel.{Async, MonadCancelThrow, Resource}
@@ -291,29 +291,29 @@ object transactor {
     type Aux[M[_], A0] = Transactor[M] { type A = A0 }
 
     /** @group Lenses */
-    def kernel[M[_], A]: Transactor.Aux[M, A] Lens A = Lens(_.kernel, (a, b) => a.copy(kernel0 = b))
+    def kernel[M[_], A]: Transactor.Aux[M, A] `Lens` A = Lens(_.kernel, (a, b) => a.copy(kernel0 = b))
 
     /** @group Lenses */
-    def connect[M[_], A]: Transactor.Aux[M, A] Lens (A => Resource[M, Connection]) =
+    def connect[M[_], A]: Transactor.Aux[M, A] `Lens` (A => Resource[M, Connection]) =
       Lens(_.connect, (a, b) => a.copy(connect0 = b))
 
     /** @group Lenses */
-    def interpret[M[_]]: Transactor[M] Lens Interpreter[M] = Lens(_.interpret, (a, b) => a.copy(interpret0 = b))
+    def interpret[M[_]]: Transactor[M] `Lens` Interpreter[M] = Lens(_.interpret, (a, b) => a.copy(interpret0 = b))
 
     /** @group Lenses */
-    def strategy[M[_]]: Transactor[M] Lens Strategy = Lens(_.strategy, (a, b) => a.copy(strategy0 = b))
+    def strategy[M[_]]: Transactor[M] `Lens` Strategy = Lens(_.strategy, (a, b) => a.copy(strategy0 = b))
 
     /** @group Lenses */
-    def before[M[_]]: Transactor[M] Lens ConnectionIO[Unit] = strategy[M] >=> Strategy.before
+    def before[M[_]]: Transactor[M] `Lens` ConnectionIO[Unit] = strategy[M] >=> Strategy.before
 
     /** @group Lenses */
-    def after[M[_]]: Transactor[M] Lens ConnectionIO[Unit] = strategy[M] >=> Strategy.after
+    def after[M[_]]: Transactor[M] `Lens` ConnectionIO[Unit] = strategy[M] >=> Strategy.after
 
     /** @group Lenses */
-    def oops[M[_]]: Transactor[M] Lens ConnectionIO[Unit] = strategy[M] >=> Strategy.oops
+    def oops[M[_]]: Transactor[M] `Lens` ConnectionIO[Unit] = strategy[M] >=> Strategy.oops
 
     /** @group Lenses */
-    def always[M[_]]: Transactor[M] Lens ConnectionIO[Unit] = strategy[M] >=> Strategy.always
+    def always[M[_]]: Transactor[M] `Lens` ConnectionIO[Unit] = strategy[M] >=> Strategy.always
 
     /** Construct a constructor of `Transactor[M, D]` for some `D <: DataSource` When calling this constructor you
       * should explicitly supply the effect type M e.g. Transactor.fromDataSource[IO](myDataSource, connectEC)

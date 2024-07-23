@@ -8,7 +8,7 @@ package util
 import cats.effect.IO
 import doobie.util.stream.repeatEvalChunks
 import org.scalacheck.Prop.forAll
-import scala.Predef._
+import scala.Predef.*
 import scala.util.Random
 
 class ProcessSuite extends munit.ScalaCheckSuite {

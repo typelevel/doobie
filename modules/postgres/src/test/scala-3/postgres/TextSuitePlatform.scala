@@ -7,5 +7,6 @@ package doobie.postgres
 trait TextSuitePlatform { self: munit.FunSuite =>
   test("derives") {
     case class Foo(a: String, b: Int) derives Text
+    val _ = Foo("a", 1)
   }
 }

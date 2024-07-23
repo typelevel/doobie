@@ -8,7 +8,7 @@ package doobie.free
 
 import cats.{~>, Applicative, Semigroup, Monoid}
 import cats.effect.kernel.{ CancelScope, Poll, Sync }
-import cats.free.{ Free => FF } // alias because some algebras have an op called Free
+import cats.free.{ Free as FF } // alias because some algebras have an op called Free
 import doobie.util.log.LogEvent
 import doobie.WeakAsync
 import scala.concurrent.Future
@@ -34,7 +34,7 @@ object ref { module =>
     // Given a Ref we can embed a RefIO program in any algebra that understands embedding.
     implicit val RefOpEmbeddable: Embeddable[RefOp, Ref] =
       new Embeddable[RefOp, Ref] {
-        def embed[A](j: Ref, fa: FF[RefOp, A]) = Embedded.Ref(j, fa)
+        def embed[A](j: Ref, fa: FF[RefOp, A]): Embedded.Ref[A] = Embedded.Ref(j, fa)
       }
 
     // Interface for a natural transformation RefOp ~> F encoded via the visitor pattern.
@@ -63,7 +63,7 @@ object ref { module =>
       // Ref
       def getBaseTypeName: F[String]
       def getObject: F[AnyRef]
-      def getObject(a: java.util.Map[String, Class[_]]): F[AnyRef]
+      def getObject(a: java.util.Map[String, Class[?]]): F[AnyRef]
       def setObject(a: AnyRef): F[Unit]
 
     }
@@ -122,7 +122,7 @@ object ref { module =>
     case object GetObject extends RefOp[AnyRef] {
       def visit[F[_]](v: Visitor[F]) = v.getObject
     }
-    final case class GetObject1(a: java.util.Map[String, Class[_]]) extends RefOp[AnyRef] {
+    final case class GetObject1(a: java.util.Map[String, Class[?]]) extends RefOp[AnyRef] {
       def visit[F[_]](v: Visitor[F]) = v.getObject(a)
     }
     final case class SetObject(a: AnyRef) extends RefOp[Unit] {
@@ -130,7 +130,7 @@ object ref { module =>
     }
 
   }
-  import RefOp._
+  import RefOp.*
 
   // Smart constructors for operations common to all algebras.
   val unit: RefIO[Unit] = FF.pure[RefOp, Unit](())
@@ -157,15 +157,15 @@ object ref { module =>
   // Smart constructors for Ref-specific operations.
   val getBaseTypeName: RefIO[String] = FF.liftF(GetBaseTypeName)
   val getObject: RefIO[AnyRef] = FF.liftF(GetObject)
-  def getObject(a: java.util.Map[String, Class[_]]): RefIO[AnyRef] = FF.liftF(GetObject1(a))
+  def getObject(a: java.util.Map[String, Class[?]]): RefIO[AnyRef] = FF.liftF(GetObject1(a))
   def setObject(a: AnyRef): RefIO[Unit] = FF.liftF(SetObject(a))
 
   // Typeclass instances for RefIO
   implicit val WeakAsyncRefIO: WeakAsync[RefIO] =
     new WeakAsync[RefIO] {
       val monad = FF.catsFreeMonadForFree[RefOp]
-      override val applicative = monad
-      override val rootCancelScope = CancelScope.Cancelable
+      override val applicative: Applicative[RefIO] = monad
+      override val rootCancelScope: CancelScope = CancelScope.Cancelable
       override def pure[A](x: A): RefIO[A] = monad.pure(x)
       override def flatMap[A, B](fa: RefIO[A])(f: A => RefIO[B]): RefIO[B] = monad.flatMap(fa)(f)
       override def tailRecM[A, B](a: A)(f: A => RefIO[Either[A, B]]): RefIO[B] = monad.tailRecM(a)(f)

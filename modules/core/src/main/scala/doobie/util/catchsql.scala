@@ -5,10 +5,10 @@
 package doobie.util
 
 import cats.ApplicativeError
-import cats.syntax.applicativeError._
-import cats.syntax.apply._
-import cats.syntax.either._
-import cats.syntax.functor._
+import cats.syntax.applicativeError.*
+import cats.syntax.apply.*
+import cats.syntax.either.*
+import cats.syntax.functor.*
 import doobie.enumerated.SqlState
 import java.sql.SQLException
 

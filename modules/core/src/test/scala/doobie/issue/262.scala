@@ -5,7 +5,7 @@
 package doobie.issue
 
 import cats.effect.IO
-import doobie._, doobie.implicits._
+import doobie.*, doobie.implicits.*
 
 class `262` extends munit.FunSuite {
 
@@ -13,7 +13,7 @@ class `262` extends munit.FunSuite {
 
   // an interpreter that returns null when we ask for statement metadata
   object Interp extends KleisliInterpreter[IO](LogHandler.noop) {
-    override lazy val PreparedStatementInterpreter =
+    override lazy val PreparedStatementInterpreter: PreparedStatementInterpreter =
       new PreparedStatementInterpreter {
         override def getMetaData = primitive(_ => null)
       }

@@ -5,15 +5,15 @@
 package doobie.scalatest
 
 import cats.effect.IO
-import doobie.syntax.string._
+import doobie.syntax.string.*
 import doobie.util.transactor.Transactor
-import org.scalatest._
+import org.scalatest.*
 
 trait MatcherChecks[M[_]] extends funsuite.AnyFunSuite
     with matchers.must.Matchers
     with AnalysisMatchers[M] {
 
-  lazy val transactor = Transactor.fromDriverManager[M](
+  lazy val transactor: Transactor[M] = Transactor.fromDriverManager[M](
     driver = "org.h2.Driver",
     url = "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
     user = "sa",

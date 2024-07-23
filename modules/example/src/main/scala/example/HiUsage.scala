@@ -6,10 +6,10 @@ package example
 
 import cats.Show
 import cats.effect.{IO, IOApp}
-import cats.syntax.all._
+import cats.syntax.all.*
 import fs2.Stream
-import doobie._
-import doobie.implicits._
+import doobie.*
+import doobie.implicits.*
 
 // JDBC program using the high-level API
 object HiUsage extends IOApp.Simple {

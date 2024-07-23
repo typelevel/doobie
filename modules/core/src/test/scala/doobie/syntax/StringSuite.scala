@@ -4,7 +4,7 @@
 
 package doobie.syntax
 
-import doobie.implicits._
+import doobie.implicits.*
 
 class StringSuite extends munit.FunSuite {
 

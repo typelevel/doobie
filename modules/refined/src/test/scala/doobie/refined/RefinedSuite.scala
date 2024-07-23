@@ -6,13 +6,13 @@ package doobie.refined
 
 import cats.Show
 import cats.effect.IO
-import cats.syntax.all._
-import doobie._, doobie.implicits._
-import doobie.refined.implicits._
+import cats.syntax.all.*
+import doobie.*, doobie.implicits.*
+import doobie.refined.implicits.*
 import eu.timepit.refined.api.{Refined, Validate}
 import eu.timepit.refined.numeric.Positive
-import eu.timepit.refined._
-import doobie.util.invariant._
+import eu.timepit.refined.*
+import doobie.util.invariant.*
 
 class RefinedSuite extends munit.FunSuite {
 
@@ -100,6 +100,6 @@ class RefinedSuite extends munit.FunSuite {
   }
 
   private[this] def secondaryValidationFailedCaught_?(query: => Unit) =
-    intercept[SecondaryValidationFailed[_]](query)
+    intercept[SecondaryValidationFailed[?]](query)
 
 }

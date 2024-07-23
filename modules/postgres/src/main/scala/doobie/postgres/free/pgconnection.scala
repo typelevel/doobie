@@ -8,7 +8,7 @@ package doobie.postgres.free
 
 import cats.{~>, Applicative, Semigroup, Monoid}
 import cats.effect.kernel.{ CancelScope, Poll, Sync }
-import cats.free.{ Free => FF } // alias because some algebras have an op called Free
+import cats.free.{ Free as FF } // alias because some algebras have an op called Free
 import doobie.util.log.LogEvent
 import doobie.WeakAsync
 import scala.concurrent.Future
@@ -16,10 +16,10 @@ import scala.concurrent.duration.FiniteDuration
 
 import java.lang.Class
 import java.lang.String
-import java.sql.{ Array => SqlArray }
+import java.sql.{ Array as SqlArray }
 import org.postgresql.PGConnection
 import org.postgresql.PGNotification
-import org.postgresql.copy.{ CopyManager => PGCopyManager }
+import org.postgresql.copy.{ CopyManager as PGCopyManager }
 import org.postgresql.jdbc.AutoSave
 import org.postgresql.jdbc.PreferQueryMode
 import org.postgresql.largeobject.LargeObjectManager
@@ -42,7 +42,7 @@ object pgconnection { module =>
     // Given a PGConnection we can embed a PGConnectionIO program in any algebra that understands embedding.
     implicit val PGConnectionOpEmbeddable: Embeddable[PGConnectionOp, PGConnection] =
       new Embeddable[PGConnectionOp, PGConnection] {
-        def embed[A](j: PGConnection, fa: FF[PGConnectionOp, A]) = Embedded.PGConnection(j, fa)
+        def embed[A](j: PGConnection, fa: FF[PGConnectionOp, A]): Embedded.PGConnection[A] = Embedded.PGConnection(j, fa)
       }
 
     // Interface for a natural transformation PGConnectionOp ~> F encoded via the visitor pattern.
@@ -214,7 +214,7 @@ object pgconnection { module =>
     }
 
   }
-  import PGConnectionOp._
+  import PGConnectionOp.*
 
   // Smart constructors for operations common to all algebras.
   val unit: PGConnectionIO[Unit] = FF.pure[PGConnectionOp, Unit](())
@@ -267,8 +267,8 @@ object pgconnection { module =>
   implicit val WeakAsyncPGConnectionIO: WeakAsync[PGConnectionIO] =
     new WeakAsync[PGConnectionIO] {
       val monad = FF.catsFreeMonadForFree[PGConnectionOp]
-      override val applicative = monad
-      override val rootCancelScope = CancelScope.Cancelable
+      override val applicative: Applicative[PGConnectionIO] = monad
+      override val rootCancelScope: CancelScope = CancelScope.Cancelable
       override def pure[A](x: A): PGConnectionIO[A] = monad.pure(x)
       override def flatMap[A, B](fa: PGConnectionIO[A])(f: A => PGConnectionIO[B]): PGConnectionIO[B] = monad.flatMap(fa)(f)
       override def tailRecM[A, B](a: A)(f: A => PGConnectionIO[Either[A, B]]): PGConnectionIO[B] = monad.tailRecM(a)(f)

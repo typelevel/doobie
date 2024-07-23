@@ -5,9 +5,9 @@
 package example
 
 import cats.effect.{IO, IOApp}
-import doobie._
-import doobie.implicits._
-import doobie.postgres.implicits._
+import doobie.*
+import doobie.implicits.*
+import doobie.postgres.implicits.*
 import org.postgresql.geometric.PGpoint
 
 object PostgresPoint extends IOApp.Simple {

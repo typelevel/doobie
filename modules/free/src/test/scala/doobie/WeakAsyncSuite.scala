@@ -8,7 +8,7 @@ import cats.effect.IO
 import cats.effect.testkit.TestControl
 import munit.CatsEffectSuite
 
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 class WeakAsyncSuite extends CatsEffectSuite {
 

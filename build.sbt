@@ -1,5 +1,6 @@
 import FreeGen2._
 import scala.sys.process._
+import org.typelevel.sbt.tpolecat.{DevMode, CiMode}
 
 // Library versions all in one place, for convenience and sanity.
 lazy val catsVersion = "2.12.0"
@@ -35,6 +36,8 @@ ThisBuild / tlCiScalafmtCheck := true
 ThisBuild / scalaVersion := scala213Version
 ThisBuild / crossScalaVersions := Seq(scala212Version, scala213Version, scala3Version)
 ThisBuild / developers += tlGitHubDev("tpolecat", "Rob Norris")
+ThisBuild / tpolecatDefaultOptionsMode :=
+  (if (sys.env.contains("CI")) CiMode else DevMode)
 ThisBuild / tlSonatypeUseLegacyHost := false
 ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("11"))
 ThisBuild / githubWorkflowBuildPreamble ++= Seq(
@@ -94,12 +97,17 @@ lazy val compilerFlags = Seq(
   Compile / doc / scalacOptions --= Seq(
     "-Xfatal-warnings"
   ),
-  Test / scalacOptions --= Seq(
-    "-Xfatal-warnings"
-  )
-//  scalacOptions ++= Seq(
-//    "-Xsource:3"
-//  )
+//  Test / scalacOptions --= Seq(
+//    "-Xfatal-warnings"
+//  ),
+  scalacOptions ++= (if (tlIsScala3.value) Seq.empty
+                     else
+                       Seq(
+                         "-Xsource:3"
+                       ))
+  //  scalacOptions ++= Seq(
+  //    "-source:future" // Allow irrefutable patterns in for comprehension without withFilter
+  //  ).filter(_ => tlIsScala3.value)
 )
 
 lazy val buildSettings = Seq(
@@ -131,6 +139,9 @@ lazy val commonSettings =
       // Kind Projector (Scala 2 only)
       libraryDependencies ++= Seq(
         compilerPlugin("org.typelevel" %% "kind-projector" % "0.13.3" cross CrossVersion.full)
+        // Enable this once we can enable "-source:future" on Scala 3
+        // (We need "-source:future" for for comprehension irrefutable pattern on Scala 3)
+        // compilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1"),
       ).filterNot(_ => tlIsScala3.value),
 
       // MUnit
@@ -176,7 +187,8 @@ lazy val doobie = project.in(file("."))
     scalatest,
     munit,
     specs2,
-    weaver
+    weaver,
+    testutils
   )
 
 lazy val free = project
@@ -187,8 +199,6 @@ lazy val free = project
   .settings(
     name := "doobie-free",
     description := "Pure functional JDBC layer for Scala.",
-    scalacOptions += "-Yno-predef",
-    scalacOptions -= "-Xfatal-warnings", // the only reason this project exists
     libraryDependencies ++= Seq(
       "co.fs2" %% "fs2-core" % fs2Version,
       "org.typelevel" %% "cats-core" % catsVersion,
@@ -231,6 +241,7 @@ lazy val core = project
   .in(file("modules/core"))
   .enablePlugins(AutomateHeaderPlugin)
   .dependsOn(free)
+  .dependsOn(testutils % "test->test")
   .settings(doobieSettings)
   .settings(
     name := "doobie-core",
@@ -243,7 +254,6 @@ lazy val core = project
       "org.postgresql" % "postgresql" % postgresVersion % "test",
       "org.mockito" % "mockito-core" % "5.12.0" % Test
     ),
-    scalacOptions += "-Yno-predef",
     Compile / unmanagedSourceDirectories += {
       val sourceDir = (Compile / sourceDirectory).value
       CrossVersion.partialVersion(scalaVersion.value) match {
@@ -290,7 +300,7 @@ lazy val example = project
   .enablePlugins(NoPublishPlugin)
   .enablePlugins(AutomateHeaderPlugin)
   .settings(doobieSettings)
-  .dependsOn(core, postgres, specs2, scalatest, hikari, h2)
+  .dependsOn(core, postgres, specs2, scalatest, hikari, h2, testutils % "test->test")
   .settings(
     libraryDependencies ++= Seq(
       "co.fs2" %% "fs2-io" % fs2Version
@@ -313,6 +323,7 @@ lazy val postgres = project
   .in(file("modules/postgres"))
   .enablePlugins(AutomateHeaderPlugin)
   .dependsOn(core % "compile->compile;test->test")
+  .dependsOn(testutils % "test->test")
   .settings(doobieSettings)
   .settings(freeGen2Settings)
   .settings(
@@ -321,9 +332,9 @@ lazy val postgres = project
     libraryDependencies ++= Seq(
       "co.fs2" %% "fs2-io" % fs2Version,
       "org.postgresql" % "postgresql" % postgresVersion,
-      postgisDep % "provided"
+      postgisDep % "provided",
+      "org.scala-lang.modules" %% "scala-collection-compat" % "2.12.0" % Test
     ),
-    scalacOptions -= "-Xfatal-warnings", // we need to do deprecated things
     freeGen2Dir := (Compile / scalaSource).value / "doobie" / "postgres" / "free",
     freeGen2Package := "doobie.postgres.free",
     freeGen2Classes := {
@@ -349,7 +360,8 @@ lazy val postgres = project
       classOf[java.sql.Array],
       classOf[org.postgresql.copy.CopyDual]
     ),
-    initialCommands := """
+    initialCommands :=
+      """
       import cats._, cats.data._, cats.implicits._, cats.effect._
       import doobie._, doobie.implicits._
       import doobie.postgres._, doobie.postgres.implicits._
@@ -426,8 +438,7 @@ lazy val hikari = project
 lazy val specs2 = project
   .in(file("modules/specs2"))
   .enablePlugins(AutomateHeaderPlugin)
-  .dependsOn(core)
-  .dependsOn(h2 % "test")
+  .dependsOn(core, testutils % "test->test", h2 % "test")
   .settings(doobieSettings)
   .settings(
     name := "doobie-specs2",
@@ -547,6 +558,12 @@ lazy val refined = project
       "com.h2database" % "h2" % h2Version % "test"
     )
   )
+
+lazy val testutils = project
+  .in(file("modules/testutils"))
+  .enablePlugins(AutomateHeaderPlugin)
+  .settings(doobieSettings)
+  .settings(publish / skip := true)
 
 lazy val checkGitNoUncommittedChanges =
   taskKey[Unit]("Check git working tree is clean (no uncommitted changes) due to generated code not being committed")

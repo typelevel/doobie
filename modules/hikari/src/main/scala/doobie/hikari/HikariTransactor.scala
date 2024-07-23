@@ -8,7 +8,7 @@ package hikari
 import java.util.Properties
 import java.util.concurrent.{ScheduledExecutorService, ThreadFactory}
 
-import cats.effect.implicits._
+import cats.effect.implicits.*
 import cats.effect.kernel.{Async, Resource, Sync}
 import com.zaxxer.hikari.metrics.MetricsTrackerFactory
 import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
@@ -262,9 +262,9 @@ object HikariTransactor {
       _ <- Resource.eval[M, Unit] {
         t.configure { ds =>
           Sync[M].delay[Unit] {
-            ds setJdbcUrl url
-            ds setUsername user
-            ds setPassword pass
+            ds `setJdbcUrl` url
+            ds `setUsername` user
+            ds `setPassword` pass
           }
         }
       }

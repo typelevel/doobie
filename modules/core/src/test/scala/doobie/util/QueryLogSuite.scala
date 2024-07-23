@@ -4,12 +4,15 @@
 
 package doobie.util
 
-import cats.syntax.all._
+import cats.syntax.all.*
 import cats.effect.{IO, IOLocal}
-import doobie._
-import doobie.implicits._
+import doobie.free.connection.ConnectionIO
+import doobie.implicits.*
 import doobie.util.log.Parameters.NonBatch
-import doobie.util.log.{Parameters, ExecFailure, LogEvent, ProcessingFailure, Success}
+import doobie.util.log.{ExecFailure, LogEvent, Parameters, ProcessingFailure, Success}
+import doobie.util.query.Query
+import doobie.util.transactor.Transactor
+import doobie.util.update.Update
 
 class QueryLogSuite extends munit.FunSuite with QueryLogSuitePlatform {
 

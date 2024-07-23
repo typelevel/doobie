@@ -4,11 +4,11 @@
 
 package doobie.postgres.syntax
 
-import cats._
-import cats.syntax.all._
-import doobie.implicits._
-import doobie.postgres.sqlstate._
-import doobie._
+import cats.*
+import cats.syntax.all.*
+import doobie.implicits.*
+import doobie.postgres.sqlstate.*
+import doobie.*
 import doobie.util.catchsql.exceptSomeSqlState
 import doobie.util.query.{Query, Query0}
 import doobie.hi.{HPS, HRS, HC}
@@ -625,10 +625,10 @@ trait ToPostgresMonadErrorOps {
 }
 
 trait ToPostgresExplainOps {
-  implicit def toPostgresExplainQuery0Ops(q: Query0[_]): PostgresExplainQuery0Ops =
+  implicit def toPostgresExplainQuery0Ops(q: Query0[?]): PostgresExplainQuery0Ops =
     new PostgresExplainQuery0Ops(q)
 
-  implicit def toPostgresExplainQueryOps[A](q: Query[A, _]): PostgresExplainQueryOps[A] =
+  implicit def toPostgresExplainQueryOps[A](q: Query[A, ?]): PostgresExplainQueryOps[A] =
     new PostgresExplainQueryOps(q)
 
   implicit def toPostgresExplainUpdate0Ops(u: Update0): PostgresExplainUpdate0Ops =
@@ -638,7 +638,7 @@ trait ToPostgresExplainOps {
     new PostgresExplainUpdateOps(u)
 }
 
-class PostgresExplainQuery0Ops(self: Query0[_]) {
+class PostgresExplainQuery0Ops(self: Query0[?]) {
 
   /** Construct a program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` which returns the server's query
     * plan for the query (i.e., `EXPLAIN` output). The query is not actually executed.
@@ -658,7 +658,7 @@ class PostgresExplainQuery0Ops(self: Query0[_]) {
     }
 }
 
-class PostgresExplainQueryOps[A](self: Query[A, _]) {
+class PostgresExplainQueryOps[A](self: Query[A, ?]) {
 
   /** Apply the argument `a` to construct a program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` which
     * returns the server's query plan for the query (i.e., `EXPLAIN` output). The query is not actually executed.

@@ -5,8 +5,8 @@
 package doobie.util
 
 import cats.effect.IO
-import doobie._, doobie.implicits._
-import scala.Predef._
+import doobie.*, doobie.implicits.*
+import scala.Predef.*
 
 class QuerySuite extends munit.FunSuite {
 

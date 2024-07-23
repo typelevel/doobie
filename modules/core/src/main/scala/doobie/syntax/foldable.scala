@@ -4,8 +4,8 @@
 
 package doobie.syntax
 
-import cats._
-import doobie.util.{foldable => F}
+import cats.*
+import doobie.util.{foldable as F}
 
 class FoldableOps[F[_]: Foldable, A: Monoid](self: F[A]) {
   def foldSmash1(prefix: A, delim: A, suffix: A): A = F.foldSmash1(self)(prefix, delim, suffix)

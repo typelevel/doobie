@@ -6,11 +6,11 @@ package doobie.postgres.circe
 
 import cats.Show
 import cats.data.NonEmptyList
-import cats.syntax.all._
-import io.circe._
-import io.circe.jawn._
-import io.circe.syntax._
-import doobie.util._
+import cats.syntax.all.*
+import io.circe.*
+import io.circe.jawn.*
+import io.circe.syntax.*
+import doobie.util.*
 import org.postgresql.util.PGobject
 
 object Instances {

@@ -18,7 +18,7 @@ object lens {
       andThen(bc)
 
     def compose[C](bc: Lens[C, A]): Lens[C, B] =
-      bc andThen this
+      bc `andThen` this
 
     def modify(a: A, f: B => B): A =
       set(a, f(get(a)))

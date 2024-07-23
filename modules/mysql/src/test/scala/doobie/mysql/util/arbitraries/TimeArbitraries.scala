@@ -4,7 +4,7 @@
 
 package doobie.mysql.util.arbitraries
 
-import java.time._
+import java.time.*
 
 import doobie.util.arbitraries.GenHelpers
 import org.scalacheck.Arbitrary
@@ -18,7 +18,7 @@ object TimeArbitraries {
 
   // for Scala 2.12
   private implicit val orderingLocalDate: Ordering[LocalDate] = new Ordering[LocalDate] {
-    override def compare(x: LocalDate, y: LocalDate): Int = x compareTo y
+    override def compare(x: LocalDate, y: LocalDate): Int = x `compareTo` y
   }
 
   // 1000-01-01 to 9999-12-31

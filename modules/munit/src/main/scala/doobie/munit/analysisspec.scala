@@ -6,10 +6,10 @@ package doobie.munit
 
 import cats.effect.{IO, Async}
 import doobie.munit.analysisspec.Checker.ErrorItems
-import doobie.syntax.connectionio._
+import doobie.syntax.connectionio.*
 import doobie.util.query.{Query0, Query}
-import doobie.util.testing._
-import org.tpolecat.typename._
+import doobie.util.testing.*
+import org.tpolecat.typename.*
 import munit.{Assertions, Location}
 
 /** Module with a mix-in trait for specifications that enables checking of doobie `Query` and `Update` values.

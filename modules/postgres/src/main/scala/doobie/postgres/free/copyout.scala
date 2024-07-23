@@ -8,13 +8,13 @@ package doobie.postgres.free
 
 import cats.{~>, Applicative, Semigroup, Monoid}
 import cats.effect.kernel.{ CancelScope, Poll, Sync }
-import cats.free.{ Free => FF } // alias because some algebras have an op called Free
+import cats.free.{ Free as FF } // alias because some algebras have an op called Free
 import doobie.util.log.LogEvent
 import doobie.WeakAsync
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 
-import org.postgresql.copy.{ CopyOut => PGCopyOut }
+import org.postgresql.copy.{ CopyOut as PGCopyOut }
 
 // This file is Auto-generated using FreeGen2.scala
 object copyout { module =>
@@ -33,7 +33,7 @@ object copyout { module =>
     // Given a PGCopyOut we can embed a CopyOutIO program in any algebra that understands embedding.
     implicit val CopyOutOpEmbeddable: Embeddable[CopyOutOp, PGCopyOut] =
       new Embeddable[CopyOutOp, PGCopyOut] {
-        def embed[A](j: PGCopyOut, fa: FF[CopyOutOp, A]) = Embedded.CopyOut(j, fa)
+        def embed[A](j: PGCopyOut, fa: FF[CopyOutOp, A]): Embedded.CopyOut[A] = Embedded.CopyOut(j, fa)
       }
 
     // Interface for a natural transformation CopyOutOp ~> F encoded via the visitor pattern.
@@ -145,7 +145,7 @@ object copyout { module =>
     }
 
   }
-  import CopyOutOp._
+  import CopyOutOp.*
 
   // Smart constructors for operations common to all algebras.
   val unit: CopyOutIO[Unit] = FF.pure[CopyOutOp, Unit](())
@@ -183,8 +183,8 @@ object copyout { module =>
   implicit val WeakAsyncCopyOutIO: WeakAsync[CopyOutIO] =
     new WeakAsync[CopyOutIO] {
       val monad = FF.catsFreeMonadForFree[CopyOutOp]
-      override val applicative = monad
-      override val rootCancelScope = CancelScope.Cancelable
+      override val applicative: Applicative[CopyOutIO] = monad
+      override val rootCancelScope: CancelScope = CancelScope.Cancelable
       override def pure[A](x: A): CopyOutIO[A] = monad.pure(x)
       override def flatMap[A, B](fa: CopyOutIO[A])(f: A => CopyOutIO[B]): CopyOutIO[B] = monad.flatMap(fa)(f)
       override def tailRecM[A, B](a: A)(f: A => CopyOutIO[Either[A, B]]): CopyOutIO[B] = monad.tailRecM(a)(f)

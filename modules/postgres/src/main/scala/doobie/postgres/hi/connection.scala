@@ -8,10 +8,10 @@ import cats.~>
 import cats.data.Kleisli
 import cats.free.Free
 import org.postgresql.{PGConnection, PGNotification}
-import doobie._, doobie.implicits._
+import doobie.*, doobie.implicits.*
 import doobie.postgres.free.{Embeddable, KleisliInterpreter}
-import doobie.postgres.free.{pgconnection => IPFPC}
-import doobie.postgres.hi.{pgconnection => IPHPC}
+import doobie.postgres.free.{pgconnection as IPFPC}
+import doobie.postgres.hi.{pgconnection as IPHPC}
 
 /** Module of safe `PGConnectionIO` operations lifted into `ConnectionIO`. */
 object connection {

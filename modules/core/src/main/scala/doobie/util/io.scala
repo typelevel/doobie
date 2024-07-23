@@ -4,10 +4,10 @@
 
 package doobie.util
 
-import java.io.{Console => _, _}
+import java.io.{Console as _, *}
 
-import cats.syntax.all._
-import cats.effect.kernel.syntax.monadCancel._
+import cats.syntax.all.*
+import cats.effect.kernel.syntax.monadCancel.*
 import doobie.WeakAsync
 
 /** Module for a constructor of modules of IO operations for effectful monads. */

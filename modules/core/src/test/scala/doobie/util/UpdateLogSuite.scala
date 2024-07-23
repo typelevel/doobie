@@ -5,11 +5,11 @@
 package doobie.util
 
 import cats.effect.{IO, IOLocal}
-import cats.syntax.all._
-import doobie._
-import doobie.implicits._
+import cats.syntax.all.*
+import doobie.*
+import doobie.implicits.*
 import doobie.util.log.Parameters.NonBatch
-import doobie.util.log._
+import doobie.util.log.*
 
 import scala.annotation.nowarn
 

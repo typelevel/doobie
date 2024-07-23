@@ -8,7 +8,7 @@ package doobie.free
 
 import cats.{~>, Applicative, Semigroup, Monoid}
 import cats.effect.kernel.{ CancelScope, Poll, Sync }
-import cats.free.{ Free => FF } // alias because some algebras have an op called Free
+import cats.free.{ Free as FF } // alias because some algebras have an op called Free
 import doobie.util.log.LogEvent
 import doobie.WeakAsync
 import scala.concurrent.Future
@@ -38,7 +38,7 @@ object databasemetadata { module =>
     // Given a DatabaseMetaData we can embed a DatabaseMetaDataIO program in any algebra that understands embedding.
     implicit val DatabaseMetaDataOpEmbeddable: Embeddable[DatabaseMetaDataOp, DatabaseMetaData] =
       new Embeddable[DatabaseMetaDataOp, DatabaseMetaData] {
-        def embed[A](j: DatabaseMetaData, fa: FF[DatabaseMetaDataOp, A]) = Embedded.DatabaseMetaData(j, fa)
+        def embed[A](j: DatabaseMetaData, fa: FF[DatabaseMetaDataOp, A]): Embedded.DatabaseMetaData[A] = Embedded.DatabaseMetaData(j, fa)
       }
 
     // Interface for a natural transformation DatabaseMetaDataOp ~> F encoded via the visitor pattern.
@@ -152,7 +152,7 @@ object databasemetadata { module =>
       def insertsAreDetected(a: Int): F[Boolean]
       def isCatalogAtStart: F[Boolean]
       def isReadOnly: F[Boolean]
-      def isWrapperFor(a: Class[_]): F[Boolean]
+      def isWrapperFor(a: Class[?]): F[Boolean]
       def locatorsUpdateCopy: F[Boolean]
       def nullPlusNonNullIsNull: F[Boolean]
       def nullsAreSortedAtEnd: F[Boolean]
@@ -556,7 +556,7 @@ object databasemetadata { module =>
     case object IsReadOnly extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.isReadOnly
     }
-    final case class IsWrapperFor(a: Class[_]) extends DatabaseMetaDataOp[Boolean] {
+    final case class IsWrapperFor(a: Class[?]) extends DatabaseMetaDataOp[Boolean] {
       def visit[F[_]](v: Visitor[F]) = v.isWrapperFor(a)
     }
     case object LocatorsUpdateCopy extends DatabaseMetaDataOp[Boolean] {
@@ -834,7 +834,7 @@ object databasemetadata { module =>
     }
 
   }
-  import DatabaseMetaDataOp._
+  import DatabaseMetaDataOp.*
 
   // Smart constructors for operations common to all algebras.
   val unit: DatabaseMetaDataIO[Unit] = FF.pure[DatabaseMetaDataOp, Unit](())
@@ -946,7 +946,7 @@ object databasemetadata { module =>
   def insertsAreDetected(a: Int): DatabaseMetaDataIO[Boolean] = FF.liftF(InsertsAreDetected(a))
   val isCatalogAtStart: DatabaseMetaDataIO[Boolean] = FF.liftF(IsCatalogAtStart)
   val isReadOnly: DatabaseMetaDataIO[Boolean] = FF.liftF(IsReadOnly)
-  def isWrapperFor(a: Class[_]): DatabaseMetaDataIO[Boolean] = FF.liftF(IsWrapperFor(a))
+  def isWrapperFor(a: Class[?]): DatabaseMetaDataIO[Boolean] = FF.liftF(IsWrapperFor(a))
   val locatorsUpdateCopy: DatabaseMetaDataIO[Boolean] = FF.liftF(LocatorsUpdateCopy)
   val nullPlusNonNullIsNull: DatabaseMetaDataIO[Boolean] = FF.liftF(NullPlusNonNullIsNull)
   val nullsAreSortedAtEnd: DatabaseMetaDataIO[Boolean] = FF.liftF(NullsAreSortedAtEnd)
@@ -1043,8 +1043,8 @@ object databasemetadata { module =>
   implicit val WeakAsyncDatabaseMetaDataIO: WeakAsync[DatabaseMetaDataIO] =
     new WeakAsync[DatabaseMetaDataIO] {
       val monad = FF.catsFreeMonadForFree[DatabaseMetaDataOp]
-      override val applicative = monad
-      override val rootCancelScope = CancelScope.Cancelable
+      override val applicative: Applicative[DatabaseMetaDataIO] = monad
+      override val rootCancelScope: CancelScope = CancelScope.Cancelable
       override def pure[A](x: A): DatabaseMetaDataIO[A] = monad.pure(x)
       override def flatMap[A, B](fa: DatabaseMetaDataIO[A])(f: A => DatabaseMetaDataIO[B]): DatabaseMetaDataIO[B] = monad.flatMap(fa)(f)
       override def tailRecM[A, B](a: A)(f: A => DatabaseMetaDataIO[Either[A, B]]): DatabaseMetaDataIO[B] = monad.tailRecM(a)(f)

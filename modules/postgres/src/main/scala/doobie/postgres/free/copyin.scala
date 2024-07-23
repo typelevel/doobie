@@ -8,13 +8,13 @@ package doobie.postgres.free
 
 import cats.{~>, Applicative, Semigroup, Monoid}
 import cats.effect.kernel.{ CancelScope, Poll, Sync }
-import cats.free.{ Free => FF } // alias because some algebras have an op called Free
+import cats.free.{ Free as FF } // alias because some algebras have an op called Free
 import doobie.util.log.LogEvent
 import doobie.WeakAsync
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 
-import org.postgresql.copy.{ CopyIn => PGCopyIn }
+import org.postgresql.copy.{ CopyIn as PGCopyIn }
 import org.postgresql.util.ByteStreamWriter
 
 // This file is Auto-generated using FreeGen2.scala
@@ -34,7 +34,7 @@ object copyin { module =>
     // Given a PGCopyIn we can embed a CopyInIO program in any algebra that understands embedding.
     implicit val CopyInOpEmbeddable: Embeddable[CopyInOp, PGCopyIn] =
       new Embeddable[CopyInOp, PGCopyIn] {
-        def embed[A](j: PGCopyIn, fa: FF[CopyInOp, A]) = Embedded.CopyIn(j, fa)
+        def embed[A](j: PGCopyIn, fa: FF[CopyInOp, A]): Embedded.CopyIn[A] = Embedded.CopyIn(j, fa)
       }
 
     // Interface for a natural transformation CopyInOp ~> F encoded via the visitor pattern.
@@ -154,7 +154,7 @@ object copyin { module =>
     }
 
   }
-  import CopyInOp._
+  import CopyInOp.*
 
   // Smart constructors for operations common to all algebras.
   val unit: CopyInIO[Unit] = FF.pure[CopyInOp, Unit](())
@@ -194,8 +194,8 @@ object copyin { module =>
   implicit val WeakAsyncCopyInIO: WeakAsync[CopyInIO] =
     new WeakAsync[CopyInIO] {
       val monad = FF.catsFreeMonadForFree[CopyInOp]
-      override val applicative = monad
-      override val rootCancelScope = CancelScope.Cancelable
+      override val applicative: Applicative[CopyInIO] = monad
+      override val rootCancelScope: CancelScope = CancelScope.Cancelable
       override def pure[A](x: A): CopyInIO[A] = monad.pure(x)
       override def flatMap[A, B](fa: CopyInIO[A])(f: A => CopyInIO[B]): CopyInIO[B] = monad.flatMap(fa)(f)
       override def tailRecM[A, B](a: A)(f: A => CopyInIO[Either[A, B]]): CopyInIO[B] = monad.tailRecM(a)(f)

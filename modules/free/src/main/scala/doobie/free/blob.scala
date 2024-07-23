@@ -8,7 +8,7 @@ package doobie.free
 
 import cats.{~>, Applicative, Semigroup, Monoid}
 import cats.effect.kernel.{ CancelScope, Poll, Sync }
-import cats.free.{ Free => FF } // alias because some algebras have an op called Free
+import cats.free.{ Free as FF } // alias because some algebras have an op called Free
 import doobie.util.log.LogEvent
 import doobie.WeakAsync
 import scala.concurrent.Future
@@ -35,7 +35,7 @@ object blob { module =>
     // Given a Blob we can embed a BlobIO program in any algebra that understands embedding.
     implicit val BlobOpEmbeddable: Embeddable[BlobOp, Blob] =
       new Embeddable[BlobOp, Blob] {
-        def embed[A](j: Blob, fa: FF[BlobOp, A]) = Embedded.Blob(j, fa)
+        def embed[A](j: Blob, fa: FF[BlobOp, A]): Embedded.Blob[A] = Embedded.Blob(j, fa)
       }
 
     // Interface for a natural transformation BlobOp ~> F encoded via the visitor pattern.
@@ -159,7 +159,7 @@ object blob { module =>
     }
 
   }
-  import BlobOp._
+  import BlobOp.*
 
   // Smart constructors for operations common to all algebras.
   val unit: BlobIO[Unit] = FF.pure[BlobOp, Unit](())
@@ -200,8 +200,8 @@ object blob { module =>
   implicit val WeakAsyncBlobIO: WeakAsync[BlobIO] =
     new WeakAsync[BlobIO] {
       val monad = FF.catsFreeMonadForFree[BlobOp]
-      override val applicative = monad
-      override val rootCancelScope = CancelScope.Cancelable
+      override val applicative: Applicative[BlobIO] = monad
+      override val rootCancelScope: CancelScope = CancelScope.Cancelable
       override def pure[A](x: A): BlobIO[A] = monad.pure(x)
       override def flatMap[A, B](fa: BlobIO[A])(f: A => BlobIO[B]): BlobIO[B] = monad.flatMap(fa)(f)
       override def tailRecM[A, B](a: A)(f: A => BlobIO[Either[A, B]]): BlobIO[B] = monad.tailRecM(a)(f)

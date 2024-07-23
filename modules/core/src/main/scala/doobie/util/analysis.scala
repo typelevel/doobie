@@ -5,14 +5,14 @@
 package doobie.util
 
 import doobie.enumerated.Nullability
-import doobie.enumerated.Nullability._
+import doobie.enumerated.Nullability.*
 import doobie.enumerated.ParameterMode
 import doobie.enumerated.JdbcType
-import doobie.util.pretty._
+import doobie.util.pretty.*
 
-import scala.Predef._ // TODO: minimize
+import scala.Predef.* // TODO: minimize
 
-import cats.implicits._
+import cats.implicits.*
 import cats.data.Ior
 
 /** Module defining a type for analyzing the type alignment of prepared statements. */
@@ -51,7 +51,7 @@ object analysis {
 
   final case class ParameterTypeError(
       index: Int,
-      put: Put[_],
+      put: Put[?],
       n: NullabilityKnown,
       jdbcType: JdbcType,
       vendorTypeName: String
@@ -64,7 +64,7 @@ object analysis {
           |Expected schema type was ${put.jdbcTargets.head.show.toUpperCase}.""".stripMargin.linesIterator.mkString(" ")
   }
 
-  final case class ColumnMisalignment(index: Int, alignment: Either[(Get[_], NullabilityKnown), ColumnMeta])
+  final case class ColumnMisalignment(index: Int, alignment: Either[(Get[?], NullabilityKnown), ColumnMeta])
       extends AlignmentError {
     override val tag = "C"
     override def msg = this match {
@@ -97,7 +97,7 @@ object analysis {
     }
   }
 
-  final case class ColumnTypeError(index: Int, get: Get[_], n: NullabilityKnown, schema: ColumnMeta)
+  final case class ColumnTypeError(index: Int, get: Get[?], n: NullabilityKnown, schema: ColumnMeta)
       extends AlignmentError {
     override val tag = "C"
     override def msg =
@@ -112,7 +112,7 @@ object analysis {
           |""".stripMargin.linesIterator.mkString(" ")
   }
 
-  final case class ColumnTypeWarning(index: Int, get: Get[_], n: NullabilityKnown, schema: ColumnMeta)
+  final case class ColumnTypeWarning(index: Int, get: Get[?], n: NullabilityKnown, schema: ColumnMeta)
       extends AlignmentError {
     override val tag = "C"
     override def msg =
@@ -128,8 +128,8 @@ object analysis {
   final case class Analysis(
       driver: String,
       sql: String,
-      parameterAlignment: List[(Put[_], NullabilityKnown) Ior ParameterMeta],
-      columnAlignment: List[(Get[_], NullabilityKnown) Ior ColumnMeta]
+      parameterAlignment: List[(Put[?], NullabilityKnown) `Ior` ParameterMeta],
+      columnAlignment: List[(Get[?], NullabilityKnown) `Ior` ColumnMeta]
   ) {
 
     def parameterMisalignments: List[ParameterMisalignment] =
@@ -203,7 +203,7 @@ object analysis {
             List(f"P${i + 1}%02d", show"${typeName(j1.typeStack.last, n1)}", " → ", "", "")
           case (Ior.Right(ParameterMeta(j2, s2, _, _)), i) =>
             List(f"P${i + 1}%02d", "", " → ", j2.show.toUpperCase, show"($s2)")
-        }.transpose.map(Block(_)).foldLeft(Block(Nil))(_ leftOf1 _).trimLeft(1)
+        }.transpose.map(Block(_)).foldLeft(Block(Nil))(_ `leftOf1` _).trimLeft(1)
       params.toString.linesIterator.toList.zipWithIndex.map { case (show, n) =>
         (show, parameterAlignmentErrors.filter(_.index == n + 1))
       }
@@ -211,7 +211,7 @@ object analysis {
 
     /** Description of each parameter, paird with its errors. */
     lazy val columnDescriptions: List[(String, List[AlignmentError])] = {
-      import pretty._
+      import pretty.*
       val cols: Block =
         columnAlignment.zipWithIndex.map {
           case (Ior.Both((j1, n1), ColumnMeta(j2, s2, n2, m)), i) => List(
@@ -225,7 +225,7 @@ object analysis {
           case (Ior.Left((j1, n1)), i) => List(f"C${i + 1}%02d", "", "", "", "", " → ", typeName(j1.typeStack.last, n1))
           case (Ior.Right(ColumnMeta(j2, s2, n2, m)), i) =>
             List(f"C${i + 1}%02d", m, j2.show.toUpperCase, show"(${s2.toString})", formatNullability(n2), " → ", "")
-        }.transpose.map(Block(_)).foldLeft(Block(Nil))(_ leftOf1 _).trimLeft(1)
+        }.transpose.map(Block(_)).foldLeft(Block(Nil))(_ `leftOf1` _).trimLeft(1)
       cols.toString.linesIterator.toList.zipWithIndex.map { case (show, n) =>
         (show, columnAlignmentErrors.filter(_.index == n + 1))
       }

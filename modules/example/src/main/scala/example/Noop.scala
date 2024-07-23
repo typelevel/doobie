@@ -4,10 +4,10 @@
 
 package example
 
-import cats._
-import cats.syntax.all._
-import doobie._
-import doobie.implicits._
+import cats.*
+import cats.syntax.all.*
+import doobie.*
+import doobie.implicits.*
 
 /** Example interpreter that fails if it encounters any constructors. This lets you run `ConnectionIO` programs that
   * rely only on pure values, for example.
@@ -16,7 +16,7 @@ object Noop {
 
   def noop[S[_]]: S ~> Either[String, *] =
     new (S ~> Either[String, *]) {
-      def apply[A](c: S[A]) = Left(s"Can't interpret $c")
+      def apply[A](c: S[A]): Either[String, Nothing] = Left(s"Can't interpret $c")
     }
 
   val prog1: ConnectionIO[Int] =

@@ -8,7 +8,7 @@ package doobie.postgres.free
 
 import cats.{~>, Applicative, Semigroup, Monoid}
 import cats.effect.kernel.{ CancelScope, Poll, Sync }
-import cats.free.{ Free => FF } // alias because some algebras have an op called Free
+import cats.free.{ Free as FF } // alias because some algebras have an op called Free
 import doobie.util.log.LogEvent
 import doobie.WeakAsync
 import scala.concurrent.Future
@@ -36,7 +36,7 @@ object largeobject { module =>
     // Given a LargeObject we can embed a LargeObjectIO program in any algebra that understands embedding.
     implicit val LargeObjectOpEmbeddable: Embeddable[LargeObjectOp, LargeObject] =
       new Embeddable[LargeObjectOp, LargeObject] {
-        def embed[A](j: LargeObject, fa: FF[LargeObjectOp, A]) = Embedded.LargeObject(j, fa)
+        def embed[A](j: LargeObject, fa: FF[LargeObjectOp, A]): Embedded.LargeObject[A] = Embedded.LargeObject(j, fa)
       }
 
     // Interface for a natural transformation LargeObjectOp ~> F encoded via the visitor pattern.
@@ -200,7 +200,7 @@ object largeobject { module =>
     }
 
   }
-  import LargeObjectOp._
+  import LargeObjectOp.*
 
   // Smart constructors for operations common to all algebras.
   val unit: LargeObjectIO[Unit] = FF.pure[LargeObjectOp, Unit](())
@@ -251,8 +251,8 @@ object largeobject { module =>
   implicit val WeakAsyncLargeObjectIO: WeakAsync[LargeObjectIO] =
     new WeakAsync[LargeObjectIO] {
       val monad = FF.catsFreeMonadForFree[LargeObjectOp]
-      override val applicative = monad
-      override val rootCancelScope = CancelScope.Cancelable
+      override val applicative: Applicative[LargeObjectIO] = monad
+      override val rootCancelScope: CancelScope = CancelScope.Cancelable
       override def pure[A](x: A): LargeObjectIO[A] = monad.pure(x)
       override def flatMap[A, B](fa: LargeObjectIO[A])(f: A => LargeObjectIO[B]): LargeObjectIO[B] = monad.flatMap(fa)(f)
       override def tailRecM[A, B](a: A)(f: A => LargeObjectIO[Either[A, B]]): LargeObjectIO[B] = monad.tailRecM(a)(f)

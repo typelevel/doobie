@@ -7,13 +7,13 @@ package doobie.postgres.syntax
 import cats.Foldable
 import cats.effect.Ref
 import cats.effect.kernel.Resource
-import cats.syntax.all._
-import doobie._
-import doobie.implicits._
-import doobie.postgres._
-import doobie.postgres.hi.{connection => IPHC}
-import doobie.postgres.free.{copymanager => IPFCM, copyin => IPFCI}
-import fs2._
+import cats.syntax.all.*
+import doobie.*
+import doobie.implicits.*
+import doobie.postgres.*
+import doobie.postgres.hi.{connection as IPHC}
+import doobie.postgres.free.{copymanager as IPFCM, copyin as IPFCI}
+import fs2.*
 
 import java.io.StringReader
 import fs2.text.utf8.encode

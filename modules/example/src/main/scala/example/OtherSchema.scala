@@ -6,10 +6,10 @@ package example
 
 import cats.data.NonEmptyList
 import cats.effect.{IO, IOApp}
-import doobie._
+import doobie.*
 import doobie.enumerated.JdbcType
-import doobie.implicits._
-import org.postgresql.util._
+import doobie.implicits.*
+import org.postgresql.util.*
 
 /** The normal string mapping doesn't work for enums defined in another schema. Here we have
   *
@@ -59,7 +59,7 @@ object OtherSchema extends IOApp.Simple {
       logHandler = None
     )
     val y = xa.yolo
-    import y._
+    import y.*
 
     // Check as column value only
     val q1 = sql"SELECT 'INITIAL'::returns_data.return_status".query[ReturnStatus.Value]

@@ -4,7 +4,7 @@
 
 package doobie.util.arbitraries
 
-import scala.math.Ordering.Implicits._
+import scala.math.Ordering.Implicits.*
 
 import org.scalacheck.Gen
 
@@ -19,7 +19,7 @@ object GenHelpers {
     } yield (1, Gen.const(t))
     val other = (basicsAndSpecials.length, c.choose(minT, maxT))
     val allGens = basicsAndSpecials :+ other
-    Gen.frequency(allGens: _*)
+    Gen.frequency(allGens*)
   }
 
 }

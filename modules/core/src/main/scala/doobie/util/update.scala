@@ -4,15 +4,17 @@
 
 package doobie.util
 
-import cats._
-import cats.syntax.all._
-import doobie._
-import doobie.implicits._
+import cats.*
+import cats.syntax.all.*
+import doobie.free.connection.ConnectionIO
+import doobie.free.preparedstatement.PreparedStatementIO
+import doobie.implicits.*
 import doobie.util.analysis.Analysis
 import doobie.util.pos.Pos
-import doobie.free.{connection => IFC, preparedstatement => IFPS}
-import doobie.hi.{connection => IHC, preparedstatement => IHPS, resultset => IHRS}
-import doobie.util.log.{Parameters, LoggingInfo}
+import doobie.free.{connection as IFC, preparedstatement as IFPS}
+import doobie.hi.{connection as IHC, preparedstatement as IHPS, resultset as IHRS}
+import doobie.util.fragment.Fragment
+import doobie.util.log.{LoggingInfo, Parameters}
 import fs2.Stream
 
 import scala.Predef.genericArrayOps
@@ -142,7 +144,7 @@ object update {
       * @group Execution
       */
     def withGeneratedKeys[K: Read](columns: String*)(a: A): Stream[ConnectionIO, K] =
-      withGeneratedKeysWithChunkSize[K](columns: _*)(a, DefaultChunkSize)
+      withGeneratedKeysWithChunkSize[K](columns*)(a, DefaultChunkSize)
 
     /** Construct a stream that performs the update, yielding generated keys of readable type `K`, identified by the
       * specified columns, given a writable argument `a` and `chunkSize`. Note that not all drivers support generated
@@ -203,9 +205,9 @@ object update {
         def outputAnalysis = u.outputAnalysis
         def run = u.run(a)
         def withGeneratedKeysWithChunkSize[K: Read](columns: String*)(chunkSize: Int) =
-          u.withGeneratedKeysWithChunkSize[K](columns: _*)(a, chunkSize)
+          u.withGeneratedKeysWithChunkSize[K](columns*)(a, chunkSize)
         def withUniqueGeneratedKeys[K: Read](columns: String*) =
-          u.withUniqueGeneratedKeys(columns: _*)(a)
+          u.withUniqueGeneratedKeys(columns*)(a)
         def inspect[R](f: (String, PreparedStatementIO[Unit]) => ConnectionIO[R]) = u.inspect(a)(f)
       }
 
@@ -237,7 +239,7 @@ object update {
       */
     implicit val updateContravariant: Contravariant[Update] =
       new Contravariant[Update] {
-        def contramap[A, B](fa: Update[A])(f: B => A) = fa contramap f
+        def contramap[A, B](fa: Update[A])(f: B => A) = fa `contramap` f
       }
 
   }
@@ -285,7 +287,7 @@ object update {
       * @group Execution
       */
     def withGeneratedKeys[K: Read](columns: String*): Stream[ConnectionIO, K] =
-      withGeneratedKeysWithChunkSize(columns: _*)(DefaultChunkSize)
+      withGeneratedKeysWithChunkSize(columns*)(DefaultChunkSize)
 
     /** Construct a stream that performs the update, yielding generated keys of readable type `K`, identified by the
       * specified columns, given a `chunkSize`. Note that not all drivers support generated keys, and some support only

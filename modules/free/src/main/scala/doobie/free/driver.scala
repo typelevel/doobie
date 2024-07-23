@@ -8,7 +8,7 @@ package doobie.free
 
 import cats.{~>, Applicative, Semigroup, Monoid}
 import cats.effect.kernel.{ CancelScope, Poll, Sync }
-import cats.free.{ Free => FF } // alias because some algebras have an op called Free
+import cats.free.{ Free as FF } // alias because some algebras have an op called Free
 import doobie.util.log.LogEvent
 import doobie.WeakAsync
 import scala.concurrent.Future
@@ -38,7 +38,7 @@ object driver { module =>
     // Given a Driver we can embed a DriverIO program in any algebra that understands embedding.
     implicit val DriverOpEmbeddable: Embeddable[DriverOp, Driver] =
       new Embeddable[DriverOp, Driver] {
-        def embed[A](j: Driver, fa: FF[DriverOp, A]) = Embedded.Driver(j, fa)
+        def embed[A](j: Driver, fa: FF[DriverOp, A]): Embedded.Driver[A] = Embedded.Driver(j, fa)
       }
 
     // Interface for a natural transformation DriverOp ~> F encoded via the visitor pattern.
@@ -146,7 +146,7 @@ object driver { module =>
     }
 
   }
-  import DriverOp._
+  import DriverOp.*
 
   // Smart constructors for operations common to all algebras.
   val unit: DriverIO[Unit] = FF.pure[DriverOp, Unit](())
@@ -183,8 +183,8 @@ object driver { module =>
   implicit val WeakAsyncDriverIO: WeakAsync[DriverIO] =
     new WeakAsync[DriverIO] {
       val monad = FF.catsFreeMonadForFree[DriverOp]
-      override val applicative = monad
-      override val rootCancelScope = CancelScope.Cancelable
+      override val applicative: Applicative[DriverIO] = monad
+      override val rootCancelScope: CancelScope = CancelScope.Cancelable
       override def pure[A](x: A): DriverIO[A] = monad.pure(x)
       override def flatMap[A, B](fa: DriverIO[A])(f: A => DriverIO[B]): DriverIO[B] = monad.flatMap(fa)(f)
       override def tailRecM[A, B](a: A)(f: A => DriverIO[Either[A, B]]): DriverIO[B] = monad.tailRecM(a)(f)

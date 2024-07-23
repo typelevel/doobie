@@ -5,14 +5,14 @@
 package doobie.util.meta
 
 import cats.effect.IO
-import doobie._
+import doobie.util.transactor.Transactor
 import doobie.util.{Get, Put}
 
 import scala.annotation.nowarn
 
 case class Foo(str: String)
 
-@nowarn("msg=.*local method foo.*")
+@nowarn("msg=.*(local method foo|unused).*")
 class MetaSuite extends munit.FunSuite {
 
   test("Meta should exist for primitive types") {
@@ -31,7 +31,7 @@ class MetaSuite extends munit.FunSuite {
 }
 
 class MetaDBSuite extends munit.FunSuite {
-  import doobie.implicits._
+  import doobie.implicits.*
   import cats.effect.unsafe.implicits.global
 
   lazy val xa = Transactor.fromDriverManager[IO](

@@ -5,18 +5,18 @@
 package doobie.util
 
 import cats.effect.kernel.Async
-import cats.instances.int._
-import cats.instances.string._
-import cats.syntax.show._
+import cats.instances.int.*
+import cats.instances.string.*
+import cats.syntax.show.*
 import doobie.free.connection.{ConnectionIO, delay}
-import doobie.implicits._
-import doobie.util.query._
-import doobie.util.update._
-import doobie.util.testing._
-import doobie.util.transactor._
+import doobie.implicits.*
+import doobie.util.query.*
+import doobie.util.update.*
+import doobie.util.testing.*
+import doobie.util.transactor.*
 import fs2.Stream
-import scala.Predef._
-import org.tpolecat.typename._
+import scala.Predef.*
+import org.tpolecat.typename.*
 
 /** Module for implicit syntax useful in REPL session. */
 
@@ -36,7 +36,7 @@ object yolo {
           .evalMap(out(_, colors))
           .compile
           .drain
-          .transact(xa)(ev)
+          .transact(xa)(using ev)
 
       def check(implicit colors: Colors = Colors.Ansi): M[Unit] =
         checkImpl(Analyzable.unpack(q), colors)
@@ -74,7 +74,7 @@ object yolo {
     implicit class Update0YoloOps(u: Update0) {
 
       def quick(implicit colors: Colors = Colors.Ansi): M[Unit] =
-        u.run.flatMap(a => out(show"$a row(s) updated", colors)).transact(xa)(ev)
+        u.run.flatMap(a => out(show"$a row(s) updated", colors)).transact(xa)(using ev)
 
       def check(implicit colors: Colors = Colors.Ansi): M[Unit] =
         checkImpl(Analyzable.unpack(u), colors)
@@ -92,19 +92,19 @@ object yolo {
     implicit class ConnectionIOYoloOps[A](ca: ConnectionIO[A]) {
       @SuppressWarnings(Array("org.wartremover.warts.ToString"))
       def quick(implicit colors: Colors = Colors.Ansi): M[Unit] =
-        ca.flatMap(a => out(a.toString, colors)).transact(xa)(ev)
+        ca.flatMap(a => out(a.toString, colors)).transact(xa)(using ev)
     }
 
     implicit class StreamYoloOps[A](pa: Stream[ConnectionIO, A]) {
       @SuppressWarnings(Array("org.wartremover.warts.ToString"))
       def quick(implicit colors: Colors = Colors.Ansi): M[Unit] =
-        pa.evalMap(a => out(a.toString, colors)).compile.drain.transact(xa)(ev)
+        pa.evalMap(a => out(a.toString, colors)).compile.drain.transact(xa)(using ev)
     }
 
     private def checkImpl(args: AnalysisArgs, colors: Colors): M[Unit] =
       analyze(args).flatMap { report =>
         val formatted = formatReport(args, report, colors)
         delay(println(formatted.padLeft("  ")))
-      }.transact(xa)(ev)
+      }.transact(xa)(using ev)
   }
 }

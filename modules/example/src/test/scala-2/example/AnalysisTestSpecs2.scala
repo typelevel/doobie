@@ -5,13 +5,14 @@
 package example
 
 import cats.effect.IO
-import doobie._
-import doobie.specs2.analysisspec._
+import doobie.*
+import doobie.specs2.analysisspec.*
+import doobie.testutils.VoidExtensions
 import org.specs2.mutable.Specification
 
 class AnalysisTestSpecs2 extends Specification with IOChecker {
 
-  val transactor = Transactor.fromDriverManager[IO](
+  val transactor: Transactor[IO] = Transactor.fromDriverManager[IO](
     driver = "org.postgresql.Driver",
     url = "jdbc:postgresql:world",
     user = "postgres",
@@ -20,11 +21,11 @@ class AnalysisTestSpecs2 extends Specification with IOChecker {
   )
   // Commented tests fail!
   // check(AnalysisTest.speakerQuery(null, 0))
-  check(AnalysisTest.speakerQuery2)
-  check(AnalysisTest.arrayTest)
-  check(AnalysisTest.pointTest)
-  // check(AnalysisTest.pointTest2)
-  checkOutput(AnalysisTest.update)
-  checkOutput(AnalysisTest.update0_1("foo", "bkah"))
-  check(AnalysisTest.update0_2)
+  check(AnalysisTest.speakerQuery2).void
+  check(AnalysisTest.arrayTest).void
+  check(AnalysisTest.pointTest).void
+  // check(AnalysisTest.pointTest2).void
+  checkOutput(AnalysisTest.update).void
+  checkOutput(AnalysisTest.update0_1("foo", "bkah")).void
+  check(AnalysisTest.update0_2).void
 }

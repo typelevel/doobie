@@ -8,7 +8,7 @@ package doobie.free
 
 import cats.{~>, Applicative, Semigroup, Monoid}
 import cats.effect.kernel.{ CancelScope, Poll, Sync }
-import cats.free.{ Free => FF } // alias because some algebras have an op called Free
+import cats.free.{ Free as FF } // alias because some algebras have an op called Free
 import doobie.util.log.LogEvent
 import doobie.WeakAsync
 import scala.concurrent.Future
@@ -36,7 +36,7 @@ object sqldata { module =>
     // Given a SQLData we can embed a SQLDataIO program in any algebra that understands embedding.
     implicit val SQLDataOpEmbeddable: Embeddable[SQLDataOp, SQLData] =
       new Embeddable[SQLDataOp, SQLData] {
-        def embed[A](j: SQLData, fa: FF[SQLDataOp, A]) = Embedded.SQLData(j, fa)
+        def embed[A](j: SQLData, fa: FF[SQLDataOp, A]): Embedded.SQLData[A] = Embedded.SQLData(j, fa)
       }
 
     // Interface for a natural transformation SQLDataOp ~> F encoded via the visitor pattern.
@@ -128,7 +128,7 @@ object sqldata { module =>
     }
 
   }
-  import SQLDataOp._
+  import SQLDataOp.*
 
   // Smart constructors for operations common to all algebras.
   val unit: SQLDataIO[Unit] = FF.pure[SQLDataOp, Unit](())
@@ -161,8 +161,8 @@ object sqldata { module =>
   implicit val WeakAsyncSQLDataIO: WeakAsync[SQLDataIO] =
     new WeakAsync[SQLDataIO] {
       val monad = FF.catsFreeMonadForFree[SQLDataOp]
-      override val applicative = monad
-      override val rootCancelScope = CancelScope.Cancelable
+      override val applicative: Applicative[SQLDataIO] = monad
+      override val rootCancelScope: CancelScope = CancelScope.Cancelable
       override def pure[A](x: A): SQLDataIO[A] = monad.pure(x)
       override def flatMap[A, B](fa: SQLDataIO[A])(f: A => SQLDataIO[B]): SQLDataIO[B] = monad.flatMap(fa)(f)
       override def tailRecM[A, B](a: A)(f: A => SQLDataIO[Either[A, B]]): SQLDataIO[B] = monad.tailRecM(a)(f)
