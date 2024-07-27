@@ -87,7 +87,7 @@ sealed abstract class Write[A](
 
 }
 
-object Write {
+object Write extends WritePlatform {
 
   def apply[A](
       puts: List[(Put[?], NullabilityKnown)],
@@ -153,7 +153,7 @@ final class MkWrite[A](
     override val unsafeSet: (PreparedStatement, Int, A) => Unit,
     override val unsafeUpdate: (ResultSet, Int, A) => Unit
 ) extends Write[A](puts, toList, unsafeSet, unsafeUpdate)
-object MkWrite extends WritePlatform {
+object MkWrite extends MkWritePlatform {
 
   def lift[A](w: Write[A]): MkWrite[A] =
     new MkWrite[A](w.puts, w.toList, w.unsafeSet, w.unsafeUpdate)

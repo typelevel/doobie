@@ -7,7 +7,7 @@ package doobie.util
 import shapeless.{HList, HNil, ::, Generic, Lazy, <:!<, OrElse}
 import shapeless.labelled.{FieldType}
 
-trait WritePlatform extends LowerPriorityWrite {
+trait MkWritePlatform extends LowerPriorityWrite {
 
   // Derivation base case for product types (1-element)
   implicit def productBase[H](

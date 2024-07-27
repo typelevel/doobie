@@ -39,10 +39,23 @@ class ReadSuite extends munit.FunSuite with ReadSuitePlatform {
     assert(compileErrors("Read[Option[CaseObj.type]]").contains("Cannot find or construct"))
   }
 
-  test("Read is not auto derived for tuples without an import") {
-    assert(compileErrors("Read[(Int, Int)]").contains("Cannot find or construct"))
-    assert(compileErrors("Read[(Int, Int, String)]").contains("Cannot find or construct"))
-    assert(compileErrors("Read[(Int, (Int, String))]").contains("Cannot find or construct"))
+  test("Read is auto derived for tuples without an import") {
+    Read[(Int, Int)].void
+    Read[(Int, Int, String)].void
+    Read[(Int, (Int, String))].void
+
+    Read[Option[(Int, Int)]].void
+    Read[Option[(Int, Option[(String, Int)])]].void
+  }
+
+  test("Read is still auto derived for tuples when import is present (no ambiguous implicits)") {
+    import doobie.generic.auto.*
+    Read[(Int, Int)].void
+    Read[(Int, Int, String)].void
+    Read[(Int, (Int, String))].void
+
+    Read[Option[(Int, Int)]].void
+    Read[Option[(Int, Option[(String, Int)])]].void
   }
 
   test("Read can be manually derived") {

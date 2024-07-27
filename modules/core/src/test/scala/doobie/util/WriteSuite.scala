@@ -31,10 +31,23 @@ class WriteSuite extends munit.FunSuite with WriteSuitePlatform {
     Write[ComplexCaseClass].void
   }
 
-  test("Write is not auto derived for tuples without an import") {
-    assert(compileErrors("Write[(Int, Int)]").contains("Cannot find or construct"))
-    assert(compileErrors("Write[(Int, Int, String)]").contains("Cannot find or construct"))
-    assert(compileErrors("Write[(Int, (Int, String))]").contains("Cannot find or construct"))
+  test("Write is auto derived for tuples without an import") {
+    Write[(Int, Int)].void
+    Write[(Int, Int, String)].void
+    Write[(Int, (Int, String))].void
+
+    Write[Option[(Int, Int)]].void
+    Write[Option[(Int, Option[(String, Int)])]].void
+  }
+
+  test("Write is still auto derived for tuples when import is present (no ambiguous implicits) ") {
+    import doobie.generic.auto.*
+    Write[(Int, Int)].void
+    Write[(Int, Int, String)].void
+    Write[(Int, (Int, String))].void
+
+    Write[Option[(Int, Int)]].void
+    Write[Option[(Int, Option[(String, Int)])]].void
   }
 
   test("Write is not auto derived for case classes") {

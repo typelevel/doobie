@@ -7,7 +7,7 @@ package doobie.util
 import scala.deriving.Mirror
 import doobie.util.shapeless.OrElse
 
-trait WritePlatform:
+trait MkWritePlatform:
 
   // Derivation for product types (i.e. case class)
   given derived[P <: Product, A](
@@ -15,10 +15,9 @@ trait WritePlatform:
       m: Mirror.ProductOf[P],
       i: m.MirroredElemTypes =:= A,
       w: MkWrite[A]
-  ): MkWrite[P] = {
+  ): MkWrite[P] =
     val write: Write[P] = w.contramap(p => i(Tuple.fromProductTyped(p)))
     MkWrite.lift(write)
-  }
 
   // Derivation for optional product types
   given derivedOption[P <: Product, A](
@@ -26,10 +25,9 @@ trait WritePlatform:
       m: Mirror.ProductOf[P],
       i: m.MirroredElemTypes =:= A,
       w: MkWrite[Option[A]]
-  ): MkWrite[Option[P]] = {
+  ): MkWrite[Option[P]] =
     val write: Write[Option[P]] = w.contramap(op => op.map(p => i(Tuple.fromProductTyped(p))))
     MkWrite.lift(write)
-  }
 
   // Derivation base case for product types (1-element)
   given productBase[H](

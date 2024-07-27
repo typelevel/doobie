@@ -5,11 +5,12 @@
 package doobie.util
 
 import cats.*
-import doobie.free.{ResultSetIO}
+import doobie.free.ResultSetIO
 import doobie.enumerated.Nullability.*
+
 import java.sql.ResultSet
 import scala.annotation.implicitNotFound
-import doobie.free.{resultset as IFRS}
+import doobie.free.resultset as IFRS
 
 @implicitNotFound("""
 Cannot find or construct a Read instance for type:
@@ -59,7 +60,7 @@ sealed abstract class Read[A](
 
 }
 
-object Read {
+object Read extends ReadPlatform {
 
   def apply[A](
       gets: List[(Get[?], NullabilityKnown)],
@@ -99,7 +100,8 @@ final class MkRead[A](
     override val gets: List[(Get[?], NullabilityKnown)],
     override val unsafeGet: (ResultSet, Int) => A
 ) extends Read[A](gets, unsafeGet)
-object MkRead extends ReadPlatform {
+
+object MkRead extends MkReadPlatform {
 
   def lift[A](r: Read[A]): MkRead[A] =
     new MkRead[A](r.gets, r.unsafeGet)

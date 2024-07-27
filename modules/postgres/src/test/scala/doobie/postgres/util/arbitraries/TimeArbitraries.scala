@@ -60,6 +60,7 @@ object TimeArbitraries {
   implicit val arbitraryLocalDateTime: Arbitrary[LocalDateTime] = Arbitrary {
     for {
       date <- GenHelpers.chooseT(MinTimestampDate, MaxTimestampDate)
+      if date.isLeapYear || date.getMonth != Month.FEBRUARY || date.getDayOfMonth != 29
       time <- arbitraryLocalTime.arbitrary
     } yield LocalDateTime.of(date, time)
   }

@@ -24,6 +24,9 @@ object TimeArbitraries {
   // 1000-01-01 to 9999-12-31
   implicit val arbitraryLocalDate: Arbitrary[LocalDate] = Arbitrary {
     GenHelpers.chooseT(LocalDate.of(1000, 1, 1), LocalDate.of(9999, 12, 31), LocalDate.of(1970, 1, 1))
+      .filter(date =>
+        // Remove invalid 29th February
+        !date.isLeapYear || date.getMonth != Month.FEBRUARY || date.getDayOfMonth != 29)
   }
 
   // 00:00:00.000000 to 23:59:59.999999
