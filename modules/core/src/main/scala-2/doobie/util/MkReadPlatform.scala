@@ -7,7 +7,7 @@ package doobie.util
 import shapeless.{HList, HNil, ::, Generic, Lazy, <:!<, OrElse}
 import shapeless.labelled.{field, FieldType}
 
-trait ReadPlatform extends LowerPriorityRead {
+trait MkReadPlatform extends LowerPriorityRead {
 
   // Derivation base case for product types (1-element)
   implicit def productBase[H](
@@ -65,8 +65,8 @@ trait LowerPriorityRead extends EvenLowerPriorityRead {
   }
 
   // Derivation for product types (i.e. case class)
-  implicit def generic[F, G](implicit gen: Generic.Aux[F, G], G: Lazy[MkRead[G]]): MkRead[F] =
-    new MkRead[F](G.value.gets, (rs, n) => gen.from(G.value.unsafeGet(rs, n)))
+  implicit def generic[T, Repr](implicit gen: Generic.Aux[T, Repr], G: Lazy[MkRead[Repr]]): MkRead[T] =
+    new MkRead[T](G.value.gets, (rs, n) => gen.from(G.value.unsafeGet(rs, n)))
 
   // Derivation base case for Option of product types (1-element)
   implicit def optProductBase[H](

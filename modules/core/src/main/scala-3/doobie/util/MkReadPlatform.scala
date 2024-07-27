@@ -7,7 +7,7 @@ package doobie.util
 import scala.deriving.Mirror
 import doobie.util.shapeless.OrElse
 
-trait ReadPlatform:
+trait MkReadPlatform:
 
   // Generic Read for products.
   given derived[P <: Product, A](

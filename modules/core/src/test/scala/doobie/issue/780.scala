@@ -9,7 +9,7 @@ import doobie.testutils.VoidExtensions
 
 import scala.annotation.nowarn
 
-@nowarn("msg=.*(Foo is never used|unused).*")
+@nowarn("msg=.*(Foo is never used|(U|u)nused).*")
 class `780` extends munit.FunSuite {
   import doobie.generic.auto.*
 
