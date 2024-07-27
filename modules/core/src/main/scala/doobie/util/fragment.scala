@@ -47,7 +47,6 @@ object fragment {
           case Opt(a, _) => a
         }.toList
 
-      @SuppressWarnings(Array("org.wartremover.warts.Var"))
       val unsafeSet: (PreparedStatement, Int, elems.type) => Unit = { (ps, n, elems) =>
         var index = n
         elems.iterator.foreach { e =>
@@ -59,7 +58,6 @@ object fragment {
         }
       }
 
-      @SuppressWarnings(Array("org.wartremover.warts.Var"))
       val unsafeUpdate: (ResultSet, Int, elems.type) => Unit = { (ps, n, elems) =>
         var index = n
         elems.iterator.foreach { e =>
@@ -85,15 +83,12 @@ object fragment {
     def ++(fb: Fragment): Fragment =
       new Fragment(sql + fb.sql, elems ++ fb.elems, pos orElse fb.pos)
 
-    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
     def stripMargin(marginChar: Char): Fragment =
       new Fragment(sql.stripMargin(marginChar), elems, pos)
 
-    @SuppressWarnings(Array("org.wartremover.warts.Overloading"))
     def stripMargin: Fragment = stripMargin('|')
 
     /** Construct a [[Query0]] from this fragment, with asserted row type `B`. */
-    @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
     def query[B: Read]: Query0[B] =
       queryWithLabel(unlabeled)
 
@@ -103,7 +98,6 @@ object fragment {
       Query[elems.type, B](sql, pos, label).toQuery0(elems)
 
     /** Construct an [[Update0]] from this fragment. */
-    @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
     def update: Update0 =
       updateWithLabel(unlabeled)
 
@@ -122,7 +116,6 @@ object fragment {
       }
 
     /** Used only for testing; this uses universal equality on the captured arguments. */
-    @SuppressWarnings(Array("org.wartremover.warts.Equals"))
     private[util] def unsafeEquals(fb: Fragment): Boolean =
       sql == fb.sql && args == fb.args
 
@@ -169,21 +162,18 @@ object fragment {
       * accommodate the given list of interpolated elements. This is normally accomplished via the string interpolator
       * rather than direct construction.
       */
-    @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
     def apply(sql: String, elems: List[Elem], pos: Option[Pos] = None): Fragment =
       new Fragment(sql, Chain.fromSeq(elems), pos)
 
     /** Construct a statement fragment with no interpolated values and no trailing space; the passed SQL string must not
       * contain `?` placeholders.
       */
-    @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
     def const0(sql: String, pos: Option[Pos] = None): Fragment =
       new Fragment(sql, Chain.empty, pos)
 
     /** Construct a statement fragment with no interpolated values and a trailing space; the passed SQL string must not
       * contain `?` placeholders.
       */
-    @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
     def const(sql: String, pos: Option[Pos] = None): Fragment =
       const0(sql + " ", pos)
 

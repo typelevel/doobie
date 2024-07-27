@@ -29,7 +29,6 @@ object yolo {
 
     implicit class Query0YoloOps[A: TypeName](q: Query0[A]) {
 
-      @SuppressWarnings(Array("org.wartremover.warts.ToString"))
       def quick(implicit colors: Colors = Colors.Ansi): M[Unit] =
         q.stream
           .map(_.toString)
@@ -90,13 +89,11 @@ object yolo {
     }
 
     implicit class ConnectionIOYoloOps[A](ca: ConnectionIO[A]) {
-      @SuppressWarnings(Array("org.wartremover.warts.ToString"))
       def quick(implicit colors: Colors = Colors.Ansi): M[Unit] =
         ca.flatMap(a => out(a.toString, colors)).transact(xa)(using ev)
     }
 
     implicit class StreamYoloOps[A](pa: Stream[ConnectionIO, A]) {
-      @SuppressWarnings(Array("org.wartremover.warts.ToString"))
       def quick(implicit colors: Colors = Colors.Ansi): M[Unit] =
         pa.evalMap(a => out(a.toString, colors)).compile.drain.transact(xa)(using ev)
     }

@@ -237,7 +237,6 @@ object analysis {
 
   private val packagePrefix = "\\b[a-z]+\\.".r
 
-  @SuppressWarnings(Array("org.wartremover.warts.ToString"))
   private def typeName(t: Option[String], n: NullabilityKnown): String = {
     val name = packagePrefix.replaceAllIn(t.fold("«erased»")(_.toString), "")
     n match {

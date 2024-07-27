@@ -49,7 +49,6 @@ object Instances {
     def h2DecoderGetT[A: Decoder]: Get[A] =
       Get[Json].temap(json => json.as[A].leftMap(_.show))
 
-    @SuppressWarnings(Array("org.wartremover.warts.Throw"))
     def h2DecoderGet[A: Decoder]: Get[A] =
       Get[Json].map(json => json.as[A].fold(throw _, identity))
   }

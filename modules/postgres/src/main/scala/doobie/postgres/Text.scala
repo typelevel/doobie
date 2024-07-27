@@ -39,7 +39,6 @@ trait Text[A] { outer =>
     Text.instance((b, sb) => outer.unsafeEncode(f(b), sb))
 
   /** `Text` is semigroupal. */
-  @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
   def product[B](fb: Text[B]): Text[(A, B)] =
     new Text[(A, B)] {
       def unsafeEncode(ab: (A, B), sb: StringBuilder) = {
@@ -134,7 +133,6 @@ trait TextInstances extends TextInstances0 { this: Text.type =>
   // Date, Time, etc.
 
   // Byte arrays in \\x01A3DD.. format.
-  @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
   implicit val byteArrayInstance: Text[Array[Byte]] =
     instance { (bs, sb) =>
       sb.append("\\\\x")
@@ -161,7 +159,6 @@ trait TextInstances extends TextInstances0 { this: Text.type =>
 trait TextInstances0 extends TextInstances1 { this: Text.type =>
 
   // Iterable and views thereof, as [nested] ARRAY
-  @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements", "org.wartremover.warts.Var"))
   implicit def iterableInstance[F[_], A](
       implicit
       ev: Text[A],

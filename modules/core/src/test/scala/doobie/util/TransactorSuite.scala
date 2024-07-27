@@ -25,7 +25,6 @@ class TransactorSuite extends munit.FunSuite {
     assertEquals(q.transact(xa[IO]).unsafeRunSync(), 42)
   }
 
-  @SuppressWarnings(Array("org.wartremover.warts.Var"))
   class ConnectionTracker {
     var connections = List.empty[java.sql.Connection]
 

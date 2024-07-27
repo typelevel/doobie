@@ -55,7 +55,6 @@ sealed abstract class Put[A](
       update = update.contramap(f)
     ) {}
 
-  @SuppressWarnings(Array("org.wartremover.warts.Equals"))
   def unsafeSetNonNullable(ps: PreparedStatement, n: Int, a: A): Unit =
     if (a == null) sys.error("oops, null")
     else put.fi.apply(ps, n, (put.k(a)))
@@ -66,7 +65,6 @@ sealed abstract class Put[A](
       case None    => unsafeSetNull(ps, n)
     }
 
-  @SuppressWarnings(Array("org.wartremover.warts.Equals"))
   def unsafeUpdateNonNullable(rs: ResultSet, n: Int, a: A): Unit =
     if (a == null) sys.error("oops, null")
     else update.fi.apply(rs, n, (update.k(a)))
@@ -172,7 +170,6 @@ object Put extends PutInstances {
     ): Put[A] =
       many(NonEmptyList.of(jdbcTarget), vendorTypeNames, put, update)
 
-    @SuppressWarnings(Array("org.wartremover.warts.Equals", "org.wartremover.warts.AsInstanceOf"))
     def array[A >: Null <: AnyRef](
         vendorTypeNames: NonEmptyList[String],
         elementType: String

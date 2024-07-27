@@ -186,7 +186,6 @@ object query {
     /** Apply an argument, yielding a residual `[[Query0]]`.
       * @group Transformations
       */
-    @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
     def toQuery0(a: A): Query0[B] =
       new Query0[B] {
         def sql = outer.sql
@@ -214,7 +213,6 @@ object query {
       * interpolator.
       * @group Constructors
       */
-    @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
     def apply[A, B](sql: String, pos: Option[Pos] = None, label: String = unlabeled)(implicit
         A: Write[A],
         B: Read[B]
@@ -352,7 +350,6 @@ object query {
       * Note that the most common way to construct a `Query` is via the `sql`interpolator.
       * @group Constructors
       */
-    @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
     def apply[A: Read](sql: String, pos: Option[Pos] = None, label: String = unlabeled): Query0[A] =
       Query[Unit, A](sql, pos, label).toQuery0(())
 

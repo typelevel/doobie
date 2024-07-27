@@ -15,7 +15,6 @@ trait TextPlatform { this: Text.type =>
     csv.contramap(_.head)
 
   // HLists of more that one element
-  @SuppressWarnings(Array("org.wartremover.warts.NonUnitStatements"))
   implicit def multiple[H, T <: HList](
       implicit
       h: Text[H],
