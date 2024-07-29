@@ -16,6 +16,7 @@
 * [Extensions-PostgreSQL](15-Extensions-PostgreSQL.md)
 * [Extensions-H2](16-Extensions-H2.md)
 * [FAQ](17-FAQ.md)
+* [Related-Projects](18-Related-Projects.md)
 @@@
 
 # Book of Doobie
