@@ -252,7 +252,7 @@ object transactor {
       val strategy = strategy0
     }
 
-    def withLogHandler(logHandler: LogHandler[M])(implicit ev: WeakAsync[M]): Transactor.Aux[M, A] = copy(
+    def withLogHandler(logHandler: LogHandler[M])(implicit ev: Async[M]): Transactor.Aux[M, A] = copy(
       interpret0 =
         KleisliInterpreter[M](logHandler).ConnectionInterpreter
     )

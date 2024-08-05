@@ -245,6 +245,8 @@ lazy val core = project
   .settings(doobieSettings)
   .settings(
     name := "doobie-core",
+    libraryDependencies += "org.postgresql" % "postgresql" % "42.5.0",
+
     description := "Pure functional JDBC layer for Scala.",
     libraryDependencies ++= Seq(
       "com.chuusai" %% "shapeless" % shapelessVersion
