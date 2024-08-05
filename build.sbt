@@ -42,7 +42,7 @@ ThisBuild / tlSonatypeUseLegacyHost := false
 ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("11"))
 ThisBuild / githubWorkflowBuildPreamble ++= Seq(
   WorkflowStep.Run(
-    commands = List("docker-compose up -d"),
+    commands = List("docker compose up -d"),
     name = Some("Start up Postgres")
   ),
   WorkflowStep.Sbt(
