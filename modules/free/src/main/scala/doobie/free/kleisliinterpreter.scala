@@ -11,7 +11,6 @@ import cats.~>
 import cats.data.Kleisli
 import cats.effect.kernel.{Async, Outcome, Poll, Sync}
 import cats.free.Free
-import doobie.util.cancellation.CancellationForker
 import doobie.util.log.{LogEvent, LogHandler}
 
 import scala.concurrent.Future
@@ -102,6 +101,11 @@ class KleisliInterpreter[M[_]](logHandler: LogHandler[M])(implicit val asyncM: A
     // primitive JDBC methods throw exceptions and so do we when reading values
     // so catch any non-fatal exceptions and lift them into the effect
     import cats.syntax.all._
+//    try {
+//      asyncM.blocking(f(a))
+//    } catch {
+//      case scala.util.control.NonFatal(e) => asyncM.raiseError(e)
+//    }
     for {
       jdbcBlockedFiber <- asyncM.start(asyncM.blocking(f(a)).attempt)
       a <- jdbcBlockedFiber.join.flatMap {
