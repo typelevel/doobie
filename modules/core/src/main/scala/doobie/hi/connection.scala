@@ -175,7 +175,11 @@ object connection {
     }
 
     createLogged
-      .bracket(ps => IFC.embed(ps, prepLogged *> execAndProcessLogged))(ps => IFC.embed(ps, IFPS.close))
+      .bracket(ps =>
+        WeakAsyncConnectionIO.cancelable(
+          IFC.embed(ps, prepLogged *> execAndProcessLogged),
+          IFC.embed(ps, IFPS.close)
+        ))(IFC.embed(_, IFPS.close))
   }
 
   /** Execute a PreparedStatement query and provide rows from the ResultSet in chunks

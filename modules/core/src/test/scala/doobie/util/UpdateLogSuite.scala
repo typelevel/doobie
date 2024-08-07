@@ -4,7 +4,7 @@
 
 package doobie.util
 
-import cats.effect.{IO, IOLocal}
+import cats.effect.{IO, Ref}
 import cats.syntax.all.*
 import doobie.*
 import doobie.implicits.*
@@ -18,28 +18,30 @@ class UpdateLogSuite extends munit.FunSuite {
 
   import cats.effect.unsafe.implicits.global
 
-  val ioLocal: IOLocal[LogEvent] =
-    IOLocal[LogEvent](null).unsafeRunSync()
+  val logEventRef: Ref[IO, LogEvent] =
+    Ref.of[IO, LogEvent](null).unsafeRunSync()
 
   val xa = Transactor.fromDriverManager[IO](
     "org.h2.Driver",
     "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
     "sa",
     "",
-    logHandler = Some(ev => ioLocal.set(ev))
+    logHandler = Some(ev => logEventRef.set(ev))
   )
 
-  def eventForCIO[A](cio: ConnectionIO[A]): LogEvent =
-    (
-      sql"create table if not exists foo (c1 integer, c2 varchar)".update.run *> cio
-    )
-      .transact(xa)
-      .attempt
-      .flatMap { res =>
-        val _ = res
-        ioLocal.get
-      }
-      .unsafeRunSync()
+  def eventForCIO[A](cio: ConnectionIO[A]): LogEvent = {
+    logEventRef.set(null) *>
+      (
+        sql"create table if not exists foo (c1 integer, c2 varchar)".update.run *> cio
+      )
+        .transact(xa)
+        .attempt
+        .flatMap { res =>
+          val _ = res
+          logEventRef.get
+        }
+  }
+    .unsafeRunSync()
 
   def successEventForCIO[A](cio: ConnectionIO[A]): Success =
     eventForCIO(cio) match {

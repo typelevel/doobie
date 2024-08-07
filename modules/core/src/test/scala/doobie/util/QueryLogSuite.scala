@@ -5,7 +5,7 @@
 package doobie.util
 
 import cats.syntax.all.*
-import cats.effect.{IO, IOLocal}
+import cats.effect.{IO, Ref}
 import doobie.free.connection.ConnectionIO
 import doobie.implicits.*
 import doobie.util.log.Parameters.NonBatch
@@ -18,19 +18,24 @@ class QueryLogSuite extends munit.FunSuite with QueryLogSuitePlatform {
 
   import cats.effect.unsafe.implicits.global
 
-  val ioLocal: IOLocal[LogEvent] =
-    IOLocal[LogEvent](null).unsafeRunSync()
+  val logEventRef: Ref[IO, LogEvent] =
+    Ref.of[IO, LogEvent](null).unsafeRunSync()
 
   val xa = Transactor.fromDriverManager[IO](
     "org.h2.Driver",
     "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
     "sa",
     "",
-    logHandler = Some(ev => ioLocal.set(ev))
+    logHandler = Some(ev => logEventRef.set(ev))
   )
 
-  def eventForCIO[A](cio: ConnectionIO[A]): LogEvent =
-    cio.transact(xa).attempt.flatMap(_ => ioLocal.get).unsafeRunSync()
+  def eventForCIO[A](cio: ConnectionIO[A]): LogEvent = {
+    for {
+      _ <- logEventRef.set(null)
+      _ <- cio.transact(xa).attempt
+      log <- logEventRef.get
+    } yield log
+  }.unsafeRunSync()
 
   def successEventForCIO[A](cio: ConnectionIO[A]): Success =
     eventForCIO(cio) match {
