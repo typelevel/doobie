@@ -9,8 +9,9 @@ package doobie.free
 // Library imports
 import cats.~>
 import cats.data.Kleisli
-import cats.effect.kernel.{Async, Outcome, Poll, Sync}
+import cats.effect.kernel.{Async, Poll, Sync}
 import cats.free.Free
+import doobie.WeakAsync
 import doobie.util.log.{LogEvent, LogHandler}
 
 import scala.concurrent.Future
@@ -73,12 +74,14 @@ import doobie.free.callablestatement.{ CallableStatementIO, CallableStatementOp 
 import doobie.free.resultset.{ ResultSetIO, ResultSetOp }
 
 object KleisliInterpreter {
-  def apply[M[_]: Async](logHandler: LogHandler[M]): KleisliInterpreter[M] =
-    new KleisliInterpreter[M](logHandler)
+  def apply[M[_]: WeakAsync](logHandler: LogHandler[M], customPrimitive: Option[Primitive[M]] = None): KleisliInterpreter[M] =
+    new KleisliInterpreter[M](logHandler, customPrimitive)
 }
 
 // Family of interpreters into Kleisli arrows for some monad M.
-class KleisliInterpreter[M[_]](logHandler: LogHandler[M])(implicit val asyncM: Async[M]) { outer =>
+class KleisliInterpreter[M[_]](logHandler: LogHandler[M], customPrimitive: Option[Primitive[M]] = None)(implicit val asyncM: WeakAsync[M]) { outer =>
+
+  private val _primitive = customPrimitive.getOrElse(Primitive.Default[M])
 
   // The 14 interpreters, with definitions below. These can be overridden to customize behavior.
   lazy val NClobInterpreter: NClobOp ~> Kleisli[M, NClob, *] = new NClobInterpreter { }
@@ -97,27 +100,7 @@ class KleisliInterpreter[M[_]](logHandler: LogHandler[M])(implicit val asyncM: A
   lazy val ResultSetInterpreter: ResultSetOp ~> Kleisli[M, ResultSet, *] = new ResultSetInterpreter { }
 
   // Some methods are common to all interpreters and can be overridden to change behavior globally.
-  def primitive[J, A](f: J => A): Kleisli[M, J, A] = Kleisli { a =>
-    // primitive JDBC methods throw exceptions and so do we when reading values
-    // so catch any non-fatal exceptions and lift them into the effect
-    import cats.syntax.all._
-//    try {
-//      asyncM.blocking(f(a))
-//    } catch {
-//      case scala.util.control.NonFatal(e) => asyncM.raiseError(e)
-//    }
-    for {
-      jdbcBlockedFiber <- asyncM.start(asyncM.blocking(f(a)).attempt)
-      a <- jdbcBlockedFiber.join.flatMap {
-        case Outcome.Succeeded(fa) => fa.flatMap {
-          case Left(e) => e.raiseError[M, A]
-          case Right(value) => value.pure[M]
-        }
-        case Outcome.Errored(e) => e.raiseError[M, A]
-        case Outcome.Canceled() => asyncM.never[A] // Cannot be cancelled out of scope
-      }
-    } yield a
-  }
+  def primitive[J, A](f: J => A): Kleisli[M, J, A] = _primitive.primitive(f)
   def raw[J, A](f: J => A): Kleisli[M, J, A] = primitive(f)
   def raiseError[J, A](e: Throwable): Kleisli[M, J, A] = Kleisli(_ => asyncM.raiseError(e))
   def monotonic[J]: Kleisli[M, J, FiniteDuration] = Kleisli(_ => asyncM.monotonic)
