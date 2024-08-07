@@ -9,11 +9,11 @@ package doobie.free
 // Library imports
 import cats.~>
 import cats.data.Kleisli
-import cats.effect.kernel.{Async, Poll, Sync}
+import cats.effect.kernel.{ Poll, Sync }
 import cats.free.Free
 import doobie.WeakAsync
+import doobie.free.Primitive
 import doobie.util.log.{LogEvent, LogHandler}
-
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 
@@ -81,7 +81,8 @@ object KleisliInterpreter {
 // Family of interpreters into Kleisli arrows for some monad M.
 class KleisliInterpreter[M[_]](logHandler: LogHandler[M], customPrimitive: Option[Primitive[M]] = None)(implicit val asyncM: WeakAsync[M]) { outer =>
 
-  private val _primitive = customPrimitive.getOrElse(Primitive.Default[M])
+  private val _primitive = customPrimitive.getOrElse(Primitive.Default[M]())
+
 
   // The 14 interpreters, with definitions below. These can be overridden to customize behavior.
   lazy val NClobInterpreter: NClobOp ~> Kleisli[M, NClob, *] = new NClobInterpreter { }
@@ -101,6 +102,7 @@ class KleisliInterpreter[M[_]](logHandler: LogHandler[M], customPrimitive: Optio
 
   // Some methods are common to all interpreters and can be overridden to change behavior globally.
   def primitive[J, A](f: J => A): Kleisli[M, J, A] = _primitive.primitive(f)
+
   def raw[J, A](f: J => A): Kleisli[M, J, A] = primitive(f)
   def raiseError[J, A](e: Throwable): Kleisli[M, J, A] = Kleisli(_ => asyncM.raiseError(e))
   def monotonic[J]: Kleisli[M, J, FiniteDuration] = Kleisli(_ => asyncM.monotonic)

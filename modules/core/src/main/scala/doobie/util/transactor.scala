@@ -332,7 +332,8 @@ object transactor {
       )(implicit ev: Async[M]): Transactor.Aux[M, A] = {
         val connect =
           (dataSource: A) => Resource.fromAutoCloseable(ev.evalOn(ev.delay(dataSource.getConnection()), connectEC))
-        val interp = KleisliInterpreter[M](logHandler.getOrElse(LogHandler.noop), Primitive.Cancellable[M]().some).ConnectionInterpreter
+        val interp =
+          KleisliInterpreter[M](logHandler.getOrElse(LogHandler.noop), Primitive.Cancellable[M]().some).ConnectionInterpreter
         Transactor(dataSource, connect, interp, Strategy.default)
       }
     }
@@ -352,7 +353,8 @@ object transactor {
           async: Async[M]
       ): Transactor.Aux[M, Connection] = {
         val connect = (c: Connection) => Resource.pure[M, Connection](c)
-        val interp = KleisliInterpreter[M](logHandler.getOrElse(LogHandler.noop), Primitive.Cancellable[M]().some).ConnectionInterpreter
+        val interp =
+          KleisliInterpreter[M](logHandler.getOrElse(LogHandler.noop), Primitive.Cancellable[M]().some).ConnectionInterpreter
         Transactor(connection, connect, interp, Strategy.default)
       }
     }

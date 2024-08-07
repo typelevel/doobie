@@ -21,9 +21,9 @@ class HikariQueryCancellationSuite extends munit.FunSuite {
       hikariConfig <- Resource.pure {
         val config = new HikariConfig()
         config.setDriverClassName("org.postgresql.Driver")
-        config.setJdbcUrl("jdbc:postgresql:world")
+        config.setJdbcUrl("jdbc:postgresql://localhost:5432/postgres")
         config.setUsername("postgres")
-        config.setPassword("password")
+        config.setPassword("mysecretpassword")
         config.setMaximumPoolSize(2)
         config
       }

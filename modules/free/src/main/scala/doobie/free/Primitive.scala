@@ -6,7 +6,6 @@ package doobie.free
 
 import cats.data.Kleisli
 import cats.effect.Async
-import cats.effect.kernel.Outcome
 import doobie.WeakAsync
 
 sealed trait Primitive[M[_]] {
