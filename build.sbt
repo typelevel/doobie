@@ -250,7 +250,7 @@ lazy val core = project
       "org.tpolecat" %% "typename" % "1.1.0",
       "com.h2database" % "h2" % h2Version % "test",
       "org.postgresql" % "postgresql" % postgresVersion % "test",
-      "org.mockito" % "mockito-core" % "5.12.0" % Test
+      "org.mockito" % "mockito-core" % "5.13.0" % Test
     ),
     Compile / unmanagedSourceDirectories += {
       val sourceDir = (Compile / sourceDirectory).value
