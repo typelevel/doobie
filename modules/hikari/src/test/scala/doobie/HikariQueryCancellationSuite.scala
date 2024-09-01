@@ -10,6 +10,7 @@ import com.zaxxer.hikari.HikariConfig
 import doobie.hikari.HikariTransactor
 import doobie.implicits.*
 import doobie.util.transactor
+import fs2.Stream
 
 import scala.concurrent.duration.DurationInt
 
@@ -33,10 +34,10 @@ class HikariQueryCancellationSuite extends munit.FunSuite {
 
   test("Query cancel with Hikari") {
     val insert = for {
-      _ <- sql"CREATE TABLE if not exists blah (i text)".update.run
-      _ <- sql"truncate table blah".update.run
-      _ <- sql"INSERT INTO blah values ('1')".update.run
-      _ <- sql"INSERT INTO blah select concat(2, pg_sleep(1))".update.run
+      _ <- sql"CREATE TABLE if not exists query_cancel_test (i text)".update.run
+      _ <- sql"truncate table query_cancel_test".update.run
+      _ <- sql"INSERT INTO query_cancel_test values ('1')".update.run
+      _ <- sql"INSERT INTO query_cancel_test select concat(2, pg_sleep(1))".update.run
     } yield ()
     val scenario = transactorRes.use { xa =>
       for {
@@ -44,7 +45,7 @@ class HikariQueryCancellationSuite extends munit.FunSuite {
         _ <- IO.sleep(200.millis) *> fiber.cancel
         _ <- IO.sleep(3.second)
         _ <- fiber.join.attempt
-        result <- sql"select * from blah order by i".query[String].to[List].transact(xa)
+        result <- sql"select * from query_cancel_test order by i".query[String].to[List].transact(xa)
       } yield {
         assertEquals(result, List("1"))
       }
@@ -53,4 +54,26 @@ class HikariQueryCancellationSuite extends munit.FunSuite {
     scenario.unsafeRunSync()
   }
 
+  test("Stream query cancel with Hikari") {
+    val insert = for {
+      _ <- Stream.eval(sql"CREATE TABLE if not exists stream_cancel_test (i text)".update.run)
+      _ <- Stream.eval(sql"truncate table stream_cancel_test".update.run)
+      _ <- Stream.eval(sql"INSERT INTO stream_cancel_test values ('1')".update.run)
+      _ <- sql"INSERT INTO stream_cancel_test select concat(2, pg_sleep(1))".update.withGeneratedKeys[Int]("i")
+    } yield ()
+
+    val scenario = transactorRes.use { xa =>
+      for {
+        fiber <- insert.transact(xa).compile.drain.start
+        _ <- IO.sleep(200.millis) *> fiber.cancel
+        _ <- IO.sleep(3.second)
+        _ <- fiber.join.attempt
+        result <- sql"select * from stream_cancel_test order by i".query[String].to[List].transact(xa)
+      } yield {
+        assertEquals(result, List("1"))
+      }
+    }
+
+    scenario.unsafeRunSync()
+  }
 }
