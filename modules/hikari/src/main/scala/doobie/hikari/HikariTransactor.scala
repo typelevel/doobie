@@ -240,7 +240,7 @@ object HikariTransactor {
       // Note that the number of JDBC connections is usually limited by the underlying JDBC pool.
       // You may therefore want to limit your connection pool to the same size as the underlying JDBC pool
       // as any additional threads are guaranteed to be blocked.
-      // https://tpolecat.github.io/doobie/docs/14-Managing-Connections.html#about-threading
+      // https://typelevel.org/doobie/docs/14-Managing-Connections.html#about-threading
       connectEC <- ExecutionContexts.fixedThreadPool[M0](hikariConfig.getMaximumPoolSize)
       result <- fromHikariConfigCustomEcWithResEffect[M0, M](hikariConfig, connectEC, logHandler)
     } yield result

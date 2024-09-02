@@ -7,7 +7,7 @@
 
 **doobie** is a pure functional JDBC layer for Scala.
 
-Please proceed to the [**microsite**](https://tpolecat.github.io/doobie/) for more information.
+Please proceed to the [**microsite**](https://typelevel.org/doobie/) for more information.
 
 ## Reporting a bug or need help?
 
