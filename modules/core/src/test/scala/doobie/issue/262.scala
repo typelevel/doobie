@@ -33,7 +33,7 @@ class `262` extends munit.FunSuite {
     Transactor.interpret.set(baseXa, Interp.ConnectionInterpreter)
 
   test("getColumnJdbcMeta should handle null metadata") {
-    val prog = HC.prepareStatement("select 1")(HPS.getColumnJdbcMeta)
+    val prog = HC.prepareStatementPrimitive("select 1")(HPS.getColumnJdbcMeta)
     assertEquals(prog.transact(xa).unsafeRunSync(), Nil)
   }
 
