@@ -71,6 +71,6 @@ object connection {
 
   // a helper
   private def execVoid(sql: String): ConnectionIO[Unit] =
-    HC.prepareStatement(sql)(FPS.executeUpdate).map(_ => ())
+    HC.prepareStatementPrimitive(sql)(FPS.executeUpdate).map(_ => ())
 
 }

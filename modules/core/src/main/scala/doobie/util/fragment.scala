@@ -77,7 +77,7 @@ object fragment {
       * delegated to the provided program.
       */
     def execWith[B](fa: PreparedStatementIO[B]): ConnectionIO[B] =
-      IHC.prepareStatement(sql)(write.set(1, elems).flatMap(_ => fa))
+      IHC.prepareStatementPrimitive(sql)(write.set(1, elems).flatMap(_ => fa))
 
     /** Concatenate this fragment with another, yielding a larger fragment. */
     def ++(fb: Fragment): Fragment =

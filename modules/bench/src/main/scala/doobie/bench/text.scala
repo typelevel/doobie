@@ -25,12 +25,12 @@ class text {
       sql"create table bench_person (name varchar not null, age integer not null)".update.run.void
 
   def naive(n: Int): ConnectionIO[Int] =
-    ddl *> HC.prepareStatement("insert into bench_person (name, age) values (?, ?)")(
+    ddl *> HC.prepareStatementPrimitive("insert into bench_person (name, age) values (?, ?)")(
       people(n).foldRight(HPS.executeBatch)((p, k) => HPS.set(p) *> FPS.addBatch *> k)
     ).map(_.combineAll)
 
   def optimized(n: Int): ConnectionIO[Int] =
-    ddl *> HC.prepareStatement("insert into bench_person (name, age) values (?, ?)")(
+    ddl *> HC.prepareStatementPrimitive("insert into bench_person (name, age) values (?, ?)")(
       FPS.raw { ps =>
         people(n).foreach { p =>
           ps.setString(1, p.name)
