@@ -59,7 +59,7 @@ object analysis {
     override val tag = "P"
     override def msg =
       s"""|${typeName(put.typeStack.last, n)} is not coercible to ${jdbcType.show.toUpperCase}
-          |(${vendorTypeName})
+          |(vendor's name: $vendorTypeName)
           |according to the JDBC specification.
           |Expected schema type was ${put.jdbcTargets.head.show.toUpperCase}.""".stripMargin.linesIterator.mkString(" ")
   }
@@ -100,16 +100,19 @@ object analysis {
   final case class ColumnTypeError(index: Int, get: Get[?], n: NullabilityKnown, schema: ColumnMeta)
       extends AlignmentError {
     override val tag = "C"
-    override def msg =
-      s"""|${schema.jdbcType.show.toUpperCase} (${schema.vendorTypeName}) is not
-          |coercible to ${typeName(get.typeStack.last, n)} (${get.vendorTypeNames.mkString(
-           ",")}) according to the JDBC specification or any defined
-          |mapping.
-          |Fix this by changing the schema type to
+    override def msg = {
+      val vendorNamePartFromGet =
+        if (get.vendorTypeNames.isEmpty) ""
+        else s" (vendor's name: ${get.vendorTypeNames.mkString(",")})"
+
+      s"""|${schema.jdbcType.show.toUpperCase} (vendor name: ${schema.vendorTypeName}) is not
+          |coercible to ${typeName(get.typeStack.last, n)}$vendorNamePartFromGet based on defined mapping.
+          |Fix this by changing the column type to
           |${get.jdbcSources.toList.map(_.show.toUpperCase).mkString(" or ")}; or the
           |Scala type to an appropriate ${if (schema.jdbcType === JdbcType.Array) "array" else "object"}
           |type.
           |""".stripMargin.linesIterator.mkString(" ")
+    }
   }
 
   final case class ColumnTypeWarning(index: Int, get: Get[?], n: NullabilityKnown, schema: ColumnMeta)
@@ -139,10 +142,9 @@ object analysis {
       }
 
     private def hasParameterTypeErrors[A](put: Put[A], paramMeta: ParameterMeta): Boolean = {
-      val jdbcTypeMatches = put.jdbcTargets.contains_(paramMeta.jdbcType)
-      val vendorTypeMatches = put.vendorTypeNames.isEmpty || put.vendorTypeNames.contains_(paramMeta.vendorTypeName)
-
-      !jdbcTypeMatches || !vendorTypeMatches
+      !put.jdbcTargets.contains_(paramMeta.jdbcType) ||
+      !(put.vendorTypeNames.isEmpty ||
+        put.vendorTypeNames.contains_(paramMeta.vendorTypeName))
     }
 
     def parameterTypeErrors: List[ParameterTypeError] =
@@ -158,10 +160,11 @@ object analysis {
       }
 
     private def hasColumnTypeError[A](get: Get[A], columnMeta: ColumnMeta): Boolean = {
-      val jdbcTypeMatches = (get.jdbcSources.toList ++ get.jdbcSourceSecondary).contains_(columnMeta.jdbcType)
-      val vendorTypeMatches = get.vendorTypeNames.isEmpty || get.vendorTypeNames.contains_(columnMeta.vendorTypeName)
-      !jdbcTypeMatches || !vendorTypeMatches
+      !get.allJdbcSources.contains_(columnMeta.jdbcType) ||
+      !(get.vendorTypeNames.isEmpty ||
+        get.vendorTypeNames.contains_(columnMeta.vendorTypeName))
     }
+
     def columnTypeErrors: List[ColumnTypeError] =
       columnAlignment.zipWithIndex.collect {
         case (Ior.Both((get, n1), p), n) if hasColumnTypeError(get, p) =>
@@ -190,8 +193,8 @@ object analysis {
       columnMisalignments ++ columnTypeErrors ++ columnTypeWarnings ++ nullabilityMisalignments
 
     lazy val alignmentErrors =
-      (parameterAlignmentErrors).sortBy(m => (m.index, m.msg)) ++
-        (columnAlignmentErrors).sortBy(m => (m.index, m.msg))
+      parameterAlignmentErrors.sortBy(m => (m.index, m.msg)) ++
+        columnAlignmentErrors.sortBy(m => (m.index, m.msg))
 
     /** Description of each parameter, paired with its errors. */
     lazy val paramDescriptions: List[(String, List[AlignmentError])] = {
