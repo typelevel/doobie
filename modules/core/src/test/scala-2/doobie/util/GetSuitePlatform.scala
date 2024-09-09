@@ -3,26 +3,27 @@
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
 package doobie.util
-import doobie.testutils.VoidExtensions
-
-object GetSuitePlatform {
-  final case class Y(x: String) extends AnyVal
-  final case class P(x: Int) extends AnyVal
-}
+import doobie.testutils.{VoidExtensions, assertContains}
+import doobie.testutils.TestClasses.{CCIntString, PlainObj, CCAnyVal}
 
 trait GetSuitePlatform { self: munit.FunSuite =>
-  import GetSuitePlatform._
 
   test("Get can be auto derived for unary products (AnyVal)") {
-    import doobie.generic.auto._
+    import doobie.generic.auto.*
 
-    Get[Y].void
-    Get[P].void
+    Get[CCAnyVal].void
   }
 
   test("Get can be explicitly derived for unary products (AnyVal)") {
-    Get.derived[Y].void
-    Get.derived[P].void
+    Get.derived[CCAnyVal].void
+  }
+
+  test("Get should not be derived for non-unary products") {
+    import doobie.generic.auto.*
+
+    assertContains(compileErrors("Get[CCIntString]"), "implicit value")
+    assertContains(compileErrors("Get[(Int, Int)]"), "implicit value")
+    assertContains(compileErrors("Get[PlainObj.type]"), "implicit value")
   }
 
 }

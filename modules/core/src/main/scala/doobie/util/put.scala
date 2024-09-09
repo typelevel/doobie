@@ -82,7 +82,7 @@ sealed abstract class Put[A](
 
 }
 
-object Put extends PutInstances {
+object Put extends PutInstances with PutPlatform {
 
   def apply[A](implicit ev: Put[A]): ev.type = ev
 
@@ -234,7 +234,8 @@ sealed abstract class MkPut[A](
     override val put: ContravariantCoyoneda[(PreparedStatement, Int, *) => Unit, A],
     override val update: ContravariantCoyoneda[(ResultSet, Int, *) => Unit, A]
 ) extends Put[A](typeStack, jdbcTargets, vendorTypeNames, put, update)
-object MkPut extends PutPlatform {
+
+object MkPut extends MkPutPlatform {
 
   def lift[A](g: Put[A]): MkPut[A] =
     new MkPut[A](

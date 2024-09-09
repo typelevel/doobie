@@ -4,20 +4,23 @@
 
 package doobie.util
 
-import shapeless.*
+import shapeless._
 import shapeless.ops.hlist.IsHCons
 
-trait GetPlatform {
+trait MkPutPlatform {
   import doobie.util.compat.=:=
 
   /** @group Instances */
-  @deprecated("Use Get.derived instead to derive instances explicitly", "1.0.0-RC6")
-  def unaryProductGet[A, L <: HList, H, T <: HList](
+  implicit def unaryProductPut[A, L <: HList, H, T <: HList](
       implicit
       G: Generic.Aux[A, L],
       C: IsHCons.Aux[L, H, T],
-      H: Lazy[Get[H]],
+      H: Lazy[Put[H]],
       E: (H :: HNil) =:= L
-  ): MkGet[A] = MkGet.unaryProductGet
+  ): MkPut[A] = {
+    void(E) // E is a necessary constraint but isn't used directly
+    val put = H.value.contramap[A](a => G.to(a).head)
+    MkPut.lift(put)
+  }
 
 }

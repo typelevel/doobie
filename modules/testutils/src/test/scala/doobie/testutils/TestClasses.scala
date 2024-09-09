@@ -16,5 +16,7 @@ object TestClasses {
 
   case class CCIntString(i: Int, s: String)
 
+  case class CCAnyVal(s: String) extends AnyVal
+
   object PlainObj
 }
