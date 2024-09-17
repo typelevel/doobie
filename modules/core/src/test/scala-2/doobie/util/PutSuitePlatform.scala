@@ -4,30 +4,21 @@
 
 package doobie.util
 import doobie.testutils.{VoidExtensions, assertContains}
-
-object PutSuitePlatform {
-  final case class Y(x: String) extends AnyVal
-  final case class P(x: Int) extends AnyVal
-}
+import doobie.testutils.TestClasses.{CCIntString, PlainObj, CCAnyVal}
 
 trait PutSuitePlatform { self: munit.FunSuite =>
-  import PutSuitePlatform._
-
   test("Put can be auto derived for unary products (AnyVal)") {
-    import doobie.generic.auto._
+    import doobie.generic.auto.*
 
-    Put[Y].void
-    Put[P].void
+    Put[CCAnyVal].void
   }
 
   test("Put can be explicitly derived for unary products (AnyVal)") {
-    Put.derived[Y].void
-    Put.derived[P].void
+    Put.derived[CCAnyVal].void
   }
 
   test("Put should not be derived for non-unary products") {
-    import doobie.generic.auto._
-    import doobie.testutils.TestClasses.{CCIntString, PlainObj}
+    import doobie.generic.auto.*
 
     assertContains(compileErrors("Put[CCIntString]"), "implicit value")
     assertContains(compileErrors("Put[(Int, Int)]"), "implicit value")
