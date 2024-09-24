@@ -21,14 +21,14 @@ object fragments {
   def in[A: util.Put](f: Fragment, fs0: A, fs1: A, fs: A*): Fragment =
     in(f, NonEmptyList(fs0, fs1 :: fs.toList))
 
-  /** Returns `(f IN (fs0, fs1, ...))`, or `false` for empty `fs`. */
+  /** Returns `(f IN (fs0, fs1, ...))`. */
   def in[F[_]: Reducible: Functor, A: util.Put](f: Fragment, fs: F[A]): Fragment =
     parentheses(f ++ fr" IN" ++ parentheses(comma(fs.map(a => fr"$a"))))
 
   def inOpt[F[_]: Foldable, A: util.Put](f: Fragment, fs: F[A]): Option[Fragment] =
     NonEmptyList.fromFoldable(fs).map(nel => in(f, nel))
 
-  /** Returns `(f IN ((fs0-A, fs0-B), (fs1-A, fs1-B), ...))`, or `false` for empty `fs`. */
+  /** Returns `(f IN ((fs0-A, fs0-B), (fs1-A, fs1-B), ...))`. */
   def in[F[_]: Reducible: Functor, A: util.Put, B: util.Put](f: Fragment, fs: F[(A, B)]): Fragment =
     parentheses(f ++ fr" IN" ++ parentheses(comma(fs.map { case (a, b) => fr0"($a,$b)" })))
 
@@ -36,7 +36,7 @@ object fragments {
   def notIn[A: util.Put](f: Fragment, fs0: A, fs1: A, fs: A*): Fragment =
     notIn(f, NonEmptyList(fs0, fs1 :: fs.toList))
 
-  /** Returns `(f NOT IN (fs0, fs1, ...))`, or `true` for empty `fs`. */
+  /** Returns `(f NOT IN (fs0, fs1, ...))`. */
   def notIn[F[_]: Reducible: Functor, A: util.Put](f: Fragment, fs: F[A]): Fragment = {
     parentheses(f ++ fr" NOT IN" ++ parentheses(comma(fs.map(a => fr"$a"))))
   }
