@@ -111,4 +111,4 @@ object FixmeSuite {
   case class Str2(i: Int, ls: LenStr1)
   case class StrO2(i: Int, ls: Option[LenStr1])
 }
-*/
+ */

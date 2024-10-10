@@ -34,7 +34,7 @@ object fragment {
       val writes: List[Write[?]] =
         elems.map {
           case Arg(_, p) => Write.Single(p)
-          case Opt(_, p) => Write.OptSingle(p)
+          case Opt(_, p) => Write.SingleOpt(p)
         }.toList
 
       Write.Composite(

@@ -134,11 +134,11 @@ object Write extends LowerPriorityWrite {
     override def contramap[B](f: B => Option[A]): Write[B] = Composite[B](List(this), b => List(f(b)))
   }
 
-  case class Composite[A](writes: List[Write[?]], deconstruct: A => List[Any]) extends Write[A] {
-    override lazy val length: Int = writes.map(_.length).sum
+  case class Composite[A](writeInstances: List[Write[?]], deconstruct: A => List[Any]) extends Write[A] {
+    override lazy val length: Int = writeInstances.map(_.length).sum
 
     // Make the types match up with deconstruct
-    private val anyWrites: List[Write[Any]] = writes.asInstanceOf[List[Write[Any]]]
+    private val anyWrites: List[Write[Any]] = writeInstances.asInstanceOf[List[Write[Any]]]
 
     override def unsafeSet(ps: PreparedStatement, startIdx: Int, a: A): Unit = {
       val parts = deconstruct(a)
@@ -158,21 +158,22 @@ object Write extends LowerPriorityWrite {
       }
     }
 
-    override lazy val puts: List[(Put[?], NullabilityKnown)] = writes.flatMap(_.puts)
+    override lazy val puts: List[(Put[?], NullabilityKnown)] = writeInstances.flatMap(_.puts)
 
     override def toList(a: A): List[Any] =
       anyWrites.zip(deconstruct(a)).flatMap { case (w, p) => w.toList(p) }
 
     override def toOpt: Write[Option[A]] = Composite[Option[A]](
-      writes.map(_.toOpt),
+      writeInstances.map(_.toOpt),
       {
         case Some(a) => deconstruct(a).map(Some(_))
-        case None    => List.fill(writes.length)(None) // All Nones
+        case None    => List.fill(writeInstances.length)(None) // All Nones
       }
     )
 
+    // FIXME: can be the same as other contramap impls?
     def contramap[B](f: B => A): Write[B] = {
-      Composite[B](writes, f.andThen(deconstruct))
+      Composite[B](writeInstances, f.andThen(deconstruct))
     }
   }
 }
@@ -189,4 +190,6 @@ trait LowerPriorityWrite extends WritePlatform {
 
 final class MkWrite[A](val instance: Write[A]) extends AnyVal
 
-object MkWrite extends MkWritePlatform {}
+object MkWrite extends MkWriteInstances
+
+trait MkWriteInstances extends MkWritePlatform

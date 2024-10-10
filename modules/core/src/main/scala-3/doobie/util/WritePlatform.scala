@@ -16,8 +16,6 @@ trait WritePlatform extends LowerPriority1WritePlatform:
       w: MkWrite[A]
   ): MkWrite[P] =
     MkWrite.derived[P, A]
-    
+
 trait LowerPriority1WritePlatform:
   given fromDerived[A](using ev: MkWrite[A]): Write[A] = ev.instance
-    
-

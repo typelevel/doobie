@@ -6,30 +6,28 @@ package doobie.util
 
 import shapeless.{Generic, HList, IsTuple, Lazy}
 
-trait ReadPlatform {
+trait ReadPlatform extends LowerPriorityReadPlatform {
 
   // Derivation for product types (i.e. case class)
   implicit def genericTuple[A, Repr <: HList](implicit
       gen: Generic.Aux[A, Repr],
-      G: Lazy[MkRead[Repr]],
+      G: Lazy[Read[Repr]],
       isTuple: IsTuple[A]
-  ): MkRead[A] = {
+  ): Read[A] = {
     val _ = isTuple
-    MkRead.generic[A, Repr]
-  }
-
-  // Derivation for optional of product types (i.e. case class)
-  implicit def ogenericTuple[A, Repr <: HList](
-      implicit
-      G: Generic.Aux[A, Repr],
-      B: Lazy[MkRead[Option[Repr]]],
-      isTuple: IsTuple[A]
-  ): MkRead[Option[A]] = {
-    val _ = isTuple
-    MkRead.ogeneric[A, Repr]
+    implicit val r: Read[Repr] = G.value
+    MkRead.generic[A, Repr].instance
   }
 
   @deprecated("Use Read.derived instead to derive instances explicitly", "1.0.0-RC6")
-  def generic[T, Repr](implicit gen: Generic.Aux[T, Repr], G: Lazy[MkRead[Repr]]): MkRead[T] =
+  def generic[T, Repr](
+      implicit
+      gen: Generic.Aux[T, Repr],
+      G: Lazy[MkRead[Repr]]
+  ): MkRead[T] =
     MkRead.generic[T, Repr]
+}
+
+trait LowerPriorityReadPlatform {
+  implicit def fromDerived[A](implicit ev: MkRead[A]): Read[A] = ev.instance
 }

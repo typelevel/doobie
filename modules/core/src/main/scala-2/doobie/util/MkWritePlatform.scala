@@ -85,7 +85,7 @@ trait LowerPriority2MkWrite {
   ): MkWrite[A] = {
     val g = hlistWrite.value.fold(identity, _.instance)
 
-    // FIXME: 
+    // FIXME:
     new MkWrite[A](
       Write.Composite(List(g), a => List(gen.to(a)))
     )

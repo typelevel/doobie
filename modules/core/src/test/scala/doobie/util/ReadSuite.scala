@@ -21,6 +21,13 @@ class ReadSuite extends munit.FunSuite with ReadSuitePlatform {
     logHandler = None
   )
 
+  test("fixme") {
+    import shapeless.*
+    import doobie.generic.auto.*
+
+    Read[Int :: HNil].void
+  }
+
   test("Read should exist for some fancy types") {
     import doobie.generic.auto.*
 
@@ -63,9 +70,8 @@ class ReadSuite extends munit.FunSuite with ReadSuitePlatform {
   }
 
   test("Read should exist for Unit") {
-    import doobie.generic.auto.*
-
-    Read[Unit]
+    assertEquals(Read[Unit].length, 0)
+    assertEquals(Read[Option[Unit]].length, 0)
     assertEquals(Read[(Int, Unit)].length, 1)
   }
 

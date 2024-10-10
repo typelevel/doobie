@@ -16,7 +16,7 @@ trait WritePlatform extends LowerPriority1WritePlatform {
       isTuple: IsTuple[A]
   ): Write[A] = {
     val _ = isTuple
-    implicit val hlistWrite: Lazy[Write[Repr] OrElse MkWrite[Repr]] = OrElse.primary(A.value)
+    implicit val hlistWrite: Write[Repr] = A.value
     MkWrite.generic[A, Repr].instance
   }
 
@@ -55,8 +55,6 @@ trait LowerPriority1WritePlatform extends LowerPriority2WritePlatform {
 
 }
 
-trait LowerPriority2WritePlatform extends LowerPriority3WritePlatform {}
-
-trait LowerPriority3WritePlatform {
+trait LowerPriority2WritePlatform {
   implicit def fromDerived[A](implicit ev: MkWrite[A]): Write[A] = ev.instance
 }
