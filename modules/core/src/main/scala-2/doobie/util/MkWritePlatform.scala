@@ -73,9 +73,7 @@ trait LowerPriority0MkWrite extends LowerPriority1MkWrite {
 
 }
 
-trait LowerPriority1MkWrite extends LowerPriority2MkWrite {}
-
-trait LowerPriority2MkWrite {
+trait LowerPriority1MkWrite {
 
   // Derivation for product types (i.e. case class)
   implicit def generic[A, Repr <: HList](
@@ -85,12 +83,9 @@ trait LowerPriority2MkWrite {
   ): MkWrite[A] = {
     val g = hlistWrite.value.fold(identity, _.instance)
 
-    // FIXME:
     new MkWrite[A](
       Write.Composite(List(g), a => List(gen.to(a)))
     )
   }
 
 }
-
-object MkWritePlatform extends MkWritePlatform

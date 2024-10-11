@@ -78,7 +78,7 @@ object Read extends LowerPriorityRead {
 
   implicit val optionUnit: Read[Option[Unit]] = Read.Composite(Nil, _ => Some(()))
 
-  implicit def optionalFromRead[A](implicit read: Read[A]): Read[Option[A]] = read.toOpt
+  implicit def fromReadOption[A](implicit read: Read[A]): Read[Option[A]] = read.toOpt
 
   case class Single[A](get: Get[A]) extends Read[A] {
     def unsafeGet(rs: ResultSet, startIdx: Int): A =

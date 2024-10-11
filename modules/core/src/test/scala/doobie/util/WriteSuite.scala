@@ -54,6 +54,7 @@ class WriteSuite extends munit.FunSuite with WriteSuitePlatform {
 
     Write[Option[(Int, Int)]].void
     Write[Option[(Int, Option[(String, Int)])]].void
+    Write[ComplexCaseClass].void
   }
 
   // FIXME:

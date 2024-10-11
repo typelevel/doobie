@@ -16,7 +16,7 @@ trait WritePlatform extends LowerPriority1WritePlatform {
       isTuple: IsTuple[A]
   ): Write[A] = {
     val _ = isTuple
-    implicit val hlistWrite: Write[Repr] = A.value
+    implicit val hlistWrite: Lazy[Write[Repr] OrElse MkWrite[Repr]] = A.map(OrElse.primary(_))
     MkWrite.generic[A, Repr].instance
   }
 
@@ -31,11 +31,11 @@ trait WritePlatform extends LowerPriority1WritePlatform {
 
   implicit def recordBase[K <: Symbol, H](
       implicit H: Write[H]
-  ): Write[FieldType[K, H] :: HNil] = MkWritePlatform.recordBase[K, H].instance
+  ): Write[FieldType[K, H] :: HNil] = MkWrite.recordBase[K, H].instance
 
   implicit def productBase[H](
       implicit H: Write[H]
-  ): Write[H :: HNil] = MkWritePlatform.productBase[H].instance
+  ): Write[H :: HNil] = MkWrite.productBase[H].instance
 
 }
 
@@ -45,13 +45,13 @@ trait LowerPriority1WritePlatform extends LowerPriority2WritePlatform {
       implicit
       H: Write[H],
       T: Write[T]
-  ): Write[H :: T] = MkWritePlatform.product[H, T].instance
+  ): Write[H :: T] = MkWrite.product[H, T].instance
 
   implicit def record[K <: Symbol, H, T <: HList](
       implicit
       H: Write[H],
       T: Write[T]
-  ): Write[FieldType[K, H] :: T] = MkWritePlatform.record[K, H, T].instance
+  ): Write[FieldType[K, H] :: T] = MkWrite.record[K, H, T].instance
 
 }
 

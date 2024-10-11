@@ -74,7 +74,6 @@ trait LowerPriorityMkRead {
     )
   }
 
-  // FIXME:  remove lazyies
   // Derivation for product types (i.e. case class)
   implicit def generic[T, Repr](
       implicit
