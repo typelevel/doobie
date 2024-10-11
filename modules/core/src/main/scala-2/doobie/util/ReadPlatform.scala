@@ -22,10 +22,10 @@ trait ReadPlatform extends LowerPriority1ReadPlatform {
   }
 
   @deprecated("Use Read.derived instead to derive instances explicitly", "1.0.0-RC6")
-  def generic[T, Repr](
+  def generic[T, Repr <: HList](
       implicit
       gen: Generic.Aux[T, Repr],
-      G: Lazy[MkRead[Repr]]
+      G: Lazy[Read[Repr] OrElse MkRead[Repr]]
   ): MkRead[T] =
     MkRead.generic[T, Repr]
 

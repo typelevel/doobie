@@ -6,7 +6,7 @@ package doobie.util
 
 import scala.deriving.Mirror
 
-trait ReadPlatform:
+trait ReadPlatform extends LowerPriority1ReadPlatform:
   // Generic Read for products.
   given derivedTuple[P <: Tuple, A](
       using
@@ -16,11 +16,5 @@ trait ReadPlatform:
   ): MkRead[P] =
     MkRead.derived[P, A]
 
-  // Generic Read for option of products.
-  given derivedOptionTuple[P <: Tuple, A](
-      using
-      m: Mirror.ProductOf[P],
-      i: A =:= m.MirroredElemTypes,
-      w: MkRead[Option[A]]
-  ): MkRead[Option[P]] =
-    MkRead.derivedOption[P, A]
+trait LowerPriority1ReadPlatform:
+  implicit def fromDerived[A](implicit ev: MkRead[A]): Read[A] = ev.instance

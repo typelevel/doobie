@@ -23,9 +23,9 @@ trait MkWritePlatform:
   given productBase[H](
       using H: Write[H] `OrElse` MkWrite[H]
   ): MkWrite[H *: EmptyTuple] = {
-    val headWrite = H.fold(identity, _.instance)
+    val headInstance = H.fold(identity, _.instance)
     new MkWrite(Write.Composite(
-      List(headWrite),
+      List(headInstance),
       { case h *: EmptyTuple => List(h) }
     ))
   }

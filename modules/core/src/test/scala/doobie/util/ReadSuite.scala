@@ -21,13 +21,6 @@ class ReadSuite extends munit.FunSuite with ReadSuitePlatform {
     logHandler = None
   )
 
-  test("fixme") {
-    import shapeless.*
-    import doobie.generic.auto.*
-
-    Read[Int :: HNil].void
-  }
-
   test("Read should exist for some fancy types") {
     import doobie.generic.auto.*
 
@@ -83,14 +76,6 @@ class ReadSuite extends munit.FunSuite with ReadSuitePlatform {
     Read[Option[(Int, Int, String)]].void
     Read[Option[(Int, (Int, String))]].void
     Read[Option[(Int, Option[(Int, String)])]].void
-    // FIXME:
-    import shapeless.*
-    Read[Option[Int]]
-//    implicit val x: Read[SimpleCaseClass] = Read.derived[SimpleCaseClass]
-    Read[SimpleCaseClass]
-    Read[Option[SimpleCaseClass]]
-    
-    Read[Option[SimpleCaseClass] :: HNil]
     Read[ComplexCaseClass].void
   }
 
