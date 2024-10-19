@@ -1,6 +1,6 @@
 ## Unit Testing
 
-The YOLO-mode query checking feature demonstated in an earlier chapter is also available as a trait you can mix into your [Specs2](http://etorreborre.github.io/specs2/), [ScalaTest](http://www.scalatest.org/), [MUnit](https://scalameta.org/munit) or [Weaver](https://disneystreaming.github.io/weaver-test/) unit tests.
+The YOLO-mode query checking feature demonstrated in an earlier chapter is also available as a trait you can mix into your [Specs2](http://etorreborre.github.io/specs2/), [ScalaTest](http://www.scalatest.org/), [MUnit](https://scalameta.org/munit) or [Weaver](https://disneystreaming.github.io/weaver-test/) unit tests.
 
 ### Setting Up
 
