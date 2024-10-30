@@ -28,6 +28,7 @@ class FragmentsSuite extends munit.FunSuite {
   val someF: Option[Fragment] = Some(sql"${1}")
   val noneF: Option[Fragment] = None
   val ofs = List(Some(sql"${1}"), None, Some(sql"${3}"))
+  val sqlKv = nelInt.zipWith(NonEmptyList.of("a", "b", "c"))((v, k) => fr0"${Fragment.const0(k)} = $v").toList
 
   test("values for one column") {
     assertEquals(values(nelInt).query[Unit].sql, "VALUES (?) , (?) , (?) ")
@@ -35,6 +36,30 @@ class FragmentsSuite extends munit.FunSuite {
 
   test("values for two columns") {
     assertEquals(values(NonEmptyList.of((1, true), (2, false))).query[Unit].sql, "VALUES (?,?) , (?,?) ")
+  }
+
+  test("updateSetOpt for three column") {
+    assertEquals(
+      updateSetOpt(Fragment.const("Foo"), sqlKv, List.empty[Fragment]).map(_.query[Unit].sql),
+      Some("UPDATE Foo SET a = ?, b = ?, c = ? "))
+  }
+
+  test("updateSetOpt for empty columns") {
+    assertEquals(
+      updateSetOpt(Fragment.const("Foo"), List.empty[Fragment], List.empty[Fragment]).map(_.query[Unit].sql),
+      None)
+  }
+
+  test("updateSetOpt for three column and defined where clause") {
+    assertEquals(
+      updateSetOpt(Fragment.const("Foo"), sqlKv, List(fr0"id = 1")).map(_.query[Unit].sql),
+      Some("UPDATE Foo SET a = ?, b = ?, c = ? WHERE (id = 1)"))
+  }
+
+  test("updateSetOpt for empty columns but defined where clause") {
+    assertEquals(
+      updateSetOpt(Fragment.const("Foo"), List.empty[Fragment], List(fr0"id = 1")).map(_.query[Unit].sql),
+      None)
   }
 
   test("in (1-column varargs)") {
