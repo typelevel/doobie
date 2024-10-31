@@ -22,10 +22,10 @@ object fragments {
   def updateSetOpt[F[_]: Foldable](
       tableName: Fragment,
       columnUpdates: F[Fragment],
-      whereAnd: F[Fragment]
+      condition: Fragment
   ): Option[Fragment] = {
     NonEmptyList.fromFoldable(columnUpdates).map(cs =>
-      fr"UPDATE" ++ tableName ++ set(cs) ++ fr"" ++ whereAndOpt(whereAnd))
+      fr"UPDATE" ++ tableName ++ set(cs) ++ (if (condition == Fragment.empty) condition else fr"" ++ whereAnd(condition)))
   }
 
   /** Returns `(f IN (fs0, fs1, ...))`. */

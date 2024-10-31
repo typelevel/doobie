@@ -40,25 +40,25 @@ class FragmentsSuite extends munit.FunSuite {
 
   test("updateSetOpt for three column") {
     assertEquals(
-      updateSetOpt(Fragment.const("Foo"), sqlKv, List.empty[Fragment]).map(_.query[Unit].sql),
-      Some("UPDATE Foo SET a = ?, b = ?, c = ? "))
+      updateSetOpt(Fragment.const("Foo"), sqlKv, Fragment.empty).map(_.query[Unit].sql),
+      Some("UPDATE Foo SET a = ?, b = ?, c = ?"))
   }
 
   test("updateSetOpt for empty columns") {
     assertEquals(
-      updateSetOpt(Fragment.const("Foo"), List.empty[Fragment], List.empty[Fragment]).map(_.query[Unit].sql),
+      updateSetOpt(Fragment.const("Foo"), List.empty[Fragment], Fragment.empty).map(_.query[Unit].sql),
       None)
   }
 
   test("updateSetOpt for three column and defined where clause") {
     assertEquals(
-      updateSetOpt(Fragment.const("Foo"), sqlKv, List(fr0"id = 1")).map(_.query[Unit].sql),
+      updateSetOpt(Fragment.const("Foo"), sqlKv, fr0"id = 1").map(_.query[Unit].sql),
       Some("UPDATE Foo SET a = ?, b = ?, c = ? WHERE (id = 1)"))
   }
 
   test("updateSetOpt for empty columns but defined where clause") {
     assertEquals(
-      updateSetOpt(Fragment.const("Foo"), List.empty[Fragment], List(fr0"id = 1")).map(_.query[Unit].sql),
+      updateSetOpt(Fragment.const("Foo"), List.empty[Fragment], fr0"id = 1").map(_.query[Unit].sql),
       None)
   }
 
