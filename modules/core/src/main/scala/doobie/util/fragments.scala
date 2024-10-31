@@ -25,7 +25,8 @@ object fragments {
       condition: Fragment
   ): Option[Fragment] = {
     NonEmptyList.fromFoldable(columnUpdates).map(cs =>
-      fr"UPDATE" ++ tableName ++ set(cs) ++ (if (condition == Fragment.empty) condition else fr"" ++ whereAnd(condition)))
+      fr"UPDATE" ++ tableName ++ set(cs) ++ (if (condition == Fragment.empty) condition
+                                             else fr"" ++ whereAnd(condition)))
   }
 
   /** Returns `(f IN (fs0, fs1, ...))`. */
