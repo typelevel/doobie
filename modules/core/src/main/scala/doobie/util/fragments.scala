@@ -5,9 +5,11 @@
 package doobie
 package util
 
+import cats.Foldable
+import cats.Functor
+import cats.Reducible
 import cats.data.NonEmptyList
 import cats.syntax.all.*
-import cats.{Foldable, Functor, Reducible}
 import doobie.implicits.*
 import doobie.Fragment.*
 
@@ -53,6 +55,45 @@ object fragments {
   def notInOpt[F[_]: Foldable, A: util.Put](f: Fragment, fs: F[A]): Option[Fragment] = {
     NonEmptyList.fromFoldable(fs).map(nel => notIn(f, nel))
   }
+
+  @inline
+  private def inNotInValues[F[_]: Reducible: Functor, A](
+      fwop: Fragment,
+      fs: F[A],
+      fallback: Fragment
+  )(implicit A: util.Write[A]): Fragment = {
+    if (A.length == 0) fallback
+    else {
+      fwop ++ {
+        if (A.length == 1) // no need for extra parentheses
+          parentheses(comma(fs.map(values(_))))
+        else
+          parentheses(comma(fs.map(a => parentheses0(values(a)))))
+      }
+    }
+  }
+
+  /** Returns `f IN (fs0, fs1, ...)`.
+    * @param f
+    *   left-hand expression.
+    * @param fs
+    *   values of `Product` type to compare to the left-hand expression.
+    * @return
+    *   the `IN` subquery expression or `FALSE` if `fs` is a 0-arity product.
+    */
+  def inValues[F[_]: Reducible: Functor, A: util.Write](f: Fragment, fs: F[A]): Fragment =
+    inNotInValues(f ++ fr" IN", fs, fr"FALSE")
+
+  /** Returns `f NOT IN (fs0, fs1, ...)`.
+    * @param f
+    *   left-hand expression.
+    * @param fs
+    *   values of `Product` type to compare to the left-hand expression.
+    * @return
+    *   the `NOT IN` subquery expression or `TRUE` if `fs` is a 0-arity product.
+    */
+  def notInValues[F[_]: Reducible: Functor, A: util.Write](f: Fragment, fs: F[A]): Fragment =
+    inNotInValues(f ++ fr" NOT IN", fs, fr"TRUE")
 
   /** Returns `(f1 AND f2 AND ... fn)`. */
   def and(f1: Fragment, f2: Fragment, fs: Fragment*): Fragment =

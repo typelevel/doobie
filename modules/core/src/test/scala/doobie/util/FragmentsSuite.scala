@@ -5,8 +5,9 @@
 package doobie.util
 
 import cats.data.NonEmptyList
-import doobie.*, doobie.implicits.*
 import cats.effect.IO
+import doobie.*
+import doobie.implicits.*
 
 class FragmentsSuite extends munit.FunSuite {
   import Fragments.*
@@ -20,7 +21,10 @@ class FragmentsSuite extends munit.FunSuite {
     logHandler = None
   )
 
+  val nelUnit100 = NonEmptyList.fromListUnsafe(List.fill(100)(()))
   val nelInt = NonEmptyList.of(1, 2, 3)
+  val nelIntBool2 = NonEmptyList.of((1, true), (2, false))
+  val nelStrDblInt3 = NonEmptyList.of(("abc", 1.2, 3), ("def", 4.5, 6), ("ghi", 7.8, 9))
   val listInt = nelInt.toList
   val nel1 = NonEmptyList.of(1).map(i => sql"$i")
   val nel = NonEmptyList.of(1, 2, 3).map(i => sql"$i")
@@ -66,6 +70,48 @@ class FragmentsSuite extends munit.FunSuite {
 
   test("in (2-column varargs)") {
     assertEquals(in(sql"foo", NonEmptyList.of((1, true), (2, false))).query[Unit].sql, "(foo IN ((?,?), (?,?)) ) ")
+  }
+
+  test("inValues for no columns") {
+    assertEquals(
+      inValues(fr0"foo.bar", nelUnit100).query[Unit].sql,
+      "FALSE ")
+  }
+  test("inValues for one column") {
+    assertEquals(
+      inValues(fr0"foo.bar", nelInt).query[Unit].sql,
+      "foo.bar IN (?, ?, ?) ")
+  }
+  test("inValues for two columns") {
+    assertEquals(
+      inValues(fr0"foo.bar", nelIntBool2).query[Unit].sql,
+      "foo.bar IN ((?,?), (?,?)) ")
+  }
+  test("inValues for three columns") {
+    assertEquals(
+      inValues(fr0"foo.bar", nelStrDblInt3).query[Unit].sql,
+      "foo.bar IN ((?,?,?), (?,?,?), (?,?,?)) ")
+  }
+
+  test("notInValues for no columns") {
+    assertEquals(
+      notInValues(fr0"foo.bar", nelUnit100).query[Unit].sql,
+      "TRUE ")
+  }
+  test("notInValues for one column") {
+    assertEquals(
+      notInValues(fr0"foo.bar", nelInt).query[Unit].sql,
+      "foo.bar NOT IN (?, ?, ?) ")
+  }
+  test("notInValues for two columns") {
+    assertEquals(
+      notInValues(fr0"foo.bar", nelIntBool2).query[Unit].sql,
+      "foo.bar NOT IN ((?,?), (?,?)) ")
+  }
+  test("notInValues for three columns") {
+    assertEquals(
+      notInValues(fr0"foo.bar", nelStrDblInt3).query[Unit].sql,
+      "foo.bar NOT IN ((?,?,?), (?,?,?), (?,?,?)) ")
   }
 
   test("notIn (varargs many)") {
