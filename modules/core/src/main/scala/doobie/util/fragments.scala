@@ -18,15 +18,12 @@ object fragments {
   def values[F[_]: Reducible, A](fs: F[A])(implicit w: util.Write[A]): Fragment =
     fr"VALUES" ++ comma(fs.toNonEmptyList.map(f => parentheses(values(f))))
 
-  /** Returns `UPDATE tableName SET columnUpdate0, columnUpdate1, ... WHERE (whereAnd0) AND (whereAnd1) ...`. */
+  /** Returns `UPDATE tableName SET columnUpdate0, columnUpdate1, ...`. */
   def updateSetOpt[F[_]: Foldable](
       tableName: Fragment,
-      columnUpdates: F[Fragment],
-      condition: Fragment
+      columnUpdates: F[Fragment]
   ): Option[Fragment] = {
-    NonEmptyList.fromFoldable(columnUpdates).map(cs =>
-      fr"UPDATE" ++ tableName ++ set(cs) ++ (if (condition == Fragment.empty) condition
-                                             else fr"" ++ whereAnd(condition)))
+    NonEmptyList.fromFoldable(columnUpdates).map(cs => fr"UPDATE" ++ tableName ++ set(cs))
   }
 
   /** Returns `(f IN (fs0, fs1, ...))`. */
