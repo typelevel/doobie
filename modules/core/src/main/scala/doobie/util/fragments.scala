@@ -9,6 +9,7 @@ import cats.data.NonEmptyList
 import cats.syntax.all.*
 import cats.{Foldable, Functor, Reducible}
 import doobie.implicits.*
+import doobie.Fragment.*
 
 /** Module of `Fragment` constructors. */
 object fragments {
@@ -16,6 +17,14 @@ object fragments {
   /** Returns `VALUES (fs0), (fs1), ...`. */
   def values[F[_]: Reducible, A](fs: F[A])(implicit w: util.Write[A]): Fragment =
     fr"VALUES" ++ comma(fs.toNonEmptyList.map(f => parentheses(values(f))))
+
+  /** Returns `UPDATE tableName SET columnUpdate0, columnUpdate1, ...`. */
+  def updateSetOpt[F[_]: Foldable](
+      tableName: Fragment,
+      columnUpdates: F[Fragment]
+  ): Option[Fragment] = {
+    NonEmptyList.fromFoldable(columnUpdates).map(cs => fr"UPDATE" ++ tableName ++ set(cs))
+  }
 
   /** Returns `(f IN (fs0, fs1, ...))`. */
   def in[A: util.Put](f: Fragment, fs0: A, fs1: A, fs: A*): Fragment =
