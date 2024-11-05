@@ -4,32 +4,51 @@
 
 package doobie.util
 
-import shapeless.{Generic, HList, IsTuple, Lazy}
+import shapeless.labelled.FieldType
+import shapeless.{Generic, HList, IsTuple, Lazy, OrElse}
+import shapeless.{::, HNil}
 
-trait ReadPlatform {
+trait ReadPlatform extends LowerPriority1ReadPlatform {
 
   // Derivation for product types (i.e. case class)
   implicit def genericTuple[A, Repr <: HList](implicit
       gen: Generic.Aux[A, Repr],
-      G: Lazy[MkRead[Repr]],
+      G: Lazy[Read[Repr]],
       isTuple: IsTuple[A]
-  ): MkRead[A] = {
+  ): Read[A] = {
     val _ = isTuple
-    MkRead.generic[A, Repr]
+    implicit val r: Lazy[Read[Repr] OrElse Derived[MkRead[Repr]]] = G.map(OrElse.primary(_))
+    MkRead.genericRead[A, Repr].instance
   }
 
-  // Derivation for optional of product types (i.e. case class)
-  implicit def ogenericTuple[A, Repr <: HList](
+  @deprecated("Read.generic has been renamed to Read.derived to align with Scala 3 derivation", "1.0.0-RC6")
+  def generic[T, Repr <: HList](
       implicit
-      G: Generic.Aux[A, Repr],
-      B: Lazy[MkRead[Option[Repr]]],
-      isTuple: IsTuple[A]
-  ): MkRead[Option[A]] = {
-    val _ = isTuple
-    MkRead.ogeneric[A, Repr]
-  }
+      gen: Generic.Aux[T, Repr],
+      G: Lazy[Read[Repr] OrElse Derived[MkRead[Repr]]]
+  ): Read[T] =
+    MkRead.genericRead[T, Repr].instance
 
-  @deprecated("Use Read.derived instead to derive instances explicitly", "1.0.0-RC6")
-  def generic[T, Repr](implicit gen: Generic.Aux[T, Repr], G: Lazy[MkRead[Repr]]): MkRead[T] =
-    MkRead.generic[T, Repr]
+  implicit def recordBase[K <: Symbol, H](
+      implicit H: Read[H]
+  ): Read[FieldType[K, H] :: HNil] = MkRead.recordBase[K, H].instance
+
+  implicit def productBase[H](
+      implicit H: Read[H]
+  ): Read[H :: HNil] = MkRead.productBase[H].instance
+}
+
+trait LowerPriority1ReadPlatform extends LowestPriorityRead {
+
+  implicit def product[H, T <: HList](
+      implicit
+      H: Read[H],
+      T: Read[T]
+  ): Read[H :: T] = MkRead.product[H, T].instance
+
+  implicit def record[K <: Symbol, H, T <: HList](
+      implicit
+      H: Read[H],
+      T: Read[T]
+  ): Read[FieldType[K, H] :: T] = MkRead.record[K, H, T].instance
 }

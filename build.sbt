@@ -33,6 +33,7 @@ lazy val weaverVersion = "0.8.4"
 ThisBuild / tlBaseVersion := "1.0"
 ThisBuild / tlCiReleaseBranches := Seq("main") // publish snapshots on `main`
 ThisBuild / tlCiScalafmtCheck := true
+//ThisBuild / scalaVersion := scala212Version
 ThisBuild / scalaVersion := scala213Version
 //ThisBuild / scalaVersion := scala3Version
 ThisBuild / crossScalaVersions := Seq(scala212Version, scala213Version, scala3Version)
@@ -98,9 +99,12 @@ lazy val compilerFlags = Seq(
   Compile / doc / scalacOptions --= Seq(
     "-Xfatal-warnings"
   ),
-//  Test / scalacOptions --= Seq(
-//    "-Xfatal-warnings"
-//  ),
+  // Disable warning when @nowarn annotation isn't suppressing a warning
+  // to simplify cross-building
+  // because 2.12 @nowarn doesn't actually do anything.. https://github.com/scala/bug/issues/12313
+  scalacOptions ++= Seq(
+    "-Wconf:cat=unused-nowarn:s"
+  ),
   scalacOptions ++= (if (tlIsScala3.value)
                        // Handle irrefutable patterns in for comprehensions
                        Seq("-source:future", "-language:adhocExtensions")
@@ -249,8 +253,7 @@ lazy val core = project
     ).filterNot(_ => tlIsScala3.value) ++ Seq(
       "org.tpolecat" %% "typename" % "1.1.0",
       "com.h2database" % "h2" % h2Version % "test",
-      "org.postgresql" % "postgresql" % postgresVersion % "test",
-      "org.mockito" % "mockito-core" % "5.12.0" % Test
+      "org.postgresql" % "postgresql" % postgresVersion % "test"
     ),
     Compile / unmanagedSourceDirectories += {
       val sourceDir = (Compile / sourceDirectory).value
@@ -493,7 +496,12 @@ lazy val bench = project
   .enablePlugins(NoPublishPlugin)
   .enablePlugins(AutomateHeaderPlugin)
   .enablePlugins(JmhPlugin)
-  .dependsOn(core, postgres)
+  .settings(
+    libraryDependencies ++= (if (scalaVersion.value == scala212Version)
+                               Seq("org.scala-lang.modules" %% "scala-collection-compat" % "2.12.0")
+                             else Seq.empty)
+  )
+  .dependsOn(core, postgres, hikari)
   .settings(doobieSettings)
 
 lazy val docs = project
