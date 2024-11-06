@@ -67,6 +67,18 @@ object fragments {
     parentheses(fs.reduceLeftTo(row) { _ ++ fr"," ++ row(_) })
   }
 
+  @inline
+  private def constSubqueryExprOpt[F[_]: Foldable, A](fs: F[A])(implicit A: util.Write[A]): Option[Fragment] = {
+    val row: A => Fragment =
+      if (A.length == 1) // no need for extra parentheses
+        a => values(a)
+      else
+        a => parentheses0(values(a))
+
+    fs.reduceLeftToOption(row) { _ ++ fr"," ++ row(_) }
+      .map(parentheses)
+  }
+
   /** Returns `f IN (fs0, fs1, ...)`.
     * @param f
     *   left-hand expression.
