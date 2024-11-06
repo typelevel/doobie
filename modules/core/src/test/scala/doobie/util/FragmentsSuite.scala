@@ -24,7 +24,9 @@ class FragmentsSuite extends munit.FunSuite {
   val nelInt = NonEmptyList.of(1, 2, 3)
   val nelIntBool2 = NonEmptyList.of((1, true), (2, false))
   val nelStrDblInt3 = NonEmptyList.of(("abc", 1.2, 3), ("def", 4.5, 6), ("ghi", 7.8, 9))
-  val listInt = nelInt.toList
+  val listInt3 = nelInt.toList
+  val listIntBool2 = nelIntBool2.toList
+  val listStrDblInt3 = nelStrDblInt3.toList
   val nel1 = NonEmptyList.of(1).map(i => sql"$i")
   val nel = NonEmptyList.of(1, 2, 3).map(i => sql"$i")
   val fs = nel.toList
@@ -51,80 +53,128 @@ class FragmentsSuite extends munit.FunSuite {
     assertEquals(updateSetOpt(Fragment.const("Foo"), List.empty[Fragment]).map(_.query[Unit].sql), None)
   }
 
-  test("in (1-column varargs)") {
-    assertEquals(in(sql"foo", 1, 2, 3).query[Unit].sql, "(foo IN (? , ? , ? ) ) ")
-  }
-
-  test("in (1-column Reducible many)") {
-    assertEquals(in(sql"foo", nelInt).query[Unit].sql, "(foo IN (? , ? , ? ) ) ")
-  }
-
-  test("inOpt (1-column Reducible empty)") {
-    assertEquals(inOpt(sql"foo", List.empty[Int]).map(_.query[Unit].sql), None)
-  }
-
-  test("inOpt (1-column Reducible many)") {
-    assertEquals(inOpt(sql"foo", listInt).map(_.query[Unit].sql), Some("(foo IN (? , ? , ? ) ) "))
-  }
-
-  test("in (2-column varargs)") {
-    assertEquals(in(sql"foo", NonEmptyList.of((1, true), (2, false))).query[Unit].sql, "(foo IN ((?,?), (?,?)) ) ")
-  }
-
-  test("inValues for one column") {
+  test("in (1-column, varargs)") {
     assertEquals(
-      inValues(fr0"foo.bar", nelInt).query[Unit].sql,
-      "foo.bar IN (?, ?, ?) ")
-  }
-  test("inValues for two columns") {
+      in(sql"foo.bar", 1, 2).query[Unit].sql,
+      "(foo.bar IN (?, ?)) ")
     assertEquals(
-      inValues(fr0"foo.bar", nelIntBool2).query[Unit].sql,
-      "foo.bar IN ((?,?), (?,?)) ")
+      in(sql"foo.bar", 3, 4, 5).query[Unit].sql,
+      "(foo.bar IN (?, ?, ?)) ")
   }
-  test("inValues for three columns") {
+  test("in (2-column, varargs)") {
     assertEquals(
-      inValues(fr0"foo.bar", nelStrDblInt3).query[Unit].sql,
-      "foo.bar IN ((?,?,?), (?,?,?), (?,?,?)) ")
-  }
-
-  test("notInValues for one column") {
+      in(sql"foo.bar", 1 -> "one", 2 -> "two").query[Unit].sql,
+      "(foo.bar IN ((?,?), (?,?))) ")
     assertEquals(
-      notInValues(fr0"foo.bar", nelInt).query[Unit].sql,
-      "foo.bar NOT IN (?, ?, ?) ")
+      in(sql"foo.bar", 3 -> "three", 4 -> "four", 5 -> "five").query[Unit].sql,
+      "(foo.bar IN ((?,?), (?,?), (?,?))) ")
   }
-  test("notInValues for two columns") {
+  test("in (3-column, varargs)") {
     assertEquals(
-      notInValues(fr0"foo.bar", nelIntBool2).query[Unit].sql,
-      "foo.bar NOT IN ((?,?), (?,?)) ")
-  }
-  test("notInValues for three columns") {
+      in(sql"foo.bar", (1.2, "A", 3), (4.5, "B", 6)).query[Unit].sql,
+      "(foo.bar IN ((?,?,?), (?,?,?))) ")
     assertEquals(
-      notInValues(fr0"foo.bar", nelStrDblInt3).query[Unit].sql,
-      "foo.bar NOT IN ((?,?,?), (?,?,?), (?,?,?)) ")
+      in(sql"foo.bar", (9.8, "Z", 7), (6.5, "Y", 4), (3.2, "X", 1)).query[Unit].sql,
+      "(foo.bar IN ((?,?,?), (?,?,?), (?,?,?))) ")
   }
 
-  test("notIn (varargs many)") {
-    assertEquals(notIn(sql"foo", 1, 2, 3).query[Unit].sql, "(foo NOT IN (? , ? , ? ) ) ")
+  test("notIn (1-column, varargs)") {
+    assertEquals(
+      notIn(sql"foo.bar", 1, 2).query[Unit].sql,
+      "(foo.bar NOT IN (?, ?)) ")
+    assertEquals(
+      notIn(sql"foo.bar", 3, 4, 5).query[Unit].sql,
+      "(foo.bar NOT IN (?, ?, ?)) ")
+  }
+  test("notIn (2-column, varargs)") {
+    assertEquals(
+      notIn(sql"foo.bar", 1 -> "one", 2 -> "two").query[Unit].sql,
+      "(foo.bar NOT IN ((?,?), (?,?))) ")
+    assertEquals(
+      notIn(sql"foo.bar", 3 -> "three", 4 -> "four", 5 -> "five").query[Unit].sql,
+      "(foo.bar NOT IN ((?,?), (?,?), (?,?))) ")
+  }
+  test("notIn (3-column, varargs)") {
+    assertEquals(
+      notIn(sql"foo.bar", (1.2, "A", 3), (4.5, "B", 6)).query[Unit].sql,
+      "(foo.bar NOT IN ((?,?,?), (?,?,?))) ")
+    assertEquals(
+      notIn(sql"foo.bar", (9.8, "Z", 7), (6.5, "Y", 4), (3.2, "X", 1)).query[Unit].sql,
+      "(foo.bar NOT IN ((?,?,?), (?,?,?), (?,?,?))) ")
   }
 
-  test("notIn (Reducible 1)") {
-    assertEquals(notIn(sql"foo", NonEmptyList.of(1)).query[Unit].sql, "(foo NOT IN (? ) ) ")
+  test("in (1-column)") {
+    assertEquals(
+      in(fr0"foo.bar", nelInt).query[Unit].sql,
+      "(foo.bar IN (?, ?, ?)) ")
+  }
+  test("in (2-columns)") {
+    assertEquals(
+      in(fr0"foo.bar", nelIntBool2).query[Unit].sql,
+      "(foo.bar IN ((?,?), (?,?))) ")
+  }
+  test("in (3-columns)") {
+    assertEquals(
+      in(fr0"foo.bar", nelStrDblInt3).query[Unit].sql,
+      "(foo.bar IN ((?,?,?), (?,?,?), (?,?,?))) ")
   }
 
-  test("notIn (Reducible many)") {
-    assertEquals(notIn(sql"foo", nelInt).query[Unit].sql, "(foo NOT IN (? , ? , ? ) ) ")
+  test("inOpt (1-column, many)") {
+    assertEquals(
+      inOpt(fr0"foo.bar", listInt3).map(_.query[Unit].sql),
+      Some("(foo.bar IN (?, ?, ?)) "))
+  }
+  test("inOpt (2-columns, many)") {
+    assertEquals(
+      inOpt(fr0"foo.bar", listIntBool2).map(_.query[Unit].sql),
+      Some("(foo.bar IN ((?,?), (?,?))) "))
+  }
+  test("inOpt (3-columns, many)") {
+    assertEquals(
+      inOpt(fr0"foo.bar", listStrDblInt3).map(_.query[Unit].sql),
+      Some("(foo.bar IN ((?,?,?), (?,?,?), (?,?,?))) "))
+  }
+  test("inOpt (empty)") {
+    assert(inOpt(fr0"foo.bar", List.empty[Int]).isEmpty, "1 column")
+    assert(inOpt(fr0"foo.bar", List.empty[(Int, Boolean)]).isEmpty, "2 columns")
+    assert(inOpt(fr0"foo.bar", List.empty[(String, Double, Int)]).isEmpty, "3 columns")
   }
 
-  test("notInOpt (Foldable empty)") {
-    assertEquals(notInOpt(sql"foo", List.empty[Int]).map(_.query[Unit].sql), None)
+  test("notIn (1-column)") {
+    assertEquals(
+      notIn(fr0"foo.bar", nelInt).query[Unit].sql,
+      "(foo.bar NOT IN (?, ?, ?)) ")
+  }
+  test("notIn (2-columns)") {
+    assertEquals(
+      notIn(fr0"foo.bar", nelIntBool2).query[Unit].sql,
+      "(foo.bar NOT IN ((?,?), (?,?))) ")
+  }
+  test("notIn (3-columns)") {
+    assertEquals(
+      notIn(fr0"foo.bar", nelStrDblInt3).query[Unit].sql,
+      "(foo.bar NOT IN ((?,?,?), (?,?,?), (?,?,?))) ")
   }
 
-  test("notInOpt (Foldable 1)") {
-    assertEquals(notInOpt(sql"foo", List(1)).map(_.query[Unit].sql), Some("(foo NOT IN (? ) ) "))
+  test("notInOpt (1-column, many)") {
+    assertEquals(
+      notInOpt(fr0"foo.bar", listInt3).map(_.query[Unit].sql),
+      Some("(foo.bar NOT IN (?, ?, ?)) "))
   }
-
-  test("notInOpt (Foldable many)") {
-    assertEquals(notInOpt(sql"foo", listInt).map(_.query[Unit].sql), Some("(foo NOT IN (? , ? , ? ) ) "))
+  test("notInOpt (2-columns, many)") {
+    assertEquals(
+      notInOpt(fr0"foo.bar", listIntBool2).map(_.query[Unit].sql),
+      Some("(foo.bar NOT IN ((?,?), (?,?))) "))
+  }
+  test("notInOpt (3-columns, many)") {
+    assertEquals(
+      notInOpt(fr0"foo.bar", listStrDblInt3).map(_.query[Unit].sql),
+      Some("(foo.bar NOT IN ((?,?,?), (?,?,?), (?,?,?))) "))
+  }
+  test("notInOpt (empty)") {
+    assert(notInOpt(fr0"foo.bar", List.empty[Int]).isEmpty, "1 column")
+    assert(notInOpt(fr0"foo.bar", List.empty[(Int, Boolean)]).isEmpty, "2 columns")
+    assert(notInOpt(fr0"foo.bar", List.empty[(String, Double, Int)]).isEmpty, "3 columns")
   }
 
   test("and (vararg 2)") {
