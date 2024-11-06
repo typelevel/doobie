@@ -57,13 +57,15 @@ object fragments {
   }
 
   @inline
-  private def constSubqueryExpr[F[_]: Reducible: Functor, A](fs: F[A])(implicit A: util.Write[A]): Fragment =
-    parentheses(comma {
+  private def constSubqueryExpr[F[_]: Reducible, A](fs: F[A])(implicit A: util.Write[A]): Fragment = {
+    val row: A => Fragment =
       if (A.length == 1) // no need for extra parentheses
-        fs.map(values(_))
+        a => values(a)
       else
-        fs.map(a => parentheses0(values(a)))
-    })
+        a => parentheses0(values(a))
+
+    parentheses(fs.reduceLeftTo(row) { _ ++ fr"," ++ row(_) })
+  }
 
   /** Returns `f IN (fs0, fs1, ...)`.
     * @param f
