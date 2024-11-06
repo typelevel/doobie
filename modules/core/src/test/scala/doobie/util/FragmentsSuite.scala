@@ -21,7 +21,6 @@ class FragmentsSuite extends munit.FunSuite {
     logHandler = None
   )
 
-  val nelUnit100 = NonEmptyList.fromListUnsafe(List.fill(100)(()))
   val nelInt = NonEmptyList.of(1, 2, 3)
   val nelIntBool2 = NonEmptyList.of((1, true), (2, false))
   val nelStrDblInt3 = NonEmptyList.of(("abc", 1.2, 3), ("def", 4.5, 6), ("ghi", 7.8, 9))
@@ -72,11 +71,6 @@ class FragmentsSuite extends munit.FunSuite {
     assertEquals(in(sql"foo", NonEmptyList.of((1, true), (2, false))).query[Unit].sql, "(foo IN ((?,?), (?,?)) ) ")
   }
 
-  test("inValues for no columns") {
-    assertEquals(
-      inValues(fr0"foo.bar", nelUnit100).query[Unit].sql,
-      "FALSE ")
-  }
   test("inValues for one column") {
     assertEquals(
       inValues(fr0"foo.bar", nelInt).query[Unit].sql,
@@ -93,11 +87,6 @@ class FragmentsSuite extends munit.FunSuite {
       "foo.bar IN ((?,?,?), (?,?,?), (?,?,?)) ")
   }
 
-  test("notInValues for no columns") {
-    assertEquals(
-      notInValues(fr0"foo.bar", nelUnit100).query[Unit].sql,
-      "TRUE ")
-  }
   test("notInValues for one column") {
     assertEquals(
       notInValues(fr0"foo.bar", nelInt).query[Unit].sql,

@@ -10,8 +10,8 @@ import cats.Functor
 import cats.Reducible
 import cats.data.NonEmptyList
 import cats.syntax.all.*
-import doobie.implicits.*
 import doobie.Fragment.*
+import doobie.implicits.*
 
 /** Module of `Fragment` constructors. */
 object fragments {
@@ -57,21 +57,13 @@ object fragments {
   }
 
   @inline
-  private def inNotInValues[F[_]: Reducible: Functor, A](
-      fwop: Fragment,
-      fs: F[A],
-      fallback: Fragment
-  )(implicit A: util.Write[A]): Fragment = {
-    if (A.length == 0) fallback
-    else {
-      fwop ++ {
-        if (A.length == 1) // no need for extra parentheses
-          parentheses(comma(fs.map(values(_))))
-        else
-          parentheses(comma(fs.map(a => parentheses0(values(a)))))
-      }
-    }
-  }
+  private def constSubqueryExpr[F[_]: Reducible: Functor, A](fs: F[A])(implicit A: util.Write[A]): Fragment =
+    parentheses(comma {
+      if (A.length == 1) // no need for extra parentheses
+        fs.map(values(_))
+      else
+        fs.map(a => parentheses0(values(a)))
+    })
 
   /** Returns `f IN (fs0, fs1, ...)`.
     * @param f
@@ -82,7 +74,7 @@ object fragments {
     *   the `IN` subquery expression or `FALSE` if `fs` is a 0-arity product.
     */
   def inValues[F[_]: Reducible: Functor, A: util.Write](f: Fragment, fs: F[A]): Fragment =
-    inNotInValues(f ++ fr" IN", fs, fr"FALSE")
+    f ++ fr" IN" ++ constSubqueryExpr(fs)
 
   /** Returns `f NOT IN (fs0, fs1, ...)`.
     * @param f
@@ -93,7 +85,7 @@ object fragments {
     *   the `NOT IN` subquery expression or `TRUE` if `fs` is a 0-arity product.
     */
   def notInValues[F[_]: Reducible: Functor, A: util.Write](f: Fragment, fs: F[A]): Fragment =
-    inNotInValues(f ++ fr" NOT IN", fs, fr"TRUE")
+    f ++ fr" NOT IN" ++ constSubqueryExpr(fs)
 
   /** Returns `(f1 AND f2 AND ... fn)`. */
   def and(f1: Fragment, f2: Fragment, fs: Fragment*): Fragment =
