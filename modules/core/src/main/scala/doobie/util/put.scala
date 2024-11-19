@@ -56,7 +56,7 @@ sealed abstract class Put[A](
     ) {}
 
   def unsafeSetNonNullable(ps: PreparedStatement, n: Int, a: A): Unit =
-    if (a == null) sys.error("oops, null")
+    if (a == null) sys.error(s"Expected non-nullable param at $n. Use Option to describe nullable values.")
     else put.fi.apply(ps, n, (put.k(a)))
 
   def unsafeSetNullable(ps: PreparedStatement, n: Int, oa: Option[A]): Unit =
@@ -66,7 +66,7 @@ sealed abstract class Put[A](
     }
 
   def unsafeUpdateNonNullable(rs: ResultSet, n: Int, a: A): Unit =
-    if (a == null) sys.error("oops, null")
+    if (a == null) sys.error(s"Expected non-nullable param at $n. Use Option to describe nullable values.")
     else update.fi.apply(rs, n, (update.k(a)))
 
   def unsafeUpdateNullable(rs: ResultSet, n: Int, oa: Option[A]): Unit =

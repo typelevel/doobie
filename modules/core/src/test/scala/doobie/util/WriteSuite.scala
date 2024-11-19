@@ -122,4 +122,27 @@ class WriteSuite extends munit.FunSuite with WriteSuitePlatform {
       .unsafeRunSync()
   }
 
+  test("Write should yield correct error when Some(null) inserted") {
+    interceptMessage[RuntimeException]("Expected non-nullable param at 2. Use Option to describe nullable values.") {
+      testNullPut(("a", Some(null)))
+    }
+  }
+
+  test("Write should yield correct error when null inserted into non-nullable field") {
+    interceptMessage[RuntimeException]("Expected non-nullable param at 1. Use Option to describe nullable values.") {
+      testNullPut((null, Some("b")))
+    }
+  }
+
+  private def testNullPut(input: (String, Option[String])): Int = {
+    import doobie.implicits.*
+
+    (for {
+      _ <- sql"create temp table t0 (a text, b text null)".update.run
+      n <- Update[(String, Option[String])]("insert into t0 (a, b) values (?, ?)").run(input)
+    } yield n)
+      .transact(xa)
+      .unsafeRunSync()
+  }
+
 }
