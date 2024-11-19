@@ -123,7 +123,7 @@ class WriteSuite extends munit.FunSuite with WriteSuitePlatform {
   }
 
   test("Write should yield correct error when Some(null) inserted") {
-    interceptMessage[RuntimeException]("Expected non-nullable param at 2. Use Option to describe nullable values.") {
+    interceptMessage[RuntimeException]("Expected optional param at 2 but got Some(null).") {
       testNullPut(("a", Some(null)))
     }
   }

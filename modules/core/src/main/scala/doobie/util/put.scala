@@ -56,24 +56,36 @@ sealed abstract class Put[A](
     ) {}
 
   def unsafeSetNonNullable(ps: PreparedStatement, n: Int, a: A): Unit =
-    if (a == null) sys.error(s"Expected non-nullable param at $n. Use Option to describe nullable values.")
-    else put.fi.apply(ps, n, (put.k(a)))
+    unsafeSetWhatShouldNotBeNull(ps, n, a, expectedNonNullableParam)
 
   def unsafeSetNullable(ps: PreparedStatement, n: Int, oa: Option[A]): Unit =
     oa match {
-      case Some(a) => unsafeSetNonNullable(ps, n, a)
+      case Some(a) => unsafeSetWhatShouldNotBeNull(ps, n, a, expectedOptionalParam)
       case None    => unsafeSetNull(ps, n)
     }
 
+  private def unsafeSetWhatShouldNotBeNull(ps: PreparedStatement, n: Int, a: A, message: Int => String): Unit =
+    if (a == null) sys.error(message(n))
+    else put.fi.apply(ps, n, (put.k(a)))
+
   def unsafeUpdateNonNullable(rs: ResultSet, n: Int, a: A): Unit =
-    if (a == null) sys.error(s"Expected non-nullable param at $n. Use Option to describe nullable values.")
-    else update.fi.apply(rs, n, (update.k(a)))
+    unsafeUpdateWhatShouldNotBeNull(rs, n, a, expectedNonNullableParam)
 
   def unsafeUpdateNullable(rs: ResultSet, n: Int, oa: Option[A]): Unit =
     oa match {
-      case Some(a) => unsafeUpdateNonNullable(rs, n, a)
+      case Some(a) => unsafeUpdateWhatShouldNotBeNull(rs, n, a, expectedOptionalParam)
       case None    => rs.updateNull(n)
     }
+
+  private def unsafeUpdateWhatShouldNotBeNull(rs: ResultSet, n: Int, a: A, message: Int => String): Unit =
+    if (a == null) sys.error(message(n))
+    else update.fi.apply(rs, n, (update.k(a)))
+
+  private def expectedNonNullableParam(n: Int) =
+    s"Expected non-nullable param at $n. Use Option to describe nullable values."
+
+  private def expectedOptionalParam(n: Int) =
+    s"Expected optional param at $n but got Some(null)."
 
   override def toString(): String = {
     s"Put(typeStack=${typeStack.mkString_(",")}, jdbcTargets=${jdbcTargets.mkString_(
