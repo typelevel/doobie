@@ -8,16 +8,24 @@ import doobie.util.compat.=:=
 import doobie.util.transactor.Transactor
 import doobie.free.connection.ConnectionIO
 import cats.data.Kleisli
+import cats.effect.Concurrent
 import cats.effect.kernel.{Async, MonadCancelThrow}
 import fs2.{Pipe, Stream}
 
 class StreamOps[F[_], A](fa: Stream[F, A]) {
-  def transact[M[_]: MonadCancelThrow](xa: Transactor[M])(implicit
+  def transactNoPrefetch[M[_]: MonadCancelThrow](xa: Transactor[M])(implicit
       ev: Stream[F, A] =:= Stream[ConnectionIO, A]
   ): Stream[M, A] = xa.transP.apply(fa)
+
+  def transact[M[_]: Concurrent](xa: Transactor[M])(implicit
+      ev: Stream[F, A] =:= Stream[ConnectionIO, A]
+  ): Stream[M, A] = transactNoPrefetch(xa).prefetchN(1)
+
 }
 class KleisliStreamOps[A, B](fa: Stream[Kleisli[ConnectionIO, A, *], B]) {
-  def transact[M[_]: MonadCancelThrow](xa: Transactor[M]): Stream[Kleisli[M, A, *], B] = xa.transPK[A].apply(fa)
+  def transactNoPrefetch[M[_]: MonadCancelThrow](xa: Transactor[M]): Stream[Kleisli[M, A, *], B] =
+    xa.transPK[A].apply(fa)
+  def transact[M[_]: Concurrent](xa: Transactor[M]): Stream[Kleisli[M, A, *], B] = transactNoPrefetch(xa).prefetchN(1)
 }
 class PipeOps[F[_], A, B](inner: Pipe[F, A, B]) {
   def transact[M[_]: Async](xa: Transactor[M])(implicit ev: Pipe[F, A, B] =:= Pipe[ConnectionIO, A, B]): Pipe[M, A, B] =
