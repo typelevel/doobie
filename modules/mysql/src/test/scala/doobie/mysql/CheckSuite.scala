@@ -65,12 +65,12 @@ class CheckSuite extends CatsEffectSuite {
   }
 
   private def successRead[A: Read](frag: Fragment): Unit = {
-    frag.query[A].analysis.transact(xa).map(_.columnAlignmentErrors).assertEquals(Nil)
-    frag.query[A].unique.transact(xa).attempt.map(_.isRight).assert
+    val _ = frag.query[A].analysis.transact(xa).map(_.columnAlignmentErrors).assertEquals(Nil)
+    val _ = frag.query[A].unique.transact(xa).attempt.map(_.isRight).assert
   }
 
   private def failedRead[A: Read](frag: Fragment): Unit = {
-    frag.query[A].analysis.transact(xa).map(_.columnAlignmentErrors.map(_.getClass)).assertEquals(List(
+    val _ = frag.query[A].analysis.transact(xa).map(_.columnAlignmentErrors.map(_.getClass)).assertEquals(List(
       classOf[ColumnTypeError]))
   }
 

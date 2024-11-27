@@ -12,15 +12,12 @@ import doobie.h2.implicits.*
 import doobie.util.analysis.{Analysis, ColumnTypeError}
 import doobie.util.arbitraries.SQLArbitraries.*
 import doobie.util.arbitraries.StringArbitraries.*
-import org.scalacheck.Prop.forAll
 import org.scalacheck.{Arbitrary, Gen}
 import munit.CatsEffectAssertions.MUnitCatsAssertionsForIOOps
 import org.scalacheck.effect.PropF
 
 // Establish that we can read various types. It's not very comprehensive as a test, bit it's a start.
 class h2typesspec extends munit.ScalaCheckSuite {
-
-  import cats.effect.unsafe.implicits.global
 
   val xa = Transactor.fromDriverManager[IO](
     driver = "org.h2.Driver",
@@ -214,7 +211,7 @@ class h2typesspec extends munit.ScalaCheckSuite {
 
   private def assertAnalyzeColumnError(result: IO[Analysis]): Unit = {
     val errorClasses = result.map(_.alignmentErrors.map(_.getClass))
-    errorClasses.assertEquals(List(classOf[ColumnTypeError]))
+    val _ = errorClasses.assertEquals(List(classOf[ColumnTypeError]))
   }
 
 }
