@@ -8,10 +8,11 @@ import cats.Applicative
 import cats.implicits.*
 import cats.effect.IO
 import cats.kernel.Monoid
+import munit.*
 import doobie.*
 import doobie.implicits.*
 
-class ConnectionIOSuite extends munit.FunSuite {
+class ConnectionIOSuite extends munit.CatsEffectSuite {
 
   import cats.effect.unsafe.implicits.global
 
@@ -25,11 +26,11 @@ class ConnectionIOSuite extends munit.FunSuite {
 
   test("Semigroup ConnectionIO") {
     val prg = Applicative[ConnectionIO].pure(List(1, 2, 3)) `combine` Applicative[ConnectionIO].pure(List(4, 5, 6))
-    assertEquals(prg.transact(xa).unsafeRunSync(), List(1, 2, 3, 4, 5, 6))
+    prg.transact(xa).assertEquals(List(1, 2, 3, 4, 5, 6))
   }
 
   test("Monoid ConnectionIO") {
-    assertEquals(Monoid[ConnectionIO[List[Int]]].empty.transact(xa).unsafeRunSync(), Nil)
+    Monoid[ConnectionIO[List[Int]]].empty.transact(xa) assertEquals (Nil)
   }
 
 }

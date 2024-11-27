@@ -8,11 +8,10 @@ import cats.effect.IO
 import doobie.util.TestTypes.*
 import doobie.util.transactor.Transactor
 import doobie.testutils.VoidExtensions
+import munit.CatsEffectSuite
 
-class ReadSuite extends munit.FunSuite with ReadSuitePlatform {
-
-  import cats.effect.unsafe.implicits.global
-
+class ReadSuite extends CatsEffectSuite with ReadSuitePlatform {
+  
   val xa = Transactor.fromDriverManager[IO](
     driver = "org.h2.Driver",
     url = "jdbc:h2:mem:;DB_CLOSE_DELAY=-1",
@@ -105,7 +104,7 @@ class ReadSuite extends munit.FunSuite with ReadSuitePlatform {
 
     val p = readInt.product(readString)
 
-    assertEquals(p.gets, (readInt.gets ++ readString.gets))
+    assertEquals(p.gets, readInt.gets ++ readString.gets)
   }
 
   /*
@@ -117,15 +116,13 @@ class ReadSuite extends munit.FunSuite with ReadSuitePlatform {
 
     val frag = sql"SELECT 1, NULL, 3, NULL"
     val q1 = frag.query[Option[(Int, Option[Int], Int, Option[Int])]].to[List]
-    val o1 = q1.transact(xa).unsafeRunSync()
     // This result doesn't seem ideal, because we should know that Int isn't
     // nullable, so the correct result is Some((1, None, 3, None))
     // But with how things are wired at the moment this isn't possible
-    assertEquals(o1, List(None))
+    q1.transact(xa).assertEquals(List(None))
 
     val q2 = frag.query[Option[(Int, Int, Int, Int)]].to[List]
-    val o2 = q2.transact(xa).unsafeRunSync()
-    assertEquals(o2, List(None))
+    q2.transact(xa).assertEquals(List(None))
   }
 
   test("Read should read correct columns for instances with Option (Some)") {
@@ -133,12 +130,10 @@ class ReadSuite extends munit.FunSuite with ReadSuitePlatform {
 
     val frag = sql"SELECT 1, 2, 3, 4"
     val q1 = frag.query[Option[(Int, Option[Int], Int, Option[Int])]].to[List]
-    val o1 = q1.transact(xa).unsafeRunSync()
-    assertEquals(o1, List(Some((1, Some(2), 3, Some(4)))))
+    q1.transact(xa).assertEquals(List(Some((1, Some(2), 3, Some(4)))))
 
     val q2 = frag.query[Option[(Int, Int, Int, Int)]].to[List]
-    val o2 = q2.transact(xa).unsafeRunSync()
-    assertEquals(o2, List(Some((1, 2, 3, 4))))
+    q2.transact(xa).assertEquals(List(Some((1, 2, 3, 4))))
   }
 
   test("Read should select correct columns when combined with `ap`") {
@@ -150,10 +145,7 @@ class ReadSuite extends munit.FunSuite with ReadSuitePlatform {
     val c = (r, r, r, r, r).tupled
 
     val q = sql"SELECT 1, 2, 3, 4, 5".query(using c).to[List]
-
-    val o = q.transact(xa).unsafeRunSync()
-
-    assertEquals(o, List((1, 2, 3, 4, 5)))
+    q.transact(xa).assertEquals(List((1, 2, 3, 4, 5)))
   }
 
   test("Read should select correct columns when combined with `product`") {
@@ -163,9 +155,7 @@ class ReadSuite extends munit.FunSuite with ReadSuitePlatform {
     val r = Read[Int].product(Read[Int].product(Read[Int]))
 
     val q = sql"SELECT 1, 2, 3".query(using r).to[List]
-    val o = q.transact(xa).unsafeRunSync()
-
-    assertEquals(o, List((1, (2, 3))))
+    q.transact(xa).assertEquals(List((1, (2, 3))))
   }
 
 }

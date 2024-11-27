@@ -11,7 +11,7 @@ import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import doobie.testutils.VoidExtensions
 
-class WriteSuite extends munit.FunSuite with WriteSuitePlatform {
+class WriteSuite extends munit.CatsEffectSuite with WriteSuitePlatform {
 
   val xa: Transactor[IO] = Transactor.fromDriverManager[IO](
     driver = "org.h2.Driver",
@@ -119,22 +119,17 @@ class WriteSuite extends munit.FunSuite with WriteSuitePlatform {
         ))
     })
       .transact(xa)
-      .unsafeRunSync()
   }
 
   test("Write should yield correct error when Some(null) inserted") {
-    interceptMessage[RuntimeException]("Expected non-nullable param at 2. Use Option to describe nullable values.") {
-      testNullPut(("a", Some(null)))
-    }
+    testNullPut((null, Some("b"))).interceptMessage[RuntimeException]("Expected non-nullable param at 1. Use Option to describe nullable values.")
   }
 
   test("Write should yield correct error when null inserted into non-nullable field") {
-    interceptMessage[RuntimeException]("Expected non-nullable param at 1. Use Option to describe nullable values.") {
-      testNullPut((null, Some("b")))
-    }
+      testNullPut((null, Some("b"))).interceptMessage[RuntimeException]("Expected non-nullable param at 1. Use Option to describe nullable values.")
   }
 
-  private def testNullPut(input: (String, Option[String])): Int = {
+  private def testNullPut(input: (String, Option[String])): IO[Int] = {
     import doobie.implicits.*
 
     (for {
@@ -142,7 +137,6 @@ class WriteSuite extends munit.FunSuite with WriteSuitePlatform {
       n <- Update[(String, Option[String])]("insert into t0 (a, b) values (?, ?)").run(input)
     } yield n)
       .transact(xa)
-      .unsafeRunSync()
   }
 
 }

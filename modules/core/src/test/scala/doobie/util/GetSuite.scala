@@ -50,7 +50,7 @@ class GetSuite extends munit.FunSuite with GetSuitePlatform {
 final case class Foo(s: String)
 final case class Bar(n: Int)
 
-class GetDBSuite extends munit.FunSuite {
+class GetDBSuite extends munit.CatsEffectSuite {
   import cats.effect.unsafe.implicits.global
   import doobie.syntax.all.*
 
@@ -68,38 +68,38 @@ class GetDBSuite extends munit.FunSuite {
   implicit def barMeta: Get[Bar] = Get[Int].temap(n => if (n == 0) Left("cannot be 0") else Right(Bar(n)))
 
   test("Get should not allow map to observe null on the read side (AnyRef)") {
-    val x = sql"select null".query[Option[Foo]].unique.transact(xa).unsafeRunSync()
-    assertEquals(x, None)
+    val x = sql"select null".query[Option[Foo]].unique.transact(xa)
+    x.assertEquals(None)
   }
 
   test("Get should read non-null value (AnyRef)") {
-    val x = sql"select 'abc'".query[Foo].unique.transact(xa).unsafeRunSync()
-    assertEquals(x, Foo("ABC"))
+    val x = sql"select 'abc'".query[Foo].unique.transact(xa)
+    x.assertEquals(Foo("ABC"))
   }
 
   test("Get should error when reading a NULL into an unlifted Scala type (AnyRef)") {
-    def x = sql"select null".query[Foo].unique.transact(xa).attempt.unsafeRunSync()
-    assertEquals(x, Left(doobie.util.invariant.NonNullableColumnRead(1, JdbcType.Char)))
+    def x = sql"select null".query[Foo].unique.transact(xa).attempt
+    x.assertEquals(Left(doobie.util.invariant.NonNullableColumnRead(1, JdbcType.Char)))
   }
 
   test("Get should not allow map to observe null on the read side (AnyVal)") {
-    val x = sql"select null".query[Option[Bar]].unique.transact(xa).unsafeRunSync()
-    assertEquals(x, None)
+    val x = sql"select null".query[Option[Bar]].unique.transact(xa)
+    x.assertEquals(None)
   }
 
   test("Get should read non-null value (AnyVal)") {
-    val x = sql"select 1".query[Bar].unique.transact(xa).unsafeRunSync()
-    assertEquals(x, Bar(1))
+    val x = sql"select 1".query[Bar].unique.transact(xa)
+    x.assertEquals(Bar(1))
   }
 
   test("Get should error when reading a NULL into an unlifted Scala type (AnyVal)") {
-    def x = sql"select null".query[Bar].unique.transact(xa).attempt.unsafeRunSync()
-    assertEquals(x, Left(doobie.util.invariant.NonNullableColumnRead(1, JdbcType.Integer)))
+    def x = sql"select null".query[Bar].unique.transact(xa).attempt
+    x.assertEquals(Left(doobie.util.invariant.NonNullableColumnRead(1, JdbcType.Integer)))
   }
 
   test("Get should error when reading an incorrect value") {
-    def x = sql"select 0".query[Bar].unique.transact(xa).attempt.unsafeRunSync()
-    assertEquals(x, Left(doobie.util.invariant.InvalidValue[Int, Bar](0, "cannot be 0")))
+    def x = sql"select 0".query[Bar].unique.transact(xa).attempt
+    x.assertEquals(Left(doobie.util.invariant.InvalidValue[Int, Bar](0, "cannot be 0")))
   }
 
 }

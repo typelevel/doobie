@@ -15,6 +15,7 @@ import doobie.util.arbitraries.SQLArbitraries.*
 import doobie.util.arbitraries.StringArbitraries.*
 import org.scalacheck.Prop.forAll
 import org.scalacheck.{Arbitrary, Gen}
+import munit.CatsEffectAssertions.MUnitCatsAssertionsForIOOps
 
 // Establish that we can read various types. It's not very comprehensive as a test, bit it's a start.
 class h2typesspec extends munit.ScalaCheckSuite {
@@ -49,15 +50,15 @@ class h2typesspec extends munit.ScalaCheckSuite {
 
   def testInOutWithCustomGen[A](col: String, gen: Gen[A])(implicit m: Get[A], p: Put[A]) = {
     test(s"Mapping for $col as ${m.typeStack} - write+read $col as ${m.typeStack}") {
-      forAll(gen) { (t: A) => assertEquals(inOut(col, t).transact(xa).attempt.unsafeRunSync(), Right(t)) }
+      forAll(gen) { (t: A) => inOut(col, t).transact(xa).attempt.assertEquals(Right(t)) }
     }
     test(s"Mapping for $col as ${m.typeStack} - write+read $col as Option[${m.typeStack}] (Some)") {
       forAll(gen) { (t: A) =>
-        assertEquals(inOutOpt[A](col, Some(t)).transact(xa).attempt.unsafeRunSync(), Right(Some(t)))
+        inOutOpt[A](col, Some(t)).transact(xa).attempt.assertEquals(Right(Some(t)))
       }
     }
     test(s"Mapping for $col as ${m.typeStack} - write+read $col as Option[${m.typeStack}] (None)") {
-      assertEquals(inOutOpt[A](col, None).transact(xa).attempt.unsafeRunSync(), Right(None))
+      inOutOpt[A](col, None).transact(xa).attempt.assertEquals(Right(None))
     }
   }
 
@@ -115,30 +116,30 @@ class h2typesspec extends munit.ScalaCheckSuite {
   skip("GEOMETRY")
 
   test("Mapping for Boolean should pass query analysis for unascribed 'true'") {
-    val a = sql"select true".query[Boolean].analysis.transact(xa).unsafeRunSync()
-    assertEquals(a.alignmentErrors, Nil)
+    val a = sql"select true".query[Boolean].analysis.transact(xa)
+    a.map(_.alignmentErrors).assertEquals(Nil)
   }
   test("Mapping for Boolean should pass query analysis for ascribed BIT") {
-    val a = sql"select true::BIT".query[Boolean].analysis.transact(xa).unsafeRunSync()
-    assertEquals(a.alignmentErrors, Nil)
+    val a = sql"select true::BIT".query[Boolean].analysis.transact(xa)
+    a.map(_.alignmentErrors).assertEquals(Nil)
   }
   test("Mapping for Boolean should pass query analysis for ascribed BOOLEAN") {
-    val a = sql"select true::BOOLEAN".query[Boolean].analysis.transact(xa).unsafeRunSync()
-    assertEquals(a.alignmentErrors, Nil)
+    val a = sql"select true::BOOLEAN".query[Boolean].analysis.transact(xa)
+    a.map(_.alignmentErrors).assertEquals(Nil)
   }
 
   test("Mapping for UUID should pass query analysis for unascribed UUID") {
-    val a = sql"select random_uuid()".query[UUID].analysis.transact(xa).unsafeRunSync()
-    assertEquals(a.alignmentErrors, Nil)
+    val a = sql"select random_uuid()".query[UUID].analysis.transact(xa)
+    a.map(_.alignmentErrors).assertEquals(Nil)
   }
   test("Mapping for UUID should pass query analysis for ascribed UUID") {
-    val a = sql"select random_uuid()::UUID".query[UUID].analysis.transact(xa).unsafeRunSync()
-    assertEquals(a.alignmentErrors, Nil)
+    val a = sql"select random_uuid()::UUID".query[UUID].analysis.transact(xa)
+    a.map(_.alignmentErrors).assertEquals(Nil)
   }
 
   test("Mapping for LocalDate should pass query analysis for DATE") {
     val a = analyzeDate[java.time.LocalDate]
-    assertEquals(a.alignmentErrors, Nil)
+    a.map(_.alignmentErrors).assertEquals(Nil)
   }
 
   test("Mapping for LocalDate should fail query analysis for TIMESTAMP") {
@@ -148,7 +149,7 @@ class h2typesspec extends munit.ScalaCheckSuite {
 
   test("Mapping for LocalTime should pass query analysis for TIME") {
     val a = analyzeTime[java.time.LocalTime]
-    assertEquals(a.alignmentErrors, Nil)
+    a.map(_.alignmentErrors).assertEquals(Nil)
   }
 
   test("Mapping for LocalTime should fail query analysis for TIME WITH TIME ZONE") {
@@ -158,7 +159,7 @@ class h2typesspec extends munit.ScalaCheckSuite {
 
   test("Mapping for OffsetTime should pass query analysis for TIME WITH TIME ZONE") {
     val a = analyzeTimeWithTimeZone[java.time.OffsetTime]
-    assertEquals(a.alignmentErrors, Nil)
+    a.map(_.alignmentErrors).assertEquals(Nil)
   }
 
   test("Mapping for OffsetTime should fail query analysis for TIME") {
@@ -168,7 +169,7 @@ class h2typesspec extends munit.ScalaCheckSuite {
 
   test("Mapping for LocalDateTime should pass query analysis for TIMESTAMP") {
     val a = analyzeTimestamp[java.time.LocalDateTime]
-    assertEquals(a.alignmentErrors, Nil)
+    a.map(_.alignmentErrors).assertEquals(Nil)
   }
 
   test("Mapping for LocalDateTime should fail query analysis for DATE") {
@@ -188,7 +189,7 @@ class h2typesspec extends munit.ScalaCheckSuite {
 
   test("Mapping for OffsetDateTime should pass query analysis for TIMESTAMP WITH TIME ZONE") {
     val a = analyzeTimestampWithTimeZone[java.time.OffsetDateTime]
-    assertEquals(a.alignmentErrors, Nil)
+    a.map(_.alignmentErrors).assertEquals(Nil)
   }
 
   test("Mapping for OffsetDateTime should fail query analysis for TIME WITH TIME ZONE") {
@@ -201,18 +202,19 @@ class h2typesspec extends munit.ScalaCheckSuite {
     assertAnalyzeColumnError(a)
   }
 
-  private def analyzeDate[R: Read] = analyze(sql"select '2000-01-02'::DATE".query[R])
-  private def analyzeTime[R: Read] = analyze(sql"select '01:02:03'::TIME".query[R])
-  private def analyzeTimeWithTimeZone[R: Read] = analyze(sql"select '01:02:03+04:05'::TIME WITH TIME ZONE".query[R])
-  private def analyzeTimestamp[R: Read] = analyze(sql"select '2000-01-02T01:02:03'::TIMESTAMP".query[R])
-  private def analyzeTimestampWithTimeZone[R: Read] =
+  private def analyzeDate[R: Read]: IO[Analysis] = analyze(sql"select '2000-01-02'::DATE".query[R])
+  private def analyzeTime[R: Read]: IO[Analysis] = analyze(sql"select '01:02:03'::TIME".query[R])
+  private def analyzeTimeWithTimeZone[R: Read]: IO[Analysis] =
+    analyze(sql"select '01:02:03+04:05'::TIME WITH TIME ZONE".query[R])
+  private def analyzeTimestamp[R: Read]: IO[Analysis] = analyze(sql"select '2000-01-02T01:02:03'::TIMESTAMP".query[R])
+  private def analyzeTimestampWithTimeZone[R: Read]: IO[Analysis] =
     analyze(sql"select '2000-01-02T01:02:03+04:05'::TIMESTAMP WITH TIME ZONE".query[R])
 
-  private def analyze[R](q: Query0[R]) = q.analysis.transact(xa).unsafeRunSync()
+  private def analyze[R](q: Query0[R]): IO[Analysis] = q.analysis.transact(xa)
 
-  private def assertAnalyzeColumnError(result: Analysis): Unit = {
-    val errorClasses = result.alignmentErrors.map(_.getClass)
-    assertEquals(errorClasses, List(classOf[ColumnTypeError]))
+  private def assertAnalyzeColumnError(result: IO[Analysis]): Unit = {
+    val errorClasses = result.map(_.alignmentErrors.map(_.getClass))
+    errorClasses.assertEquals(List(classOf[ColumnTypeError]))
   }
 
 }
