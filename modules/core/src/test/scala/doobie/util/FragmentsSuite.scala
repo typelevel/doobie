@@ -389,13 +389,13 @@ class FragmentsSuite extends munit.CatsEffectSuite {
   test("values (1)") {
     val c = Contact(Person("Bob", 42), Some("addr"))
     val f = sql"select" ++ Fragments.values(c)
-    f.query[Contact].unique.transact(xa)assertEquals(c)
+    f.query[Contact].unique.transact(xa) assertEquals (c)
   }
 
   test("values (2)") {
     val c = Contact(Person("Bob", 42), None)
     val f = sql"select" ++ Fragments.values(c)
-    f.query[Contact].unique.transact(xa).assertEquals( c)
+    f.query[Contact].unique.transact(xa).assertEquals(c)
   }
 
 }

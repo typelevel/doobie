@@ -11,7 +11,7 @@ import doobie.testutils.VoidExtensions
 import munit.CatsEffectSuite
 
 class ReadSuite extends CatsEffectSuite with ReadSuitePlatform {
-  
+
   val xa = Transactor.fromDriverManager[IO](
     driver = "org.h2.Driver",
     url = "jdbc:h2:mem:;DB_CLOSE_DELAY=-1",

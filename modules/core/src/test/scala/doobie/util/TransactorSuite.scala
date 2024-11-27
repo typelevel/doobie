@@ -24,7 +24,7 @@ class TransactorSuite extends munit.CatsEffectSuite {
   )
 
   test("Transactor should support cats.effect.IO") {
-    q.transact(xa[IO])assertEquals(42)
+    q.transact(xa[IO]) assertEquals (42)
   }
 
   class ConnectionTracker {

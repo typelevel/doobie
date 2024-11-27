@@ -15,7 +15,7 @@ import scala.Predef.*
 import scala.util.Random
 
 class ProcessSuite extends munit.ScalaCheckSuite {
-  
+
   test("repeatEvalChunks must yield the same result irrespective of chunk size") {
     PropF.forAllF { (n0: Int) =>
       val dataSize = 1000

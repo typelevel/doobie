@@ -10,7 +10,7 @@ import doobie.implicits.*
 import munit.CatsEffectSuite
 
 class `262` extends CatsEffectSuite {
-  
+
   // an interpreter that returns null when we ask for statement metadata
   object Interp extends KleisliInterpreter[IO](LogHandler.noop) {
     override lazy val PreparedStatementInterpreter: PreparedStatementInterpreter =

@@ -122,11 +122,13 @@ class WriteSuite extends munit.CatsEffectSuite with WriteSuitePlatform {
   }
 
   test("Write should yield correct error when Some(null) inserted") {
-    testNullPut((null, Some("b"))).interceptMessage[RuntimeException]("Expected non-nullable param at 1. Use Option to describe nullable values.")
+    testNullPut((null, Some("b"))).interceptMessage[RuntimeException](
+      "Expected non-nullable param at 1. Use Option to describe nullable values.")
   }
 
   test("Write should yield correct error when null inserted into non-nullable field") {
-      testNullPut((null, Some("b"))).interceptMessage[RuntimeException]("Expected non-nullable param at 1. Use Option to describe nullable values.")
+    testNullPut((null, Some("b"))).interceptMessage[RuntimeException](
+      "Expected non-nullable param at 1. Use Option to describe nullable values.")
   }
 
   private def testNullPut(input: (String, Option[String])): IO[Int] = {

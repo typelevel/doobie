@@ -24,26 +24,26 @@ class QuerySuite extends munit.CatsEffectSuite {
   val pairQuery = Query[String, (String, Int)]("select 'xxx', 123 where ? = 'foo'", None)
 
   test("Query (non-empty) to") {
-    q.to[List]("foo").transact(xa)assertEquals( List(123))
+    q.to[List]("foo").transact(xa) assertEquals (List(123))
   }
   test("Query (non-empty) toMap") {
-    pairQuery.toMap[String, Int]("foo").transact(xa)assertEquals(Map("xxx" -> 123))
+    pairQuery.toMap[String, Int]("foo").transact(xa) assertEquals (Map("xxx" -> 123))
   }
   test("Query (non-empty) unique") {
-    q.unique("foo").transact(xa).assertEquals( 123)
+    q.unique("foo").transact(xa).assertEquals(123)
   }
   test("Query (non-empty) option") {
-    q.option("foo").transact(xa)assertEquals( Some(123))
+    q.option("foo").transact(xa) assertEquals (Some(123))
   }
   test("Query (non-empty) map") {
-    q.map("x" * _).to[List]("foo").transact(xa)assertEquals(List("x" * 123))
+    q.map("x" * _).to[List]("foo").transact(xa) assertEquals (List("x" * 123))
   }
   test("Query (non-empty) contramap") {
     q.contramap[Int](n => "foo" * n).to[List](1).transact(xa).assertEquals(List(123))
   }
 
   test("Query (empty) to") {
-    q.to[List]("bar").transact(xa).assertEquals( Nil)
+    q.to[List]("bar").transact(xa).assertEquals(Nil)
   }
   test("Query (empty) toMap") {
     pairQuery.toMap[String, Int]("bar").transact(xa).assertEquals(Map.empty[String, Int])
@@ -55,55 +55,55 @@ class QuerySuite extends munit.CatsEffectSuite {
     q.option("bar").transact(xa).assertEquals(None)
   }
   test("Query (empty) map") {
-    q.map("x" * _).to[List]("bar").transact(xa).assertEquals( Nil)
+    q.map("x" * _).to[List]("bar").transact(xa).assertEquals(Nil)
   }
   test("Query (empty) contramap") {
     q.contramap[Int](n => "bar" * n).to[List](1).transact(xa).assertEquals(Nil)
   }
 
   test("Query0 from Query (non-empty) to") {
-    q.toQuery0("foo").to[List].transact(xa).assertEquals( List(123))
+    q.toQuery0("foo").to[List].transact(xa).assertEquals(List(123))
   }
   test("Query0 from Query (non-empty) toMap") {
     pairQuery.toQuery0("foo").toMap[String, Int].transact(xa).assertEquals(Map("xxx" -> 123))
   }
   test("Query0 from Query (non-empty) unique") {
-    q.toQuery0("foo").unique.transact(xa).assertEquals( 123)
+    q.toQuery0("foo").unique.transact(xa).assertEquals(123)
   }
   test("Query0 from Query (non-empty) option") {
-    q.toQuery0("foo").option.transact(xa).assertEquals( Some(123))
+    q.toQuery0("foo").option.transact(xa).assertEquals(Some(123))
   }
   test("Query0 from Query (non-empty) map") {
-    q.toQuery0("foo").map(_ * 2).to[List].transact(xa).assertEquals( List(246))
+    q.toQuery0("foo").map(_ * 2).to[List].transact(xa).assertEquals(List(246))
   }
 
   test("Query0 from Query (empty) to") {
-    q.toQuery0("bar").to[List].transact(xa).assertEquals( Nil)
+    q.toQuery0("bar").to[List].transact(xa).assertEquals(Nil)
   }
   test("Query0 from Query (empty) toMap") {
-    pairQuery.toQuery0("bar").toMap[String, Int].transact(xa).assertEquals( Map.empty[String, Int])
+    pairQuery.toQuery0("bar").toMap[String, Int].transact(xa).assertEquals(Map.empty[String, Int])
   }
   test("Query0 from Query (empty) unique") {
-    q.toQuery0("bar").unique.transact(xa).attempt.assertEquals( Left(invariant.UnexpectedEnd))
+    q.toQuery0("bar").unique.transact(xa).attempt.assertEquals(Left(invariant.UnexpectedEnd))
   }
   test("Query0 from Query (empty) option") {
-    q.toQuery0("bar").option.transact(xa).assertEquals( None)
+    q.toQuery0("bar").option.transact(xa).assertEquals(None)
   }
   test("Query0 from Query (empty) map") {
-    q.toQuery0("bar").map(_ * 2).to[List].transact(xa).assertEquals( Nil)
+    q.toQuery0("bar").map(_ * 2).to[List].transact(xa).assertEquals(Nil)
   }
 
   val q0n = Query0[Int]("select 123 where 'foo' = 'foo'", None)
   val pairQ0n = Query0[(String, Int)]("select 'xxx', 123 where 'foo' = 'foo'", None)
 
   test("Query0 via constructor (non-empty) to") {
-    q0n.to[List].transact(xa).assertEquals( List(123))
+    q0n.to[List].transact(xa).assertEquals(List(123))
   }
   test("Query0 via constructor (non-empty) toMap") {
     pairQ0n.toMap[String, Int].transact(xa).assertEquals(Map("xxx" -> 123))
   }
   test("Query0 via constructor (non-empty) unique") {
-    q0n.unique.transact(xa).assertEquals( 123)
+    q0n.unique.transact(xa).assertEquals(123)
   }
   test("Query0 via constructor (non-empty) option") {
     q0n.option.transact(xa).assertEquals(Some(123))
@@ -116,16 +116,16 @@ class QuerySuite extends munit.CatsEffectSuite {
   val pairQ0e = Query0[(String, Int)]("select 'xxx', 123 where 'bar' = 'foo'", None)
 
   test("Query0 via constructor (empty) to") {
-    q0e.to[List].transact(xa).assertEquals( Nil)
+    q0e.to[List].transact(xa).assertEquals(Nil)
   }
   test("Query0 via constructor (empty) toMap") {
-    pairQ0e.toMap[String, Int].transact(xa).assertEquals( Map.empty[String, Int])
+    pairQ0e.toMap[String, Int].transact(xa).assertEquals(Map.empty[String, Int])
   }
   test("Query0 via constructor (empty) unique") {
     q0e.unique.transact(xa).attempt.assertEquals(Left(invariant.UnexpectedEnd))
   }
   test("Query0 via constructor (empty) option") {
-    q0e.option.transact(xa).assertEquals( None)
+    q0e.option.transact(xa).assertEquals(None)
   }
   test("Query0 via constructor (empty) map") {
     q0e.map(_ * 2).to[List].transact(xa).assertEquals(Nil)
