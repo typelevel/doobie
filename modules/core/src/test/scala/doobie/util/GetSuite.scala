@@ -51,7 +51,6 @@ final case class Foo(s: String)
 final case class Bar(n: Int)
 
 class GetDBSuite extends munit.CatsEffectSuite {
-  import cats.effect.unsafe.implicits.global
   import doobie.syntax.all.*
 
   lazy val xa = Transactor.fromDriverManager[IO](

@@ -8,7 +8,6 @@ import doobie.Transactor
 import doobie.Update
 import doobie.util.TestTypes.*
 import cats.effect.IO
-import cats.effect.unsafe.implicits.global
 import doobie.testutils.VoidExtensions
 
 class WriteSuite extends munit.CatsEffectSuite with WriteSuitePlatform {

@@ -10,8 +10,6 @@ import scala.Predef.*
 
 class QuerySuite extends munit.CatsEffectSuite {
 
-  import cats.effect.unsafe.implicits.global
-
   val xa = Transactor.fromDriverManager[IO](
     driver = "org.h2.Driver",
     url = "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",

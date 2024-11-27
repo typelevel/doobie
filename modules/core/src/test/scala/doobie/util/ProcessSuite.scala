@@ -8,7 +8,6 @@ package util
 import cats.effect.IO
 import doobie.util.stream.repeatEvalChunks
 import munit.CatsEffectAssertions.MUnitCatsAssertionsForIOOps
-import org.scalacheck.Prop.forAll
 import org.scalacheck.effect.PropF
 
 import scala.Predef.*

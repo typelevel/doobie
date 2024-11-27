@@ -11,7 +11,6 @@ import doobie.implicits.*
 
 class FragmentsSuite extends munit.CatsEffectSuite {
   import Fragments.*
-  import cats.effect.unsafe.implicits.global
 
   val xa = Transactor.fromDriverManager[IO](
     driver = "org.h2.Driver",

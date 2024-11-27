@@ -33,7 +33,6 @@ class MetaSuite extends munit.FunSuite {
 
 class MetaDBSuite extends munit.FunSuite {
   import doobie.implicits.*
-  import cats.effect.unsafe.implicits.global
 
   lazy val xa = Transactor.fromDriverManager[IO](
     driver = "org.h2.Driver",

@@ -5,13 +5,10 @@
 package doobie.util
 
 import cats.effect.{Async, IO}
-import cats.implicits.catsSyntaxApplicativeId
 import doobie.*
 import doobie.implicits.*
 
 class TransactorSuite extends munit.CatsEffectSuite {
-
-  import cats.effect.unsafe.implicits.global
 
   val q = sql"select 42".query[Int].unique
 
