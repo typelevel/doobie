@@ -5,7 +5,6 @@
 package doobie.h2
 
 import java.util.UUID
-
 import cats.effect.IO
 import doobie.*
 import doobie.implicits.*
@@ -16,6 +15,7 @@ import doobie.util.arbitraries.StringArbitraries.*
 import org.scalacheck.Prop.forAll
 import org.scalacheck.{Arbitrary, Gen}
 import munit.CatsEffectAssertions.MUnitCatsAssertionsForIOOps
+import org.scalacheck.effect.PropF
 
 // Establish that we can read various types. It's not very comprehensive as a test, bit it's a start.
 class h2typesspec extends munit.ScalaCheckSuite {
@@ -50,10 +50,10 @@ class h2typesspec extends munit.ScalaCheckSuite {
 
   def testInOutWithCustomGen[A](col: String, gen: Gen[A])(implicit m: Get[A], p: Put[A]) = {
     test(s"Mapping for $col as ${m.typeStack} - write+read $col as ${m.typeStack}") {
-      forAll(gen) { (t: A) => inOut(col, t).transact(xa).attempt.assertEquals(Right(t)) }
+      PropF.forAllF(gen) { (t: A) => inOut(col, t).transact(xa).attempt.assertEquals(Right(t)) }
     }
     test(s"Mapping for $col as ${m.typeStack} - write+read $col as Option[${m.typeStack}] (Some)") {
-      forAll(gen) { (t: A) =>
+      PropF.forAllF(gen) { (t: A) =>
         inOutOpt[A](col, Some(t)).transact(xa).attempt.assertEquals(Right(Some(t)))
       }
     }

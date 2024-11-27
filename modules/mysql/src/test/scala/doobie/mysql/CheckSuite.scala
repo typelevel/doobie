@@ -5,13 +5,13 @@
 package doobie.mysql
 
 import java.time.{LocalDate, LocalDateTime, LocalTime, OffsetDateTime}
-
 import doobie.*
 import doobie.implicits.*
 import doobie.mysql.implicits.*
 import doobie.util.analysis.ColumnTypeError
+import munit.CatsEffectSuite
 
-class CheckSuite extends munit.FunSuite {
+class CheckSuite extends CatsEffectSuite {
   import cats.effect.unsafe.implicits.global
   import MySQLTestTransactor.xa
 
@@ -65,17 +65,13 @@ class CheckSuite extends munit.FunSuite {
   }
 
   private def successRead[A: Read](frag: Fragment): Unit = {
-    val analysisResult = frag.query[A].analysis.transact(xa).unsafeRunSync()
-    assertEquals(analysisResult.columnAlignmentErrors, Nil)
-
-    val result = frag.query[A].unique.transact(xa).attempt.unsafeRunSync()
-    assert(result.isRight)
+    frag.query[A].analysis.transact(xa).map(_.columnAlignmentErrors).assertEquals(Nil)
+    frag.query[A].unique.transact(xa).attempt.map(_.isRight).assert
   }
 
   private def failedRead[A: Read](frag: Fragment): Unit = {
-    val analysisResult = frag.query[A].analysis.transact(xa).unsafeRunSync()
-    val errorClasses = analysisResult.columnAlignmentErrors.map(_.getClass)
-    assertEquals(errorClasses, List(classOf[ColumnTypeError]))
+    frag.query[A].analysis.transact(xa).map(_.columnAlignmentErrors.map(_.getClass)).assertEquals(List(
+      classOf[ColumnTypeError]))
   }
 
 //  private def failedWrite[A: Put](value: A, dbType: String): Unit = {

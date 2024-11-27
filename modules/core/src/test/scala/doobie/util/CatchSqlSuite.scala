@@ -135,8 +135,7 @@ class CatchSqlSuite extends CatsEffectSuite {
       a <- Ref.of[IO, Int](1)
       _ <- IO.delay(3).onSqlException(IO.delay(a.set(2))).attempt
       b <- a.get
-    } yield
-    assertEquals(b, 1)
+    } yield assertEquals(b, 1)
   }
 
   test("onSqlException should perform its effect on SQLException") {
@@ -145,8 +144,7 @@ class CatchSqlSuite extends CatsEffectSuite {
       e = new SQLException("foo")
       _ <- IO.raiseError[Int](e).onSqlException(a.set(2)).attempt.assertEquals(Left(e))
       b <- a.get
-    } yield
-      assertEquals(b, 2)
+    } yield assertEquals(b, 2)
   }
 
   test("onSqlException should ignore its effect on non-SQLException") {
