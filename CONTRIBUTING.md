@@ -11,6 +11,12 @@ which you can spin up using docker-compose:
 docker-compose up -d --force-update
 ```
 
+or
+
+```
+docker compose up -d --force-recreate
+```
+
 After that, in SBT you can run `test` to run tests, and `makeSite` to build the doc site
 
 If you're editing code generation related code, you should reload the SBT project and then run the `freeGen2` SBT task
@@ -21,7 +27,7 @@ before compiling or running tests.
 ## Avoiding internal cyclic module dependencies
 
 For end users, doobie provides the aliases for high and low level APIs
-such as `doobie.hi.HC`, `doobie.free.FPS`. 
+such as `doobie.hi.HC`, `doobie.free.FPS`.
 Due to how the module depends on one another, internally in doobie we cannot use
 these aliases because it'll lead to cyclic module dependencies and cause runtime errors.
 
@@ -49,6 +55,3 @@ To update the doc site, check out the tag first.
 git checkout v1.2.3
 sbt docs/publishMicrosite
 ```
-
-
-
