@@ -11,6 +11,7 @@ import doobie.free.connection.ConnectionIO
 import doobie.free.preparedstatement.PreparedStatementIO
 import doobie.free.resultset.ResultSetIO
 import doobie.free.{connection as IFC, preparedstatement as IFPS}
+import doobie.hi.connection.PreparedExecutionWithResultSet
 import doobie.hi.{connection as IHC, preparedstatement as IHPS, resultset as IHRS}
 import doobie.util.MultiVersionTypeSupport.=:=
 import doobie.util.analysis.Analysis
@@ -19,8 +20,6 @@ import doobie.util.fragment.Fragment
 import doobie.util.log.{LoggingInfo, Parameters}
 import doobie.util.pos.Pos
 import fs2.Stream
-
-import java.sql.{PreparedStatement, ResultSet}
 
 /** Module defining queries parameterized by input and output types. */
 object query {
@@ -114,9 +113,8 @@ object query {
     def toMap[K, V](a: A)(implicit ev: B =:= (K, V), f: FactoryCompat[(K, V), Map[K, V]]): ConnectionIO[Map[K, V]] =
       toConnectionIO(a, IHRS.buildPair[Map, K, V](f, read.map(ev)))
 
-    /**
-     * Just like `toMap` but allowing to alter `PreparedExecution`.
-     */
+    /** Just like `toMap` but allowing to alter `PreparedExecution`.
+      */
     def toMapAlteringExecution[K, V](a: A, fn: PreparedExecutionUpdate[Map[K, V]])(implicit
         ev: B =:= (K, V),
         f: FactoryCompat[(K, V), Map[K, V]]
@@ -153,14 +151,22 @@ object query {
       toConnectionIO(a, IHRS.nel[B])
 
     private def toConnectionIO[C](a: A, rsio: ResultSetIO[C]): ConnectionIO[C] =
-      PreparedExecution(sql, a, rsio).execute(mkLoggingInfo(a))
+      IHC.executionWithResultSet(preparedExecution(sql, a, rsio), mkLoggingInfo(a))
 
     private def toConnectionIOAlteringExecution[C](
         a: A,
         rsio: ResultSetIO[C],
         fn: PreparedExecutionUpdate[C]
     ): ConnectionIO[C] =
-      fn(PreparedExecution(sql, a, rsio)).execute(mkLoggingInfo(a))
+      IHC.executionWithResultSet(fn(preparedExecution(sql, a, rsio)), mkLoggingInfo(a))
+
+    private def preparedExecution[C](sql: String, a: A, rsio: ResultSetIO[C]): PreparedExecutionWithResultSet[C] =
+      PreparedExecutionWithResultSet(
+        create = IFC.prepareStatement(sql),
+        prep = IHPS.set(a),
+        exec = IFPS.executeQuery,
+        process = rsio
+      )
 
     private def mkLoggingInfo(a: A): LoggingInfo =
       LoggingInfo(
@@ -258,32 +264,7 @@ object query {
 
   }
 
-  type PreparedExecutionUpdate[A] = PreparedExecution[A] => PreparedExecution[A]
-
-  final case class PreparedExecution[C](
-      create: ConnectionIO[PreparedStatement],
-      prep: PreparedStatementIO[Unit],
-      exec: PreparedStatementIO[ResultSet],
-      process: ResultSetIO[C]
-  ) { ctx =>
-    private[util] def execute(loggingInfo: LoggingInfo) = IHC.executeWithResultSet(
-      create = ctx.create,
-      prep = ctx.prep,
-      exec = ctx.exec,
-      process = ctx.process,
-      loggingInfo = loggingInfo
-    )
-  }
-
-  private object PreparedExecution {
-    def apply[C, A](sql: String, a: A, rsio: ResultSetIO[C])(implicit w: Write[A]): PreparedExecution[C] =
-      PreparedExecution(
-        create = IFC.prepareStatement(sql),
-        prep = IHPS.set(a),
-        exec = IFPS.executeQuery,
-        process = rsio
-      )
-  }
+  type PreparedExecutionUpdate[A] = PreparedExecutionWithResultSet[A] => PreparedExecutionWithResultSet[A]
 
   /** An abstract query closed over its input arguments and yielding values of type `B`, without a specified
     * disposition. Methods provided on `[[Query0]]` allow the query to be interpreted as a stream or program in
