@@ -8,14 +8,10 @@ Running the tests or building the documentation site requires connection to the 
 which you can spin up using docker-compose:
 
 ```
-docker-compose up -d --force-update
-```
-
-or
-
-```
 docker compose up -d --force-recreate
 ```
+
+Note: If you're using Apple Silicone Macbooks, you need to enable "Use Rosetta for x86_64/amd64 emulation on Apple Silicon" since there is no ARM64 image for postgis yet.
 
 After that, in SBT you can run `test` to run tests, and `makeSite` to build the doc site
 
