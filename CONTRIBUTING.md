@@ -11,12 +11,17 @@ which you can spin up using docker-compose:
 docker compose up -d --force-recreate
 ```
 
-Note: If you're using Apple Silicone Macbooks, you need to enable "Use Rosetta for x86_64/amd64 emulation on Apple Silicon" since there is no ARM64 image for postgis yet.
+Note: If you're using Apple Silicone Macbooks (M1, M2, etc), you need to enable "Use Rosetta for x86_64/amd64 emulation on Apple Silicon" since there is no ARM64 image for postgis yet.
 
-After that, in SBT you can run `test` to run tests, and `makeSite` to build the doc site
+With the containers started, SBT you can run `test` to run tests, and `makeSite` to build the doc site.
 
-If you're editing code generation related code, you should reload the SBT project and then run the `freeGen2` SBT task
-before compiling or running tests.
+## Fixing warnings
+
+To improve code quality and bug, we enable many stricter scala compiler flags via the
+[sbt-tpolecat](https://github.com/typelevel/sbt-tpolecat) plugin and in CI all warnings will be treated as errors.
+
+For a more pleasant development experience, we default to `tpolecatDevMode` so warnings do not cause compilation errors.
+You can use the sbt command `tpolecatCiMode` to enable strict mode and help catch any warnings you missed.
 
 ## Caveats when working on the code
 
