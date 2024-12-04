@@ -80,7 +80,7 @@ sealed abstract class Get[A](
 
 }
 
-object Get extends GetInstances {
+object Get extends GetInstances with GetPlatform {
 
   def apply[A](implicit ev: Get[A]): ev.type = ev
 
@@ -221,7 +221,8 @@ sealed abstract class MkGet[A](
     override val vendorTypeNames: List[String],
     override val get: Coyoneda[(ResultSet, Int) => *, A]
 ) extends Get[A](typeStack, jdbcSources, jdbcSourceSecondary, vendorTypeNames, get)
-object MkGet extends GetPlatform {
+
+object MkGet extends MkGetPlatform {
 
   def lift[A](g: Get[A]): MkGet[A] =
     new MkGet[A](

@@ -5,9 +5,11 @@
 package doobie
 package util
 
+import cats.Foldable
+import cats.Reducible
 import cats.data.NonEmptyList
 import cats.syntax.all.*
-import cats.{Foldable, Functor, Reducible}
+import doobie.Fragment.*
 import doobie.implicits.*
 
 /** Module of `Fragment` constructors. */
@@ -17,33 +19,89 @@ object fragments {
   def values[F[_]: Reducible, A](fs: F[A])(implicit w: util.Write[A]): Fragment =
     fr"VALUES" ++ comma(fs.toNonEmptyList.map(f => parentheses(values(f))))
 
+  /** Returns `UPDATE tableName SET columnUpdate0, columnUpdate1, ...`. */
+  def updateSetOpt[F[_]: Foldable](
+      tableName: Fragment,
+      columnUpdates: F[Fragment]
+  ): Option[Fragment] = {
+    NonEmptyList.fromFoldable(columnUpdates).map(cs => fr"UPDATE" ++ tableName ++ set(cs))
+  }
+
   /** Returns `(f IN (fs0, fs1, ...))`. */
-  def in[A: util.Put](f: Fragment, fs0: A, fs1: A, fs: A*): Fragment =
+  def in[A: util.Write](f: Fragment, fs0: A, fs1: A, fs: A*): Fragment =
     in(f, NonEmptyList(fs0, fs1 :: fs.toList))
 
-  /** Returns `(f IN (fs0, fs1, ...))`, or `false` for empty `fs`. */
-  def in[F[_]: Reducible: Functor, A: util.Put](f: Fragment, fs: F[A]): Fragment =
-    parentheses(f ++ fr" IN" ++ parentheses(comma(fs.map(a => fr"$a"))))
-
-  def inOpt[F[_]: Foldable, A: util.Put](f: Fragment, fs: F[A]): Option[Fragment] =
-    NonEmptyList.fromFoldable(fs).map(nel => in(f, nel))
-
-  /** Returns `(f IN ((fs0-A, fs0-B), (fs1-A, fs1-B), ...))`, or `false` for empty `fs`. */
-  def in[F[_]: Reducible: Functor, A: util.Put, B: util.Put](f: Fragment, fs: F[(A, B)]): Fragment =
-    parentheses(f ++ fr" IN" ++ parentheses(comma(fs.map { case (a, b) => fr0"($a,$b)" })))
-
   /** Returns `(f NOT IN (fs0, fs1, ...))`. */
-  def notIn[A: util.Put](f: Fragment, fs0: A, fs1: A, fs: A*): Fragment =
+  def notIn[A: util.Write](f: Fragment, fs0: A, fs1: A, fs: A*): Fragment =
     notIn(f, NonEmptyList(fs0, fs1 :: fs.toList))
 
-  /** Returns `(f NOT IN (fs0, fs1, ...))`, or `true` for empty `fs`. */
-  def notIn[F[_]: Reducible: Functor, A: util.Put](f: Fragment, fs: F[A]): Fragment = {
-    parentheses(f ++ fr" NOT IN" ++ parentheses(comma(fs.map(a => fr"$a"))))
+  @inline
+  private def mkRowFn[A](implicit A: util.Write[A]): A => Fragment =
+    if (A.length == 1) // no need for extra parentheses
+      a => values(a)
+    else
+      a => parentheses0(values(a))
+
+  @inline
+  private def constSubqueryExpr[F[_]: Reducible, A: util.Write](fs: F[A]): Fragment = {
+    val row = mkRowFn[A]
+    parentheses0(fs.reduceLeftTo(row) { _ ++ fr"," ++ row(_) })
   }
 
-  def notInOpt[F[_]: Foldable, A: util.Put](f: Fragment, fs: F[A]): Option[Fragment] = {
-    NonEmptyList.fromFoldable(fs).map(nel => notIn(f, nel))
+  @inline
+  private def constSubqueryExprOpt[F[_]: Foldable, A: util.Write](fs: F[A]): Option[Fragment] = {
+    val row = mkRowFn[A]
+    fs.reduceLeftToOption(row) { _ ++ fr"," ++ row(_) }
+      .map(parentheses0)
   }
+
+  /** Returns `f IN (fs0, fs1, ...)`.
+    *
+    * @param f
+    *   left-hand expression.
+    * @param fs
+    *   values of `Product` type to compare to the left-hand expression.
+    * @return
+    *   the result `IN` expression.
+    */
+  def in[F[_]: Reducible, A: util.Write](f: Fragment, fs: F[A]): Fragment =
+    parentheses(f ++ fr" IN" ++ constSubqueryExpr(fs))
+
+  /** Returns `f IN (fs0, fs1, ...)`.
+    *
+    * @param f
+    *   left-hand expression.
+    * @param fs
+    *   values of `Product` type to compare to the left-hand expression.
+    * @return
+    *   the result `IN` expression enclosed in `Some` or `None` if `fs` is empty.
+    */
+  def inOpt[F[_]: Foldable, A: util.Write](f: Fragment, fs: F[A]): Option[Fragment] =
+    constSubqueryExprOpt(fs).map(expr => parentheses(f ++ fr" IN" ++ expr))
+
+  /** Returns `f NOT IN (fs0, fs1, ...)`.
+    *
+    * @param f
+    *   left-hand expression.
+    * @param fs
+    *   values of `Product` type to compare to the left-hand expression.
+    * @return
+    *   the result `NOT IN` subquery expression.
+    */
+  def notIn[F[_]: Reducible, A: util.Write](f: Fragment, fs: F[A]): Fragment =
+    parentheses(f ++ fr" NOT IN" ++ constSubqueryExpr(fs))
+
+  /** Returns `f NOT IN (fs0, fs1, ...)`.
+    *
+    * @param f
+    *   left-hand expression.
+    * @param fs
+    *   values of `Product` type to compare to the left-hand expression.
+    * @return
+    *   the result `NOT IN` subquery expression enclosed in `Some` or `None` if `fs` is empty.
+    */
+  def notInOpt[F[_]: Foldable, A: util.Write](f: Fragment, fs: F[A]): Option[Fragment] =
+    constSubqueryExprOpt(fs).map(expr => parentheses(f ++ fr" NOT IN" ++ expr))
 
   /** Returns `(f1 AND f2 AND ... fn)`. */
   def and(f1: Fragment, f2: Fragment, fs: Fragment*): Fragment =

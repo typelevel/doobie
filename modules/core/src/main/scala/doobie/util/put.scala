@@ -56,7 +56,7 @@ sealed abstract class Put[A](
     ) {}
 
   def unsafeSetNonNullable(ps: PreparedStatement, n: Int, a: A): Unit =
-    if (a == null) sys.error("oops, null")
+    if (a == null) sys.error(s"Expected non-nullable param at $n. Use Option to describe nullable values.")
     else put.fi.apply(ps, n, (put.k(a)))
 
   def unsafeSetNullable(ps: PreparedStatement, n: Int, oa: Option[A]): Unit =
@@ -66,7 +66,7 @@ sealed abstract class Put[A](
     }
 
   def unsafeUpdateNonNullable(rs: ResultSet, n: Int, a: A): Unit =
-    if (a == null) sys.error("oops, null")
+    if (a == null) sys.error(s"Expected non-nullable param at $n. Use Option to describe nullable values.")
     else update.fi.apply(rs, n, (update.k(a)))
 
   def unsafeUpdateNullable(rs: ResultSet, n: Int, oa: Option[A]): Unit =
@@ -82,7 +82,7 @@ sealed abstract class Put[A](
 
 }
 
-object Put extends PutInstances {
+object Put extends PutInstances with PutPlatform {
 
   def apply[A](implicit ev: Put[A]): ev.type = ev
 
@@ -234,7 +234,8 @@ sealed abstract class MkPut[A](
     override val put: ContravariantCoyoneda[(PreparedStatement, Int, *) => Unit, A],
     override val update: ContravariantCoyoneda[(ResultSet, Int, *) => Unit, A]
 ) extends Put[A](typeStack, jdbcTargets, vendorTypeNames, put, update)
-object MkPut extends PutPlatform {
+
+object MkPut extends MkPutPlatform {
 
   def lift[A](g: Put[A]): MkPut[A] =
     new MkPut[A](

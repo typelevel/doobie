@@ -8,20 +8,27 @@ Running the tests or building the documentation site requires connection to the 
 which you can spin up using docker-compose:
 
 ```
-docker-compose up -d --force-update
+docker compose up -d --force-recreate
 ```
 
-After that, in SBT you can run `test` to run tests, and `makeSite` to build the doc site
+Note: If you're using Apple Silicone Macbooks (M1, M2, etc), you need to enable "Use Rosetta for x86_64/amd64 emulation on Apple Silicon" since there is no ARM64 image for postgis yet.
 
-If you're editing code generation related code, you should reload the SBT project and then run the `freeGen2` SBT task
-before compiling or running tests.
+With the containers started, SBT you can run `test` to run tests, and `makeSite` to build the doc site.
+
+## Fixing warnings
+
+To improve code quality and bug, we enable many stricter scala compiler flags via the
+[sbt-tpolecat](https://github.com/typelevel/sbt-tpolecat) plugin and in CI all warnings will be treated as errors.
+
+For a more pleasant development experience, we default to `tpolecatDevMode` so warnings do not cause compilation errors.
+You can use the sbt command `tpolecatCiMode` to enable strict mode and help catch any warnings you missed.
 
 ## Caveats when working on the code
 
 ## Avoiding internal cyclic module dependencies
 
 For end users, doobie provides the aliases for high and low level APIs
-such as `doobie.hi.HC`, `doobie.free.FPS`. 
+such as `doobie.hi.HC`, `doobie.free.FPS`.
 Due to how the module depends on one another, internally in doobie we cannot use
 these aliases because it'll lead to cyclic module dependencies and cause runtime errors.
 
@@ -49,6 +56,3 @@ To update the doc site, check out the tag first.
 git checkout v1.2.3
 sbt docs/publishMicrosite
 ```
-
-
-

@@ -27,4 +27,8 @@ trait WritePlatform {
     val _ = isTuple
     MkWrite.ogeneric[A, Repr]
   }
+
+  @deprecated("Use Write.derived instead to derive instances explicitly", "1.0.0-RC6")
+  def generic[T, Repr](implicit gen: Generic.Aux[T, Repr], A: Lazy[MkWrite[Repr]]): MkWrite[T] =
+    MkWrite.generic[T, Repr]
 }

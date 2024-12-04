@@ -28,7 +28,7 @@ object StreamingCopy extends IOApp.Simple {
       sourceXA: Transactor[F],
       sinkXA: Transactor[F]
   )(
-      implicit ev: MonadCancelThrow[F]
+      implicit ev: Concurrent[F]
   ): Stream[F, B] =
     fuseMapGeneric(source, identity[A], sink)(sourceXA, sinkXA)
 
@@ -44,7 +44,7 @@ object StreamingCopy extends IOApp.Simple {
       sourceXA: Transactor[F],
       sinkXA: Transactor[F]
   )(
-      implicit ev: MonadCancelThrow[F]
+      implicit ev: Concurrent[F]
   ): Stream[F, C] = {
 
     // Interpret a ConnectionIO into a Kleisli arrow for F via the sink interpreter.

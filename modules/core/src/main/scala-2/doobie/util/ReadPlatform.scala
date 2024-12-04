@@ -29,4 +29,7 @@ trait ReadPlatform {
     MkRead.ogeneric[A, Repr]
   }
 
+  @deprecated("Use Read.derived instead to derive instances explicitly", "1.0.0-RC6")
+  def generic[T, Repr](implicit gen: Generic.Aux[T, Repr], G: Lazy[MkRead[Repr]]): MkRead[T] =
+    MkRead.generic[T, Repr]
 }
