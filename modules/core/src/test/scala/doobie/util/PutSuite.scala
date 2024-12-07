@@ -8,7 +8,7 @@ import cats.effect.IO
 import doobie.testutils.VoidExtensions
 import doobie.util.transactor.Transactor
 
-class PutSuite extends munit.FunSuite with PutSuitePlatform {
+class PutSuite extends munit.FunSuite {
   case class X(x: Int)
 
   case class Q(x: String)
@@ -34,20 +34,4 @@ class PutSuite extends munit.FunSuite with PutSuitePlatform {
     Put[String].void
   }
 
-  test("Put should be auto derived for unary products") {
-    import doobie.generic.auto.*
-
-    Put[X].void
-    Put[Q].void
-  }
-
-  test("Put is not auto derived without an import") {
-    compileErrors("Put[X]").void
-    compileErrors("Put[Q]").void
-  }
-
-  test("Put can be manually derived for unary products") {
-    Put.derived[X].void
-    Put.derived[Q].void
-  }
 }
