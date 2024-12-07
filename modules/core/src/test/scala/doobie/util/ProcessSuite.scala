@@ -7,16 +7,16 @@ package util
 
 import cats.effect.IO
 import doobie.util.stream.repeatEvalChunks
-import org.scalacheck.Prop.forAll
+import munit.CatsEffectAssertions.MUnitCatsAssertionsForIOOps
+import org.scalacheck.effect.PropF
+
 import scala.Predef.*
 import scala.util.Random
 
 class ProcessSuite extends munit.ScalaCheckSuite {
 
-  import cats.effect.unsafe.implicits.global
-
   test("repeatEvalChunks must yield the same result irrespective of chunk size") {
-    forAll { (n0: Int) =>
+    PropF.forAllF { (n0: Int) =>
       val dataSize = 1000
       val chunkSize = (n0 % dataSize).abs max 1
       val data = Seq.fill(dataSize)(Random.nextInt())
@@ -28,8 +28,7 @@ class ProcessSuite extends munit.ScalaCheckSuite {
           h
         }
       }
-      val result = repeatEvalChunks(fa).compile.toVector.unsafeRunSync()
-      assertEquals(result, data.toVector)
+      repeatEvalChunks(fa).compile.toVector.assertEquals(data.toVector)
     }
   }
 

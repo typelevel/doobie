@@ -7,6 +7,7 @@ package doobie.util.meta
 import cats.effect.IO
 import doobie.util.transactor.Transactor
 import doobie.util.{Get, Put}
+import munit.CatsEffectAssertions.MUnitCatsAssertionsForIOOps
 
 import scala.annotation.nowarn
 
@@ -32,7 +33,6 @@ class MetaSuite extends munit.FunSuite {
 
 class MetaDBSuite extends munit.FunSuite {
   import doobie.implicits.*
-  import cats.effect.unsafe.implicits.global
 
   lazy val xa = Transactor.fromDriverManager[IO](
     driver = "org.h2.Driver",
@@ -45,13 +45,13 @@ class MetaDBSuite extends munit.FunSuite {
   implicit def FooMeta: Meta[Foo] = Meta[String].tiemap(s => Either.cond(!s.isEmpty, Foo(s), "may not be empty"))(_.str)
 
   test("Meta.tiemap should accept valid values") {
-    val x = sql"select 'bar'".query[Foo].unique.transact(xa).unsafeRunSync()
-    assertEquals(x, Foo("bar"))
+    val x = sql"select 'bar'".query[Foo].unique.transact(xa)
+    x.assertEquals(Foo("bar"))
   }
 
   test("Meta.tiemap should reject invalid values") {
-    val x = sql"select ''".query[Foo].unique.transact(xa).attempt.unsafeRunSync()
-    assertEquals(x, Left(doobie.util.invariant.InvalidValue[String, Foo]("", "may not be empty")))
+    val x = sql"select ''".query[Foo].unique.transact(xa).attempt
+    x.assertEquals(Left(doobie.util.invariant.InvalidValue[String, Foo]("", "may not be empty")))
   }
 
 }

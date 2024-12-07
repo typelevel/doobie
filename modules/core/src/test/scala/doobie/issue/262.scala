@@ -5,11 +5,11 @@
 package doobie.issue
 
 import cats.effect.IO
-import doobie.*, doobie.implicits.*
+import doobie.*
+import doobie.implicits.*
+import munit.CatsEffectSuite
 
-class `262` extends munit.FunSuite {
-
-  import cats.effect.unsafe.implicits.global
+class `262` extends CatsEffectSuite {
 
   // an interpreter that returns null when we ask for statement metadata
   object Interp extends KleisliInterpreter[IO](LogHandler.noop) {
@@ -34,7 +34,7 @@ class `262` extends munit.FunSuite {
 
   test("getColumnJdbcMeta should handle null metadata") {
     val prog = HC.prepareStatementPrimitive("select 1")(HPS.getColumnJdbcMeta)
-    assertEquals(prog.transact(xa).unsafeRunSync(), Nil)
+    prog.transact(xa).assertEquals(Nil)
   }
 
 }
