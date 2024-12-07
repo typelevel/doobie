@@ -10,6 +10,7 @@ object TestTypes {
   case class TrivialCaseClass(i: Int)
   case class SimpleCaseClass(i: Option[Int], s: String, os: Option[String])
   case class ComplexCaseClass(sc: SimpleCaseClass, osc: Option[SimpleCaseClass], i: Option[Int], s: String)
+  case class WrappedSimpleCaseClass(sc: SimpleCaseClass)
 
   case class HasCustomReadWrite0(c: CustomReadWrite, s: String)
   case class HasCustomReadWrite1(s: String, c: CustomReadWrite)

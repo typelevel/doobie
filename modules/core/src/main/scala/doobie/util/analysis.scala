@@ -135,11 +135,12 @@ object analysis {
       columnAlignment: List[(Get[?], NullabilityKnown) `Ior` ColumnMeta]
   ) {
 
-    def parameterMisalignments: List[ParameterMisalignment] =
+    def parameterMisalignments: List[ParameterMisalignment] = {
       parameterAlignment.zipWithIndex.collect {
         case (Ior.Left(_), n)  => ParameterMisalignment(n + 1, None)
         case (Ior.Right(p), n) => ParameterMisalignment(n + 1, Some(p))
       }
+    }
 
     private def hasParameterTypeErrors[A](put: Put[A], paramMeta: ParameterMeta): Boolean = {
       !put.jdbcTargets.contains_(paramMeta.jdbcType) ||
