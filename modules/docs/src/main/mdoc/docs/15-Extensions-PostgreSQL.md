@@ -116,7 +116,7 @@ object MyEnum extends Enumeration {
   val foo, bar = Value
 }
 
-implicit val MyEnumMeta = pgEnum(MyEnum, "myenum")
+implicit val MyEnumMeta: Meta[MyEnum.Value] = pgEnum(MyEnum, "myenum")
 ```
 
 ```scala mdoc
@@ -214,14 +214,14 @@ In addition to the general types above, **doobie** provides mappings for the fol
 
 [Geographic types](http://postgis.net/workshops/postgis-intro/geography.html) mappings are defined in a different object (`pgisgeographyimplicits`), to allow geometric types using geodetic coordinates.
 
-```
+```scala
 import doobie.postgres.pgisgeographyimplicits._
 
 // or define the implicit conversion manually
 
-implicit val geographyPoint: Meta[Point] =
-  doobie.postgres.pgisgeographyimplicits.PointType
+implicit val geographyPoint: Meta[Point] = doobie.postgres.pgisgeographyimplicits.PointType
 ```
+
 - Point
 - Polygon
 - MultiPoint
@@ -242,17 +242,17 @@ The following range types are supported, and map to **doobie** generic `Range[T]
 - the `tstzrange` schema type maps to `Range[java.time.OffsetDateTime]`
 
 Non empty range maps to:
-```scala mdoc:silent
+```scala
 case class NonEmptyRange[T](lowerBound: Option[T], upperBound: Option[T], edge: Edge) extends Range[T]
 ```
 
 Empty range maps to:
-```scala mdoc:silent
+```scala
 case object EmptyRange extends Range[Nothing]
 ```
 To control the inclusive and exclusive bounds according to the [PostgreSQL](https://www.postgresql.org/docs/current/rangetypes.html#RANGETYPES-INCLUSIVITY) specification you need to use a special `Edge` enumeration when creating a `Range`:
 
-```scala mdoc:silent
+```scala
 object Edge {
   case object ExclExcl extends Edge
   case object ExclIncl extends Edge
@@ -271,13 +271,14 @@ import doobie.postgres.rangeimplicits._
 
 To create for example custom implementation of `Range[Byte]` you can use the public method which declared in the following package `doobie.postgres.rangeimplicits`:
 
-```scala mdoc:silent
+```scala
 def rangeMeta[T](sqlRangeType: String)(encode: T => String, decode: String => T): Meta[Range[T]]
 ```
 
 For a `Range[Byte]`, the meta and bounds encoder and decoder would appear as follows:
 ```scala mdoc:silent
 import doobie.postgres.rangeimplicits._
+import doobie.postgres.types.Range
 
 implicit val byteRangeMeta: Meta[Range[Byte]] = rangeMeta[Byte]("int4range")(_.toString, _.toByte)
 

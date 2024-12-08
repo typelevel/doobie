@@ -81,8 +81,8 @@ jobs:
       - name: Check there are no uncommitted changes in git (to catch generated files that weren't committed)
         run: sbt '++ ${{ matrix.scala }}' checkGitNoUncommittedChanges
 
-      - name: Check Doc Site (2.13.15 only)
-        if: matrix.scala == '2.13.15'
+      - name: Check Doc Site (2.13 only)
+        if: matrix.scala == '2.13'
         run: sbt '++ ${{ matrix.scala }}' docs/makeSite
 
       - name: Make target directories

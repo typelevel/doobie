@@ -68,8 +68,8 @@ ThisBuild / githubWorkflowBuildPostamble ++= Seq(
   ),
   WorkflowStep.Sbt(
     commands = List("docs/makeSite"),
-    name = Some(s"Check Doc Site ($scala213Version only)"),
-    cond = Some(s"matrix.scala == '$scala213Version'")
+    name = Some(s"Check Doc Site (2.13 only)"),
+    cond = Some(s"matrix.scala == '2.13'")
   )
 )
 
@@ -539,6 +539,7 @@ lazy val docs = project
       "scalaVersion" -> scalaVersion.value
     ),
     mdocIn := baseDirectory.value / "src" / "main" / "mdoc",
+    mdocExtraArguments ++= Seq("--no-link-hygiene"),
     Compile / paradox / sourceDirectory := mdocOut.value,
     makeSite := makeSite.dependsOn(mdoc.toTask("")).value
   )
