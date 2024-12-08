@@ -87,6 +87,17 @@ object connection {
       loggingInfo
     )
 
+  def executionWithResultSet[A](
+      prepared: PreparedExecutionWithResultSet[A],
+      loggingInfo: LoggingInfo
+  ): ConnectionIO[A] = executeWithResultSet(
+    prepared.create,
+    prepared.prep,
+    prepared.exec,
+    prepared.process,
+    loggingInfo
+  )
+
   /** Create and execute a PreparedStatement which immediately returns the result without reading from a ResultSet. The
     * most common case is executing an INSERT/UPDATE and it returning the rows inserted/updated. If the query you're
     * executing returns a ResultSet, use `executeWithResultSet` instead for better logging and resource cleanup.
@@ -113,6 +124,17 @@ object connection {
       create,
       prep,
       Left(exec),
+      loggingInfo
+    )
+
+  def executeWithoutResultSet[A](
+      prepared: PreparedExecutionWithoutResultSet[A],
+      loggingInfo: LoggingInfo
+  ): ConnectionIO[A] =
+    executeWithoutResultSet(
+      prepared.create,
+      prepared.prep,
+      prepared.exec,
       loggingInfo
     )
 
@@ -225,6 +247,18 @@ object connection {
       ele <- repeatEvalChunks(IFC.embed(resultSet, resultset.getNextChunk[A](chunkSize)))
     } yield ele
   }
+
+  def stream[A: Read](
+      prepared: PreparedExecutionStream,
+      loggingInfo: LoggingInfo
+  ): Stream[ConnectionIO, A] =
+    stream[A](
+      prepared.create,
+      prepared.prep,
+      prepared.exec,
+      prepared.chunkSize,
+      loggingInfo
+    )
 
   // Old implementation, used by deprecated methods
   private def liftStream[A: Read](
@@ -543,4 +577,24 @@ object connection {
   // val nativeTypeMap: ConnectionIO[Map[String, JdbcType]] = {
   //   getMetaData(IFDMD.getTypeInfo.flatMap(IFDMD.embed(_, HRS.list[(String, JdbcType)].map(_.toMap))))
   // }
+
+  final case class PreparedExecutionWithResultSet[A](
+      create: ConnectionIO[PreparedStatement],
+      prep: PreparedStatementIO[Unit],
+      exec: PreparedStatementIO[ResultSet],
+      process: ResultSetIO[A]
+  )
+
+  final case class PreparedExecutionWithoutResultSet[A](
+      create: ConnectionIO[PreparedStatement],
+      prep: PreparedStatementIO[Unit],
+      exec: PreparedStatementIO[A]
+  )
+
+  final case class PreparedExecutionStream(
+      create: ConnectionIO[PreparedStatement],
+      prep: PreparedStatementIO[Unit],
+      exec: PreparedStatementIO[ResultSet],
+      chunkSize: Int
+  )
 }
