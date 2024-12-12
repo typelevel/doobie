@@ -29,12 +29,6 @@ package object doobie
       with LegacyMeta
       with syntax.AllSyntax {
 
-    // re-export these instances so `Meta` takes priority, must be in the object
-    implicit def metaProjectionGet[A](implicit m: Meta[A]): Get[A] = Get.metaProjection
-    implicit def metaProjectionPut[A](implicit m: Meta[A]): Put[A] = Put.metaProjectionWrite
-    implicit def fromGetRead[A](implicit G: Get[A]): Read[A] = Read.fromGet
-    implicit def fromPutWrite[A](implicit P: Put[A]): Write[A] = Write.fromPut
-
     /** Only use this import if:
       *   1. You're NOT using one of the database doobie has direct java.time isntances for (PostgreSQL / MySQL). (They
       *      have more accurate column type checks) 2. Your driver natively supports java.time.* types

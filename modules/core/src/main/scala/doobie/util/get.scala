@@ -84,12 +84,6 @@ object Get extends GetInstances with GetPlatform {
 
   def apply[A](implicit ev: Get[A]): ev.type = ev
 
-  def derived[A](implicit ev: MkGet[A]): Get[A] = ev
-
-  trait Auto {
-    implicit def deriveGet[A](implicit ev: MkGet[A]): Get[A] = ev
-  }
-
   /** Get instance for a basic JDBC type. */
   object Basic {
 
@@ -212,24 +206,4 @@ trait GetInstances {
   implicit def ArrayTypeAsVectorGet[A](implicit ev: Get[Array[A]]): Get[Vector[A]] =
     ev.tmap(_.toVector)
 
-}
-
-sealed abstract class MkGet[A](
-    override val typeStack: NonEmptyList[Option[String]],
-    override val jdbcSources: NonEmptyList[JdbcType],
-    override val jdbcSourceSecondary: List[JdbcType],
-    override val vendorTypeNames: List[String],
-    override val get: Coyoneda[(ResultSet, Int) => *, A]
-) extends Get[A](typeStack, jdbcSources, jdbcSourceSecondary, vendorTypeNames, get)
-
-object MkGet extends MkGetPlatform {
-
-  def lift[A](g: Get[A]): MkGet[A] =
-    new MkGet[A](
-      typeStack = g.typeStack,
-      jdbcSources = g.jdbcSources,
-      jdbcSourceSecondary = g.jdbcSourceSecondary,
-      vendorTypeNames = g.vendorTypeNames,
-      get = g.get
-    ) {}
 }

@@ -54,8 +54,6 @@ object CheckerTests extends IOSuite with IOChecker {
   }
 
   test("Read should select correct columns for checking when combined with `ap`") { implicit transactor =>
-    import doobie.generic.auto.*
-
     val readInt = Read[(Int, Int)]
     val readIntToInt: Read[Tuple2[Int, Int] => String] =
       Read[(String, String)].map(i => k => s"$i,$k")
