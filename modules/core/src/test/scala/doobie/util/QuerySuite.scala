@@ -5,8 +5,10 @@
 package doobie.util
 
 import cats.effect.IO
-import doobie.*, doobie.implicits.*
-import scala.Predef.*
+import cats.syntax.all.*
+import doobie.*
+import doobie.hi.resultset as IHRS
+import doobie.implicits.*
 
 class QuerySuite extends munit.FunSuite {
 
@@ -59,6 +61,20 @@ class QuerySuite extends munit.FunSuite {
   }
   test("Query (empty) contramap") {
     assertEquals(q.contramap[Int](n => "bar" * n).to[List](1).transact(xa).unsafeRunSync(), Nil)
+  }
+
+  test("Query toMapAlteringExecution (result set operations)") {
+    var didRun = false
+
+    pairQuery.toMapAlteringExecution[String, Int](
+      "x",
+      { preparedExec =>
+        val process = IHRS.delay { didRun = true } *> preparedExec.process
+        preparedExec.copy(process = process)
+      })
+      .transact(xa).unsafeRunSync()
+
+    assert(didRun)
   }
 
   test("Query0 from Query (non-empty) to") {
