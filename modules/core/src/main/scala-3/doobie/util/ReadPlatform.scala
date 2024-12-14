@@ -4,23 +4,16 @@
 
 package doobie.util
 
-import scala.deriving.Mirror
+trait ReadPlatform extends LowestPriorityRead:
 
-trait ReadPlatform:
-  // Generic Read for products.
-  given derivedTuple[P <: Tuple, A](
-      using
-      m: Mirror.ProductOf[P],
-      i: A =:= m.MirroredElemTypes,
-      w: MkRead[A]
-  ): MkRead[P] =
-    MkRead.derived[P, A]
+  given tupleBase[H](
+      using H: Read[H]
+  ): Read[H *: EmptyTuple] =
+    H.map(h => h *: EmptyTuple)
 
-  // Generic Read for option of products.
-  given derivedOptionTuple[P <: Tuple, A](
+  given tuple[H, T <: Tuple](
       using
-      m: Mirror.ProductOf[P],
-      i: A =:= m.MirroredElemTypes,
-      w: MkRead[Option[A]]
-  ): MkRead[Option[P]] =
-    MkRead.derivedOption[P, A]
+      H: Read[H],
+      T: Read[T]
+  ): Read[H *: T] =
+    Read.Composite(H, T, (h, t) => h *: t)

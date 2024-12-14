@@ -4,31 +4,53 @@
 
 package doobie.util
 
-import shapeless.{Generic, HList, IsTuple, Lazy}
+import shapeless.*
+import shapeless.labelled.FieldType
 
-trait WritePlatform {
+trait WritePlatform extends LowerPriority1WritePlatform {
 
-  implicit def genericTuple[A, Repr](
+  implicit def genericTuple[A, Repr <: HList](
       implicit
       gen: Generic.Aux[A, Repr],
-      A: Lazy[MkWrite[Repr]],
+      G: Lazy[Write[Repr]],
       isTuple: IsTuple[A]
-  ): MkWrite[A] = {
+  ): Write[A] = {
     val _ = isTuple
-    MkWrite.generic[A, Repr]
+    implicit val hlistWrite: Lazy[Write[Repr] OrElse Derived[MkWrite[Repr]]] = G.map(OrElse.primary(_))
+    MkWrite.genericWrite[A, Repr].instance
   }
 
-  implicit def ogenericTuple[A, Repr <: HList](
+  @deprecated("Write.generic has been renamed to Write.derived to align with Scala 3 derivation", "1.0.0-RC6")
+  def generic[T, Repr <: HList](implicit
+      gen: Generic.Aux[T, Repr],
+      A: Write[Repr] OrElse Derived[MkWrite[Repr]]
+  ): Write[T] = {
+    implicit val hlistWrite: Lazy[Write[Repr] OrElse Derived[MkWrite[Repr]]] = A
+    MkWrite.genericWrite[T, Repr].instance
+  }
+
+  implicit def recordBase[K <: Symbol, H](
+      implicit H: Write[H]
+  ): Write[FieldType[K, H] :: HNil] = MkWrite.recordBase[K, H].instance
+
+  implicit def productBase[H](
+      implicit H: Write[H]
+  ): Write[H :: HNil] = MkWrite.productBase[H].instance
+
+}
+
+trait LowerPriority1WritePlatform extends LowestPriorityWrite {
+
+  implicit def product[H, T <: HList](
       implicit
-      G: Generic.Aux[A, Repr],
-      A: Lazy[MkWrite[Option[Repr]]],
-      isTuple: IsTuple[A]
-  ): MkWrite[Option[A]] = {
-    val _ = isTuple
-    MkWrite.ogeneric[A, Repr]
-  }
+      H: Write[H],
+      T: Write[T]
+  ): Write[H :: T] = MkWrite.product[H, T].instance
 
-  @deprecated("Use Write.derived instead to derive instances explicitly", "1.0.0-RC6")
-  def generic[T, Repr](implicit gen: Generic.Aux[T, Repr], A: Lazy[MkWrite[Repr]]): MkWrite[T] =
-    MkWrite.generic[T, Repr]
+  implicit def record[K <: Symbol, H, T <: HList](
+      implicit
+      H: Write[H],
+      T: Write[T]
+  ): Write[FieldType[K, H] :: T] = MkWrite.record[K, H, T].instance
+
 }
