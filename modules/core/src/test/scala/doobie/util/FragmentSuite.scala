@@ -9,10 +9,9 @@ import cats.effect.IO
 import doobie.*
 import doobie.implicits.*
 import doobie.testutils.VoidExtensions
+import munit.CatsEffectSuite
 
-class FragmentSuite extends munit.FunSuite {
-
-  import cats.effect.unsafe.implicits.global
+class FragmentSuite extends CatsEffectSuite {
 
   val xa = Transactor.fromDriverManager[IO](
     driver = "org.h2.Driver",
@@ -51,22 +50,22 @@ class FragmentSuite extends munit.FunSuite {
 
   test("Fragment must maintain parameter indexing (in-order)") {
     val s = fr"select" ++ List(fra, frb, frc).intercalate(fr",")
-    assertEquals(s.query[(Int, String, Boolean)].unique.transact(xa).unsafeRunSync(), ((a, b, c)))
+    s.query[(Int, String, Boolean)].unique.transact(xa).assertEquals((a, b, c))
   }
 
   test("Fragment must maintain parameter indexing (out-of-order)") {
     val s = fr"select" ++ List(frb, frc, fra).intercalate(fr",")
-    assertEquals(s.query[(String, Boolean, Int)].unique.transact(xa).unsafeRunSync(), ((b, c, a)))
+    s.query[(String, Boolean, Int)].unique.transact(xa).assertEquals((b, c, a))
   }
 
   test("Fragment must maintain associativity (left)") {
     val s = fr"select" ++ List(fra, fr",", frb, fr",", frc).foldLeft(Fragment.empty)(_ ++ _)
-    assertEquals(s.query[(Int, String, Boolean)].unique.transact(xa).unsafeRunSync(), ((a, b, c)))
+    s.query[(Int, String, Boolean)].unique.transact(xa).assertEquals((a, b, c))
   }
 
   test("Fragment must maintain associativity (right)") {
     val s = fr"select" ++ List(fra, fr",", frb, fr",", frc).foldRight(Fragment.empty)(_ ++ _)
-    assertEquals(s.query[(Int, String, Boolean)].unique.transact(xa).unsafeRunSync(), ((a, b, c)))
+    s.query[(Int, String, Boolean)].unique.transact(xa).assertEquals((a, b, c))
   }
 
   test("Fragment must Add a trailing space when constructed with .const") {
@@ -112,7 +111,7 @@ class FragmentSuite extends munit.FunSuite {
       fr0"SELECT 1 WHERE 1 IN (" ++
         List.fill(STACK_UNSAFE_SIZE)(1).foldLeft(Fragment.empty)((f, n) => f ++ fr"$n,") ++
         fr0"1)"
-    assertEquals(frag.query[Int].unique.transact(xa).unsafeRunSync(), 1)
+    frag.query[Int].unique.transact(xa).assertEquals(1)
   }
 
   test("Fragment must be stacksafe (right-associative)") {
@@ -120,7 +119,7 @@ class FragmentSuite extends munit.FunSuite {
       fr0"SELECT 1 WHERE 1 IN (" ++
         List.fill(STACK_UNSAFE_SIZE)(1).foldRight(Fragment.empty)((n, f) => f ++ fr"$n,") ++
         fr0"1)"
-    assertEquals(frag.query[Int].unique.transact(xa).unsafeRunSync(), 1)
+    frag.query[Int].unique.transact(xa).assertEquals(1)
   }
 
 }
