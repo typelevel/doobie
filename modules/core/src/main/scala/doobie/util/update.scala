@@ -12,6 +12,7 @@ import doobie.implicits.*
 import doobie.util.analysis.Analysis
 import doobie.util.pos.Pos
 import doobie.free.{connection as IFC, preparedstatement as IFPS}
+import doobie.hi.connection.{PreparedExecution, PreparedExecutionWithoutProcessStep}
 import doobie.hi.{connection as IHC, preparedstatement as IHPS, resultset as IHRS}
 import doobie.util.fragment.Fragment
 import doobie.util.log.{LoggingInfo, Parameters}
@@ -81,18 +82,22 @@ object update {
     /** Construct a program to execute the update and yield a count of affected rows, given the writable argument `a`.
       * @group Execution
       */
-    def run(a: A): ConnectionIO[Int] = {
-      IHC.executeWithoutResultSet(
-        IFC.prepareStatement(sql),
-        IHPS.set(a),
-        IFPS.executeUpdate,
-        LoggingInfo(
-          sql,
-          Parameters.NonBatch(write.toList(a)),
-          label
-        )
+    def run(a: A): ConnectionIO[Int] =
+      IHC.executeWithoutResultSet(prepareExecutionForRun(a), loggingForRun(a))
+
+    private def prepareExecutionForRun(a: A): PreparedExecutionWithoutProcessStep[Int] =
+      PreparedExecutionWithoutProcessStep(
+        create = IFC.prepareStatement(sql),
+        prep = IHPS.set(a),
+        exec = IFPS.executeUpdate
       )
-    }
+
+    private def loggingForRun(a: A): LoggingInfo =
+      LoggingInfo(
+        sql,
+        Parameters.NonBatch(write.toList(a)),
+        label
+      )
 
     /** Add many sets of parameters and execute as a batch update, returning total rows updated. Note that when an error
       * occurred while executing the batch, your JDBC driver may decide to continue executing the rest of the batch
@@ -103,15 +108,20 @@ object update {
       * @group Execution
       */
     def updateMany[F[_]: Foldable](fa: F[A]): ConnectionIO[Int] =
-      IHC.executeWithoutResultSet(
+      IHC.executeWithoutResultSet(prepareExecutionForUpdateMany(fa), loggingInfoForUpdateMany(fa))
+
+    private def prepareExecutionForUpdateMany[F[_]: Foldable](fa: F[A]): PreparedExecutionWithoutProcessStep[Int] =
+      PreparedExecutionWithoutProcessStep(
         create = IFC.prepareStatement(sql),
         prep = fa.foldMap(a => IHPS.set(a) *> IFPS.addBatch),
-        exec = IFPS.executeBatch.map(updateCounts => updateCounts.foldLeft(0)((acc, n) => acc + (n.max(0)))),
-        loggingInfo = LoggingInfo(
-          sql,
-          Parameters.Batch(() => fa.toList.map(write.toList)),
-          label
-        )
+        exec = IFPS.executeBatch.map(updateCounts => updateCounts.foldLeft(0)((acc, n) => acc + n.max(0)))
+      )
+
+    private def loggingInfoForUpdateMany[F[_]: Foldable](fa: F[A]) =
+      LoggingInfo(
+        sql,
+        Parameters.Batch(() => fa.toList.map(write.toList)),
+        label
       )
 
     /** Construct a stream that performs a batch update as with `updateMany`, yielding generated keys of readable type
@@ -130,11 +140,7 @@ object update {
             prep = IHPS.addBatches(as),
             exec = IFPS.executeBatch *> IFPS.getGeneratedKeys,
             chunkSize = chunkSize,
-            loggingInfo = LoggingInfo(
-              sql,
-              Parameters.Batch(() => as.toList.map(Write[A].toList)),
-              label
-            )
+            loggingInfo = loggingInfoForUpdateMany(as)
           )
       }
 
@@ -157,11 +163,7 @@ object update {
         prep = IHPS.set(a),
         exec = IFPS.executeUpdate *> IFPS.getGeneratedKeys,
         chunkSize = chunkSize,
-        loggingInfo = LoggingInfo(
-          sql = sql,
-          params = Parameters.NonBatch(Write[A].toList(a)),
-          label = label
-        )
+        loggingInfo = loggingInfoForUpdateWithGeneratedKeys(a)
       )
 
     /** Construct a program that performs the update, yielding a single set of generated keys of readable type `K`,
@@ -171,15 +173,23 @@ object update {
       */
     def withUniqueGeneratedKeys[K: Read](columns: String*)(a: A): ConnectionIO[K] =
       IHC.executeWithResultSet(
+        prepareExecutionForWithUniqueGeneratedKeys(columns*)(a),
+        loggingInfoForUpdateWithGeneratedKeys(a)
+      )
+
+    private def prepareExecutionForWithUniqueGeneratedKeys[K: Read](columns: String*)(a: A): PreparedExecution[K] =
+      PreparedExecution(
         create = IFC.prepareStatement(sql, columns.toArray),
         prep = IHPS.set(a),
         exec = IFPS.executeUpdate *> IFPS.getGeneratedKeys,
-        process = IHRS.getUnique,
-        loggingInfo = LoggingInfo(
-          sql,
-          Parameters.NonBatch(write.toList(a)),
-          label
-        )
+        process = IHRS.getUnique
+      )
+
+    private def loggingInfoForUpdateWithGeneratedKeys(a: A) =
+      LoggingInfo(
+        sql,
+        Parameters.NonBatch(write.toList(a)),
+        label
       )
 
     /** Update is a contravariant functor.

@@ -192,14 +192,14 @@ object query {
       toConnectionIOAlteringExecution(a, IHRS.nel[B], fn)
 
     private def toConnectionIO[C](a: A, rsio: ResultSetIO[C]): ConnectionIO[C] =
-      IHC.executionWithResultSet(preparedExecution(sql, a, rsio), mkLoggingInfo(a))
+      IHC.executeWithResultSet(preparedExecution(sql, a, rsio), mkLoggingInfo(a))
 
     private def toConnectionIOAlteringExecution[C](
         a: A,
         rsio: ResultSetIO[C],
         fn: PreparedExecution[C] => PreparedExecution[C]
     ): ConnectionIO[C] =
-      IHC.executionWithResultSet(fn(preparedExecution(sql, a, rsio)), mkLoggingInfo(a))
+      IHC.executeWithResultSet(fn(preparedExecution(sql, a, rsio)), mkLoggingInfo(a))
 
     private def preparedExecution[C](sql: String, a: A, rsio: ResultSetIO[C]): PreparedExecution[C] =
       PreparedExecution(

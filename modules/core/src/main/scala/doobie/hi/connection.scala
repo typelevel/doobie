@@ -87,7 +87,7 @@ object connection {
       loggingInfo
     )
 
-  def executionWithResultSet[A](
+  def executeWithResultSet[A](
       prepared: PreparedExecution[A],
       loggingInfo: LoggingInfo
   ): ConnectionIO[A] = executeWithResultSet(
