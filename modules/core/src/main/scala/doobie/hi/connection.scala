@@ -88,7 +88,7 @@ object connection {
     )
 
   def executionWithResultSet[A](
-      prepared: PreparedExecutionWithResultSet[A],
+      prepared: PreparedExecution[A],
       loggingInfo: LoggingInfo
   ): ConnectionIO[A] = executeWithResultSet(
     prepared.create,
@@ -128,7 +128,7 @@ object connection {
     )
 
   def executeWithoutResultSet[A](
-      prepared: PreparedExecutionWithoutResultSet[A],
+      prepared: PreparedExecutionWithoutProcessStep[A],
       loggingInfo: LoggingInfo
   ): ConnectionIO[A] =
     executeWithoutResultSet(
@@ -247,18 +247,6 @@ object connection {
       ele <- repeatEvalChunks(IFC.embed(resultSet, resultset.getNextChunk[A](chunkSize)))
     } yield ele
   }
-
-  def stream[A: Read](
-      prepared: PreparedExecutionStream,
-      loggingInfo: LoggingInfo
-  ): Stream[ConnectionIO, A] =
-    stream[A](
-      prepared.create,
-      prepared.prep,
-      prepared.exec,
-      prepared.chunkSize,
-      loggingInfo
-    )
 
   // Old implementation, used by deprecated methods
   private def liftStream[A: Read](
@@ -578,23 +566,16 @@ object connection {
   //   getMetaData(IFDMD.getTypeInfo.flatMap(IFDMD.embed(_, HRS.list[(String, JdbcType)].map(_.toMap))))
   // }
 
-  final case class PreparedExecutionWithResultSet[A](
+  final case class PreparedExecution[A](
       create: ConnectionIO[PreparedStatement],
       prep: PreparedStatementIO[Unit],
       exec: PreparedStatementIO[ResultSet],
       process: ResultSetIO[A]
   )
 
-  final case class PreparedExecutionWithoutResultSet[A](
+  final case class PreparedExecutionWithoutProcessStep[A](
       create: ConnectionIO[PreparedStatement],
       prep: PreparedStatementIO[Unit],
       exec: PreparedStatementIO[A]
-  )
-
-  final case class PreparedExecutionStream(
-      create: ConnectionIO[PreparedStatement],
-      prep: PreparedStatementIO[Unit],
-      exec: PreparedStatementIO[ResultSet],
-      chunkSize: Int
   )
 }

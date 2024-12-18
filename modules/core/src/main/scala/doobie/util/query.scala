@@ -11,7 +11,7 @@ import doobie.free.connection.ConnectionIO
 import doobie.free.preparedstatement.PreparedStatementIO
 import doobie.free.resultset.ResultSetIO
 import doobie.free.{connection as IFC, preparedstatement as IFPS}
-import doobie.hi.connection.PreparedExecutionWithResultSet
+import doobie.hi.connection.PreparedExecution
 import doobie.hi.{connection as IHC, preparedstatement as IHPS, resultset as IHRS}
 import doobie.util.MultiVersionTypeSupport.=:=
 import doobie.util.analysis.Analysis
@@ -105,6 +105,15 @@ object query {
       toConnectionIO(a, IHRS.build[F, B])
     }
 
+    /** Just like `to` but allowing to alter `PreparedExecution`.
+      */
+    def toAlteringExecution[F[_]](
+        a: A,
+        fn: PreparedExecution[F[B]] => PreparedExecution[F[B]]
+    )(implicit f: FactoryCompat[B, F[B]]): ConnectionIO[F[B]] = {
+      toConnectionIOAlteringExecution(a, IHRS.build[F, B], fn)
+    }
+
     /** Apply the argument `a` to construct a program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding
       * an `Map[(K, V)]` accumulated via the provided `CanBuildFrom`. This is the fastest way to accumulate a
       * collection. this function can call only when B is (K, V).
@@ -115,7 +124,10 @@ object query {
 
     /** Just like `toMap` but allowing to alter `PreparedExecution`.
       */
-    def toMapAlteringExecution[K, V](a: A, fn: PreparedExecutionUpdate[Map[K, V]])(implicit
+    def toMapAlteringExecution[K, V](
+        a: A,
+        fn: PreparedExecution[Map[K, V]] => PreparedExecution[Map[K, V]]
+    )(implicit
         ev: B =:= (K, V),
         f: FactoryCompat[(K, V), Map[K, V]]
     ): ConnectionIO[Map[K, V]] =
@@ -128,6 +140,14 @@ object query {
     def accumulate[F[_]: Alternative](a: A): ConnectionIO[F[B]] =
       toConnectionIO(a, IHRS.accumulate[F, B])
 
+    /** Just like `accumulate` but allowing to alter `PreparedExecution`.
+      */
+    def accumulateAlteringExecution[F[_]: Alternative](
+        a: A,
+        fn: PreparedExecution[F[B]] => PreparedExecution[F[B]]
+    ): ConnectionIO[F[B]] =
+      toConnectionIOAlteringExecution(a, IHRS.accumulate[F, B], fn)
+
     /** Apply the argument `a` to construct a program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding
       * a unique `B` and raising an exception if the resultset does not have exactly one row. See also `option`.
       * @group Results
@@ -135,12 +155,25 @@ object query {
     def unique(a: A): ConnectionIO[B] =
       toConnectionIO(a, IHRS.getUnique[B])
 
+    /** Just like `unique` but allowing to alter `PreparedExecution`.
+      */
+    def uniqueAlteringExecution(a: A, fn: PreparedExecution[B] => PreparedExecution[B]): ConnectionIO[B] =
+      toConnectionIOAlteringExecution(a, IHRS.getUnique[B], fn)
+
     /** Apply the argument `a` to construct a program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding
       * an optional `B` and raising an exception if the resultset has more than one row. See also `unique`.
       * @group Results
       */
     def option(a: A): ConnectionIO[Option[B]] =
       toConnectionIO(a, IHRS.getOption[B])
+
+    /** Just like `option` but allowing to alter `PreparedExecution`.
+      */
+    def optionAlteringExecution(
+        a: A,
+        fn: PreparedExecution[Option[B]] => PreparedExecution[Option[B]]
+    ): ConnectionIO[Option[B]] =
+      toConnectionIOAlteringExecution(a, IHRS.getOption[B], fn)
 
     /** Apply the argument `a` to construct a program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding
       * an `NonEmptyList[B]` and raising an exception if the resultset does not have at least one row. See also
@@ -150,18 +183,26 @@ object query {
     def nel(a: A): ConnectionIO[NonEmptyList[B]] =
       toConnectionIO(a, IHRS.nel[B])
 
+    /** Just like `nel` but allowing to alter `PreparedExecution`.
+      */
+    def nelAlteringExecution(
+        a: A,
+        fn: PreparedExecution[NonEmptyList[B]] => PreparedExecution[NonEmptyList[B]]
+    ): ConnectionIO[NonEmptyList[B]] =
+      toConnectionIOAlteringExecution(a, IHRS.nel[B], fn)
+
     private def toConnectionIO[C](a: A, rsio: ResultSetIO[C]): ConnectionIO[C] =
       IHC.executionWithResultSet(preparedExecution(sql, a, rsio), mkLoggingInfo(a))
 
     private def toConnectionIOAlteringExecution[C](
         a: A,
         rsio: ResultSetIO[C],
-        fn: PreparedExecutionUpdate[C]
+        fn: PreparedExecution[C] => PreparedExecution[C]
     ): ConnectionIO[C] =
       IHC.executionWithResultSet(fn(preparedExecution(sql, a, rsio)), mkLoggingInfo(a))
 
-    private def preparedExecution[C](sql: String, a: A, rsio: ResultSetIO[C]): PreparedExecutionWithResultSet[C] =
-      PreparedExecutionWithResultSet(
+    private def preparedExecution[C](sql: String, a: A, rsio: ResultSetIO[C]): PreparedExecution[C] =
+      PreparedExecution(
         create = IFC.prepareStatement(sql),
         prep = IHPS.set(a),
         exec = IFPS.executeQuery,
@@ -263,8 +304,6 @@ object query {
       }
 
   }
-
-  type PreparedExecutionUpdate[A] = PreparedExecutionWithResultSet[A] => PreparedExecutionWithResultSet[A]
 
   /** An abstract query closed over its input arguments and yielding values of type `B`, without a specified
     * disposition. Methods provided on `[[Query0]]` allow the query to be interpreted as a stream or program in
