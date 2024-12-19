@@ -10,17 +10,16 @@ import cats.data.NonEmptyList
 import doobie.free.connection.ConnectionIO
 import doobie.free.preparedstatement.PreparedStatementIO
 import doobie.free.resultset.ResultSetIO
+import doobie.free.{connection as IFC, preparedstatement as IFPS}
+import doobie.hi.connection.PreparedExecution
+import doobie.hi.{connection as IHC, preparedstatement as IHPS, resultset as IHRS}
+import doobie.util.MultiVersionTypeSupport.=:=
 import doobie.util.analysis.Analysis
 import doobie.util.compat.FactoryCompat
+import doobie.util.fragment.Fragment
 import doobie.util.log.{LoggingInfo, Parameters}
 import doobie.util.pos.Pos
-import doobie.free.{connection as IFC, preparedstatement as IFPS}
-import doobie.hi.{connection as IHC, preparedstatement as IHPS, resultset as IHRS}
 import fs2.Stream
-
-import scala.collection.immutable.Map
-import doobie.util.MultiVersionTypeSupport.=:=
-import doobie.util.fragment.Fragment
 
 /** Module defining queries parameterized by input and output types. */
 object query {
@@ -106,16 +105,33 @@ object query {
       toConnectionIO(a, IHRS.build[F, B])
     }
 
+    /** Just like `to` but allowing to alter `PreparedExecution`.
+      */
+    def toAlteringExecution[F[_]](
+        a: A,
+        fn: PreparedExecution[F[B]] => PreparedExecution[F[B]]
+    )(implicit f: FactoryCompat[B, F[B]]): ConnectionIO[F[B]] = {
+      toConnectionIOAlteringExecution(a, IHRS.build[F, B], fn)
+    }
+
     /** Apply the argument `a` to construct a program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding
       * an `Map[(K, V)]` accumulated via the provided `CanBuildFrom`. This is the fastest way to accumulate a
       * collection. this function can call only when B is (K, V).
       * @group Results
       */
     def toMap[K, V](a: A)(implicit ev: B =:= (K, V), f: FactoryCompat[(K, V), Map[K, V]]): ConnectionIO[Map[K, V]] =
-      toConnectionIO(
-        a,
-        IHRS.buildPair[Map, K, V](f, read.map(ev))
-      )
+      toConnectionIO(a, IHRS.buildPair[Map, K, V](f, read.map(ev)))
+
+    /** Just like `toMap` but allowing to alter `PreparedExecution`.
+      */
+    def toMapAlteringExecution[K, V](
+        a: A,
+        fn: PreparedExecution[Map[K, V]] => PreparedExecution[Map[K, V]]
+    )(implicit
+        ev: B =:= (K, V),
+        f: FactoryCompat[(K, V), Map[K, V]]
+    ): ConnectionIO[Map[K, V]] =
+      toConnectionIOAlteringExecution(a, IHRS.buildPair[Map, K, V](f, read.map(ev)), fn)
 
     /** Apply the argument `a` to construct a program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding
       * an `F[B]` accumulated via `MonadPlus` append. This method is more general but less efficient than `to`.
@@ -124,6 +140,14 @@ object query {
     def accumulate[F[_]: Alternative](a: A): ConnectionIO[F[B]] =
       toConnectionIO(a, IHRS.accumulate[F, B])
 
+    /** Just like `accumulate` but allowing to alter `PreparedExecution`.
+      */
+    def accumulateAlteringExecution[F[_]: Alternative](
+        a: A,
+        fn: PreparedExecution[F[B]] => PreparedExecution[F[B]]
+    ): ConnectionIO[F[B]] =
+      toConnectionIOAlteringExecution(a, IHRS.accumulate[F, B], fn)
+
     /** Apply the argument `a` to construct a program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding
       * a unique `B` and raising an exception if the resultset does not have exactly one row. See also `option`.
       * @group Results
@@ -131,12 +155,25 @@ object query {
     def unique(a: A): ConnectionIO[B] =
       toConnectionIO(a, IHRS.getUnique[B])
 
+    /** Just like `unique` but allowing to alter `PreparedExecution`.
+      */
+    def uniqueAlteringExecution(a: A, fn: PreparedExecution[B] => PreparedExecution[B]): ConnectionIO[B] =
+      toConnectionIOAlteringExecution(a, IHRS.getUnique[B], fn)
+
     /** Apply the argument `a` to construct a program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding
       * an optional `B` and raising an exception if the resultset has more than one row. See also `unique`.
       * @group Results
       */
     def option(a: A): ConnectionIO[Option[B]] =
       toConnectionIO(a, IHRS.getOption[B])
+
+    /** Just like `option` but allowing to alter `PreparedExecution`.
+      */
+    def optionAlteringExecution(
+        a: A,
+        fn: PreparedExecution[Option[B]] => PreparedExecution[Option[B]]
+    ): ConnectionIO[Option[B]] =
+      toConnectionIOAlteringExecution(a, IHRS.getOption[B], fn)
 
     /** Apply the argument `a` to construct a program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding
       * an `NonEmptyList[B]` and raising an exception if the resultset does not have at least one row. See also
@@ -146,15 +183,31 @@ object query {
     def nel(a: A): ConnectionIO[NonEmptyList[B]] =
       toConnectionIO(a, IHRS.nel[B])
 
-    private def toConnectionIO[C](a: A, rsio: ResultSetIO[C]): ConnectionIO[C] = {
-      IHC.executeWithResultSet(
+    /** Just like `nel` but allowing to alter `PreparedExecution`.
+      */
+    def nelAlteringExecution(
+        a: A,
+        fn: PreparedExecution[NonEmptyList[B]] => PreparedExecution[NonEmptyList[B]]
+    ): ConnectionIO[NonEmptyList[B]] =
+      toConnectionIOAlteringExecution(a, IHRS.nel[B], fn)
+
+    private def toConnectionIO[C](a: A, rsio: ResultSetIO[C]): ConnectionIO[C] =
+      IHC.executeWithResultSet(preparedExecution(sql, a, rsio), mkLoggingInfo(a))
+
+    private def toConnectionIOAlteringExecution[C](
+        a: A,
+        rsio: ResultSetIO[C],
+        fn: PreparedExecution[C] => PreparedExecution[C]
+    ): ConnectionIO[C] =
+      IHC.executeWithResultSet(fn(preparedExecution(sql, a, rsio)), mkLoggingInfo(a))
+
+    private def preparedExecution[C](sql: String, a: A, rsio: ResultSetIO[C]): PreparedExecution[C] =
+      PreparedExecution(
         create = IFC.prepareStatement(sql),
         prep = IHPS.set(a),
         exec = IFPS.executeQuery,
-        process = rsio,
-        loggingInfo = mkLoggingInfo(a)
+        process = rsio
       )
-    }
 
     private def mkLoggingInfo(a: A): LoggingInfo =
       LoggingInfo(
