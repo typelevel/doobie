@@ -85,6 +85,14 @@ object update {
     def run(a: A): ConnectionIO[Int] =
       IHC.executeWithoutResultSet(prepareExecutionForRun(a), loggingForRun(a))
 
+    /** Just like `run` but allowing to alter `PreparedExecutionWithoutProcessStep`.
+      */
+    def runAlteringExecution(
+        a: A,
+        fn: PreparedExecutionWithoutProcessStep[Int] => PreparedExecutionWithoutProcessStep[Int]
+    ): ConnectionIO[Int] =
+      IHC.executeWithoutResultSet(fn(prepareExecutionForRun(a)), loggingForRun(a))
+
     private def prepareExecutionForRun(a: A): PreparedExecutionWithoutProcessStep[Int] =
       PreparedExecutionWithoutProcessStep(
         create = IFC.prepareStatement(sql),
@@ -109,6 +117,14 @@ object update {
       */
     def updateMany[F[_]: Foldable](fa: F[A]): ConnectionIO[Int] =
       IHC.executeWithoutResultSet(prepareExecutionForUpdateMany(fa), loggingInfoForUpdateMany(fa))
+
+    /** Just like `updateMany` but allowing to alter `PreparedExecutionWithoutProcessStep`.
+      */
+    def updateManyAlteringExecution[F[_]: Foldable](
+        fa: F[A],
+        fn: PreparedExecutionWithoutProcessStep[Int] => PreparedExecutionWithoutProcessStep[Int]
+    ): ConnectionIO[Int] =
+      IHC.executeWithoutResultSet(fn(prepareExecutionForUpdateMany(fa)), loggingInfoForUpdateMany(fa))
 
     private def prepareExecutionForUpdateMany[F[_]: Foldable](fa: F[A]): PreparedExecutionWithoutProcessStep[Int] =
       PreparedExecutionWithoutProcessStep(
@@ -174,6 +190,17 @@ object update {
     def withUniqueGeneratedKeys[K: Read](columns: String*)(a: A): ConnectionIO[K] =
       IHC.executeWithResultSet(
         prepareExecutionForWithUniqueGeneratedKeys(columns*)(a),
+        loggingInfoForUpdateWithGeneratedKeys(a)
+      )
+
+    /** Just like `withUniqueGeneratedKeys` but allowing to alter `PreparedExecution`.
+      */
+    def withUniqueGeneratedKeysAlteringExecution[K: Read](columns: String*)(
+        a: A,
+        fn: PreparedExecution[K] => PreparedExecution[K]
+    ): ConnectionIO[K] =
+      IHC.executeWithResultSet(
+        fn(prepareExecutionForWithUniqueGeneratedKeys(columns*)(a)),
         loggingInfoForUpdateWithGeneratedKeys(a)
       )
 
