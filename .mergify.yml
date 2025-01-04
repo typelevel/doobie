@@ -10,9 +10,9 @@ pull_request_rules:
   conditions:
   - author=scala-steward
   - body~=labels:.*early-semver-patch
-  - status-success=Build and Test (ubuntu-latest, 2.12, temurin@11)
-  - status-success=Build and Test (ubuntu-latest, 2.13, temurin@11)
-  - status-success=Build and Test (ubuntu-latest, 3, temurin@11)
+  - status-success=Test (ubuntu-22.04, 2.12, temurin@11)
+  - status-success=Test (ubuntu-22.04, 2.13, temurin@11)
+  - status-success=Test (ubuntu-22.04, 3, temurin@11)
   actions:
     merge: {}
 - name: Label bench PRs
@@ -161,9 +161,9 @@ pull_request_rules:
       remove: []
 - name: merge-when-ci-pass
   conditions:
-  - status-success=Build and Test (ubuntu-latest, 2.12, temurin@11)
-  - status-success=Build and Test (ubuntu-latest, 2.13, temurin@11)
-  - status-success=Build and Test (ubuntu-latest, 3, temurin@11)
+  - status-success=Test (ubuntu-22.04, 2.12, temurin@11)
+  - status-success=Test (ubuntu-22.04, 2.13, temurin@11)
+  - status-success=Test (ubuntu-22.04, 3, temurin@11)
   - label=merge-on-build-success
   actions:
     merge: {}
