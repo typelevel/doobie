@@ -4,4 +4,4 @@
 
 package doobie.util
 
-trait PutPlatform {}
+trait PutPlatform

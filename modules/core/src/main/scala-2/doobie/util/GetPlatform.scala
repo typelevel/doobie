@@ -11,13 +11,15 @@ trait GetPlatform {
   import doobie.util.compat.=:=
 
   /** @group Instances */
-  @deprecated("Use Get.derived instead to derive instances explicitly", "1.0.0-RC6")
   def unaryProductGet[A, L <: HList, H, T <: HList](
       implicit
       G: Generic.Aux[A, L],
       C: IsHCons.Aux[L, H, T],
       H: Lazy[Get[H]],
       E: (H :: HNil) =:= L
-  ): MkGet[A] = MkGet.unaryProductGet
+  ): Get[A] = {
+    void(C) // C drives inference but is not used directly
+    H.value.tmap[A](h => G.from(h :: HNil))
+  }
 
 }

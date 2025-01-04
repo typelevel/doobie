@@ -82,15 +82,9 @@ sealed abstract class Put[A](
 
 }
 
-object Put extends PutInstances with PutPlatform {
+object Put extends PutInstances {
 
   def apply[A](implicit ev: Put[A]): ev.type = ev
-
-  def derived[A](implicit ev: MkPut[A]): Put[A] = ev
-
-  trait Auto {
-    implicit def derivePut[A](implicit ev: MkPut[A]): Put[A] = ev
-  }
 
   object Basic {
 
@@ -208,7 +202,7 @@ object Put extends PutInstances with PutPlatform {
 
 }
 
-trait PutInstances {
+trait PutInstances extends PutPlatform {
 
   /** @group Instances */
   implicit val ContravariantPut: Contravariant[Put] =
@@ -225,24 +219,4 @@ trait PutInstances {
   implicit def ArrayTypeAsVectorPut[A: ClassTag](implicit ev: Put[Array[A]]): Put[Vector[A]] =
     ev.tcontramap(_.toArray)
 
-}
-
-sealed abstract class MkPut[A](
-    override val typeStack: NonEmptyList[Option[String]],
-    override val jdbcTargets: NonEmptyList[JdbcType],
-    override val vendorTypeNames: List[String],
-    override val put: ContravariantCoyoneda[(PreparedStatement, Int, *) => Unit, A],
-    override val update: ContravariantCoyoneda[(ResultSet, Int, *) => Unit, A]
-) extends Put[A](typeStack, jdbcTargets, vendorTypeNames, put, update)
-
-object MkPut extends MkPutPlatform {
-
-  def lift[A](g: Put[A]): MkPut[A] =
-    new MkPut[A](
-      typeStack = g.typeStack,
-      jdbcTargets = g.jdbcTargets,
-      vendorTypeNames = g.vendorTypeNames,
-      put = g.put,
-      update = g.update
-    ) {}
 }
