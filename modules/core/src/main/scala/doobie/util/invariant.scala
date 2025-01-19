@@ -55,8 +55,10 @@ object invariant {
   final case class NonNullableColumnUpdate(index: Int, jdbcType: JdbcType)
       extends MappingViolation(
         show"Scala `null` value passed as update to column $index (JDBC type $jdbcType); use an Option type here. $oneBasedDisclaimer")
-  final case class NonNullableColumnRead(index: Int, jdbcType: JdbcType)
-      extends MappingViolation(show"SQL `NULL` read at column $index (JDBC type $jdbcType) but mapping is to a non-Option type; use Option here. $oneBasedDisclaimer")
+  final case class NonNullableColumnRead(
+      index: Int,
+      jdbcType: JdbcType
+  ) extends MappingViolation(show"SQL `NULL` read at column $index (JDBC type $jdbcType) but mapping is to a non-Option type; use Option here. $oneBasedDisclaimer")
 
   /** Array violations. Not terribly illuminating at this point. */
   sealed abstract class ArrayStructureViolation(msg: String) extends InvariantViolation(msg)
