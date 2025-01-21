@@ -3,7 +3,7 @@ import scala.sys.process._
 import org.typelevel.sbt.tpolecat.{DevMode, CiMode}
 
 // Library versions all in one place, for convenience and sanity.
-lazy val catsVersion = "2.12.0"
+lazy val catsVersion = "2.13.0"
 lazy val catsEffectVersion = "3.5.7"
 lazy val circeVersion = "0.14.10"
 lazy val fs2Version = "3.11.0"
