@@ -137,7 +137,8 @@ object StreamingCopy extends IOApp.Simple {
     url = "jdbc:postgresql:world",
     user = "postgres",
     password = "password",
-    logHandler = None
+    logHandler =
+      None
   ))
 
   // An h2 transactor for our sink.
