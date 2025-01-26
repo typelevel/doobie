@@ -6,3 +6,4 @@ A non-exhaustive list of projects that supplement Doobie:
   - [TableColumns](https://jatcwang.github.io/doobieroll/docs/tablecolumns) - Ensure fields in your SQL are consistently named and ordered.
   - [Assembler](https://jatcwang.github.io/doobieroll/docs/assembler) - Assemble SQL query results into hierarchical domain models.
 - [doobie-typesafe](https://github.com/arturaz/doobie-typesafe) - type-safe table definitions for Doobie.
+- [otel4s-doobie](https://github.com/arturaz/otel4s-doobie) - [Otel4s](https://github.com/typelevel/otel4s) integration.
