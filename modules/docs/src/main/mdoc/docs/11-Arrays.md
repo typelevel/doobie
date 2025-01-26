@@ -60,7 +60,7 @@ val create =
 (drop *> create).unsafeRunSync()
 ```
 
-**doobie** maps SQL array columns to `Array`, `List`, and `Vector` by default. No special handling is required, other than importing the vendor-specific array support above.
+**doobie** maps SQL array columns to `Array`, `List`, and `Vector` by default for standard types like `String` or `Int`. No special handling is required, other than importing the vendor-specific array support above.
 
 ```scala mdoc:silent
 case class Person(id: Long, name: String, pets: List[String])
@@ -93,3 +93,49 @@ sql"select array['foo','bar','baz']".query[Option[List[String]]].quick.unsafeRun
 sql"select array['foo',NULL,'baz']".query[List[Option[String]]].quick.unsafeRunSync()
 sql"select array['foo',NULL,'baz']".query[Option[List[Option[String]]]].quick.unsafeRunSync()
 ```
+
+### Array of enums
+
+For reading from and writing to a column that is an array of enum, you can use `doobie.postgres.implicits.arrayOfEnum` 
+to create a `Meta` instance for your enum type:
+
+```scala mdoc
+import doobie.postgres.implicits.arrayOfEnum
+
+sealed trait MyEnum
+
+object MyEnum {
+  case object Foo extends MyEnum
+
+  case object Bar extends MyEnum
+
+  private val typeName = "myenum"
+
+  def fromStrUnsafe(s: String): MyEnum = s match {
+    case "foo" => Foo
+    case "bar" => Bar
+    case other => throw new RuntimeException(s"Unexpected value '$other' for MyEnum")
+  }
+
+  def toStr(e: MyEnum): String = e match {
+    case Foo => "foo"
+    case Bar => "bar"
+  }
+
+  implicit val MyEnumArrayMeta: Meta[Array[MyEnum]] =
+    arrayOfEnum[MyEnum](
+      enumTypeName = typeName,
+      fromStr = fromStrUnsafe,
+      toStr = toStr
+    )
+    
+}
+```
+
+and you can now map the array of enum column into an `Array[MyEnum]`, `List[MyEnum]`, `Vector[MyEnum]`:
+
+```scala mdoc
+sql"select array['foo', 'bar'] :: myenum[]".query[List[MyEnum]].quick.unsafeRunSync()
+```
+
+For an example of using an enum type from another schema, please see [OtherEnum.scala](https://github.com/typelevel/doobie/blob/main/modules/postgres/src/test/scala/doobie/postgres/enums/OtherEnum.scala)
