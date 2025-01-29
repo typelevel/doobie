@@ -183,16 +183,20 @@ class ReadSuite extends munit.FunSuite with ReadSuitePlatform {
       _ <- sql"insert into foo values (1, 'a'), (2, 'b'), (3, 'c')".update.run
       _ <- sql"insert into bar values (1, 1, 'c'), (2, 2, null)".update.run
 
-      q <- sql"select f.foo_key, f.foo_value, b.bar_key, b.bar_value from foo f left join bar b on f.foo_key = b.foo_key".query[(Foo, Option[Bar])].to[List]
+      q <-
+        sql"select f.foo_key, f.foo_value, b.bar_key, b.bar_value from foo f left join bar b on f.foo_key = b.foo_key"
+          .query[(Foo, Option[Bar])].to[List]
     } yield q)
       .transact(xa)
       .unsafeRunSync()
 
-    assertEquals(result, List(
-      (Foo(1, "a"), Some(Bar(1, Some("c")))),
-      (Foo(2, "b"), Some(Bar(2, None))),
-      (Foo(3, "c"), None)
-    ))
+    assertEquals(
+      result,
+      List(
+        (Foo(1, "a"), Some(Bar(1, Some("c")))),
+        (Foo(2, "b"), Some(Bar(2, None))),
+        (Foo(3, "c"), None)
+      ))
   }
 
   test("Read should read correct columns for instances with Option (Some)") {
