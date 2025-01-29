@@ -7,7 +7,6 @@ package doobie.util
 import doobie.{ConnectionIO, Query, Transactor, Update}
 import doobie.util.TestTypes.*
 import cats.effect.IO
-import cats.effect.unsafe.implicits.global
 import doobie.testutils.VoidExtensions
 import doobie.syntax.all.*
 import doobie.util.analysis.{Analysis, ParameterMisalignment, ParameterTypeError}
@@ -15,7 +14,7 @@ import munit.Location
 
 import scala.annotation.nowarn
 
-class WriteSuite extends munit.FunSuite with WriteSuitePlatform {
+class WriteSuite extends munit.CatsEffectSuite with WriteSuitePlatform {
 
   val xa: Transactor[IO] = Transactor.fromDriverManager[IO](
     driver = "org.h2.Driver",
@@ -56,55 +55,59 @@ class WriteSuite extends munit.FunSuite with WriteSuitePlatform {
 
   test("Semiauto derivation selects custom Write instances when available") {
     implicit val i0: Write[HasCustomReadWrite0] = Write.derived[HasCustomReadWrite0]
-    assertEquals(i0.length, 2)
-    writeAndCheckTuple2(HasCustomReadWrite0(CustomReadWrite("x"), "y"), ("x_W", "y"))
-
     implicit val i1: Write[HasCustomReadWrite1] = Write.derived[HasCustomReadWrite1]
-    assertEquals(i1.length, 2)
-    writeAndCheckTuple2(HasCustomReadWrite1("x", CustomReadWrite("y")), ("x", "y_W"))
-
     implicit val iOpt0: Write[HasOptCustomReadWrite0] = Write.derived[HasOptCustomReadWrite0]
-    assertEquals(iOpt0.length, 2)
-    writeAndCheckTuple2(HasOptCustomReadWrite0(Some(CustomReadWrite("x")), "y"), ("x_W", "y"))
-
     implicit val iOpt1: Write[HasOptCustomReadWrite1] = Write.derived[HasOptCustomReadWrite1]
-    assertEquals(iOpt1.length, 2)
-    writeAndCheckTuple2(HasOptCustomReadWrite1("x", Some(CustomReadWrite("y"))), ("x", "y_W"))
+
+    IO {
+      assertEquals(i0.length, 2)
+    } *>
+      writeAndCheckTuple2(HasCustomReadWrite0(CustomReadWrite("x"), "y"), ("x_W", "y")) *>
+      IO {
+        assertEquals(i1.length, 2)
+      } *>
+      writeAndCheckTuple2(HasCustomReadWrite1("x", CustomReadWrite("y")), ("x", "y_W")) *>
+      IO {
+        assertEquals(iOpt0.length, 2)
+      } *>
+      writeAndCheckTuple2(HasOptCustomReadWrite0(Some(CustomReadWrite("x")), "y"), ("x_W", "y")) *>
+      IO {
+        assertEquals(iOpt1.length, 2)
+      } *>
+      writeAndCheckTuple2(HasOptCustomReadWrite1("x", Some(CustomReadWrite("y"))), ("x", "y_W"))
   }
 
   test("Semiauto derivation selects custom Put instances to use for Write when available") {
     implicit val i0: Write[HasCustomGetPut0] = Write.derived[HasCustomGetPut0]
-    assertEquals(i0.length, 2)
-    writeAndCheckTuple2(HasCustomGetPut0(CustomGetPut("x"), "y"), ("x_P", "y"))
-
     implicit val i1: Write[HasCustomGetPut1] = Write.derived[HasCustomGetPut1]
-    assertEquals(i1.length, 2)
-    writeAndCheckTuple2(HasCustomGetPut1("x", CustomGetPut("y")), ("x", "y_P"))
-
     implicit val iOpt0: Write[HasOptCustomGetPut0] = Write.derived[HasOptCustomGetPut0]
-    assertEquals(iOpt0.length, 2)
-    writeAndCheckTuple2(HasOptCustomGetPut0(Some(CustomGetPut("x")), "y"), ("x_P", "y"))
-
     implicit val iOpt1: Write[HasOptCustomGetPut1] = Write.derived[HasOptCustomGetPut1]
-    assertEquals(iOpt1.length, 2)
-    writeAndCheckTuple2(HasOptCustomGetPut1("x", Some(CustomGetPut("y"))), ("x", "y_P"))
+
+    IO { assertEquals(i0.length, 2) } *>
+      writeAndCheckTuple2(HasCustomGetPut0(CustomGetPut("x"), "y"), ("x_P", "y")) *>
+      IO { assertEquals(i1.length, 2) } *>
+      writeAndCheckTuple2(HasCustomGetPut1("x", CustomGetPut("y")), ("x", "y_P")) *>
+      IO { assertEquals(iOpt0.length, 2) } *>
+      writeAndCheckTuple2(HasOptCustomGetPut0(Some(CustomGetPut("x")), "y"), ("x_P", "y")) *>
+      IO { assertEquals(iOpt1.length, 2) } *>
+      writeAndCheckTuple2(HasOptCustomGetPut1("x", Some(CustomGetPut("y"))), ("x", "y_P"))
   }
 
   test("Automatic derivation selects custom Write instances when available") {
     import doobie.implicits.*
 
-    writeAndCheckTuple2(HasCustomReadWrite0(CustomReadWrite("x"), "y"), ("x_W", "y"))
-    writeAndCheckTuple2(HasCustomReadWrite1("x", CustomReadWrite("y")), ("x", "y_W"))
-    writeAndCheckTuple2(HasOptCustomReadWrite0(Some(CustomReadWrite("x")), "y"), ("x_W", "y"))
-    writeAndCheckTuple2(HasOptCustomReadWrite1("x", Some(CustomReadWrite("y"))), ("x", "y_W"))
+    writeAndCheckTuple2(HasCustomReadWrite0(CustomReadWrite("x"), "y"), ("x_W", "y")) *>
+      writeAndCheckTuple2(HasCustomReadWrite1("x", CustomReadWrite("y")), ("x", "y_W")) *>
+      writeAndCheckTuple2(HasOptCustomReadWrite0(Some(CustomReadWrite("x")), "y"), ("x_W", "y")) *>
+      writeAndCheckTuple2(HasOptCustomReadWrite1("x", Some(CustomReadWrite("y"))), ("x", "y_W"))
   }
 
   test("Automatic derivation selects custom Put instances to use for Write when available") {
     import doobie.implicits.*
-    writeAndCheckTuple2(HasCustomGetPut0(CustomGetPut("x"), "y"), ("x_P", "y"))
-    writeAndCheckTuple2(HasCustomGetPut1("x", CustomGetPut("y")), ("x", "y_P"))
-    writeAndCheckTuple2(HasOptCustomGetPut0(Some(CustomGetPut("x")), "y"), ("x_P", "y"))
-    writeAndCheckTuple2(HasOptCustomGetPut1("x", Some(CustomGetPut("y"))), ("x", "y_P"))
+    writeAndCheckTuple2(HasCustomGetPut0(CustomGetPut("x"), "y"), ("x_P", "y")) *>
+      writeAndCheckTuple2(HasCustomGetPut1("x", CustomGetPut("y")), ("x", "y_P")) *>
+      writeAndCheckTuple2(HasOptCustomGetPut0(Some(CustomGetPut("x")), "y"), ("x_P", "y")) *>
+      writeAndCheckTuple2(HasOptCustomGetPut1("x", Some(CustomGetPut("y"))), ("x", "y_P"))
   }
 
   test("Write should not be derivable for case objects") {
@@ -149,17 +152,17 @@ class WriteSuite extends munit.FunSuite with WriteSuitePlatform {
         ))
     })
       .transact(xa)
-      .unsafeRunSync()
+
   }
 
   test("Write should yield correct error when Some(null) inserted") {
-    interceptMessage[RuntimeException]("Expected non-nullable param at 2. Use Option to describe nullable values.") {
-      testNullPut(("a", Some(null)))
-    }
+    interceptMessageIO[RuntimeException](
+      "Expected non-nullable param at 2. Use Option to describe nullable values."
+    )(testNullPut(("a", Some(null))))
   }
 
   test("Write should yield correct error when null inserted into non-nullable field") {
-    interceptMessage[RuntimeException]("Expected non-nullable param at 1. Use Option to describe nullable values.") {
+    interceptMessageIO[RuntimeException]("Expected non-nullable param at 1. Use Option to describe nullable values.") {
       testNullPut((null, Some("b")))
     }
   }
@@ -180,26 +183,25 @@ class WriteSuite extends munit.FunSuite with WriteSuitePlatform {
     val insertSql = "INSERT INTO tab VALUES (?,?,?)"
 
     assertSuccessTypecheckWrite(
-      createTable.flatMap(_ => Update[(Option[Int], String, Double)](insertSql).analysis))
-    assertSuccessTypecheckWrite(
-      createTable.flatMap(_ => Update[((Option[Int], String), Double)](insertSql).analysis))
-    assertSuccessTypecheckWrite(
-      createTable.flatMap(_ => Update[(Option[Int], String, Option[Double])](insertSql).analysis))
-    assertSuccessTypecheckWrite(
-      createAllNullableTable.flatMap(_ => Update[(Option[Int], Option[String], Option[Double])](insertSql).analysis))
-    assertSuccessTypecheckWrite(
-      createAllNullableTable.flatMap(_ => Update[Option[(Option[Int], String, Double)]](insertSql).analysis))
-    assertSuccessTypecheckWrite(
-      createAllNullableTable.flatMap(_ => Update[Option[(Int, Option[(String, Double)])]](insertSql).analysis))
-
-    assertMisalignedTypecheckWrite(createTable.flatMap(_ => Update[(Option[Int], String)](insertSql).analysis))
-    assertMisalignedTypecheckWrite(createTable.flatMap(_ =>
-      Update[(Option[Int], String, Double, Int)](insertSql).analysis))
-
-    assertTypeErrorTypecheckWrite(
-      sql"create temp table tab(c1 binary not null, c2 varchar not null, c3 int)".update.run.flatMap(_ =>
-        Update[(Int, String, Option[Int])](insertSql).analysis)
-    )
+      createTable.flatMap(_ => Update[(Option[Int], String, Double)](insertSql).analysis)) *>
+      assertSuccessTypecheckWrite(
+        createTable.flatMap(_ => Update[((Option[Int], String), Double)](insertSql).analysis)) *>
+      assertSuccessTypecheckWrite(
+        createTable.flatMap(_ => Update[(Option[Int], String, Option[Double])](insertSql).analysis)) *>
+      assertSuccessTypecheckWrite(
+        createAllNullableTable.flatMap(_ =>
+          Update[(Option[Int], Option[String], Option[Double])](insertSql).analysis)) *>
+      assertSuccessTypecheckWrite(
+        createAllNullableTable.flatMap(_ => Update[Option[(Option[Int], String, Double)]](insertSql).analysis)) *>
+      assertSuccessTypecheckWrite(
+        createAllNullableTable.flatMap(_ => Update[Option[(Int, Option[(String, Double)])]](insertSql).analysis)) *>
+      assertMisalignedTypecheckWrite(createTable.flatMap(_ => Update[(Option[Int], String)](insertSql).analysis)) *>
+      assertMisalignedTypecheckWrite(createTable.flatMap(_ =>
+        Update[(Option[Int], String, Double, Int)](insertSql).analysis)) *>
+      assertTypeErrorTypecheckWrite(
+        sql"create temp table tab(c1 binary not null, c2 varchar not null, c3 int)".update.run.flatMap(_ =>
+          Update[(Int, String, Option[Int])](insertSql).analysis)
+      )
   }
 
   test("Write typechecking should work for case classes") {
@@ -208,67 +210,54 @@ class WriteSuite extends munit.FunSuite with WriteSuitePlatform {
     implicit val wwscc: Write[WrappedSimpleCaseClass] =
       wscc.contramap(_.sc) // Testing contramap doesn't break typechecking
 
-    val createTable = sql"create temp table tab(c1 int, c2 varchar not null, c3 varchar)".update.run
+    val createTable: ConnectionIO[Int] = sql"create temp table tab(c1 int, c2 varchar not null, c3 varchar)".update.run
 
     val insertSimpleSql = "INSERT INTO tab VALUES (?,?,?)"
-
-    assertSuccessTypecheckWrite(createTable.flatMap(_ => Update[SimpleCaseClass](insertSimpleSql).analysis))
-    assertSuccessTypecheckWrite(createTable.flatMap(_ => Update[WrappedSimpleCaseClass](insertSimpleSql).analysis))
-
-    // This shouldn't pass but JDBC driver (at least for h2) doesn't tell us when a parameter should be not-nullable
-    assertSuccessTypecheckWrite(createTable.flatMap(_ => Update[Option[SimpleCaseClass]](insertSimpleSql).analysis))
-    assertSuccessTypecheckWrite(createTable.flatMap(_ =>
-      Update[Option[WrappedSimpleCaseClass]](insertSimpleSql).analysis))
-
     val insertComplexSql = "INSERT INTO tab VALUES (?,?,?,?,?,?,?,?)"
 
-    assertSuccessTypecheckWrite(
-      sql"create temp table tab(c1 int, c2 varchar, c3 varchar, c4 int, c5 varchar, c6 varchar, c7 int, c8 varchar not null)"
-        .update.run
-        .flatMap(_ => Update[ComplexCaseClass](insertComplexSql).analysis)
-    )
-
-    assertTypeErrorTypecheckWrite(
-      sql"create temp table tab(c1 int, c2 varchar, c3 varchar, c4 BINARY, c5 varchar, c6 varchar, c7 int, c8 varchar not null)"
-        .update.run
-        .flatMap(_ => Update[ComplexCaseClass](insertComplexSql).analysis)
-    )
+    assertSuccessTypecheckWrite(createTable.flatMap(_ => Update[SimpleCaseClass](insertSimpleSql).analysis)) *>
+      assertSuccessTypecheckWrite(createTable.flatMap(_ => Update[WrappedSimpleCaseClass](insertSimpleSql).analysis)) *>
+      // This shouldn't pass but JDBC driver (at least for h2) doesn't tell us when a parameter should be not-nullable
+      assertSuccessTypecheckWrite(
+        createTable.flatMap(_ => Update[Option[SimpleCaseClass]](insertSimpleSql).analysis)) *>
+      assertSuccessTypecheckWrite(createTable.flatMap(_ =>
+        Update[Option[WrappedSimpleCaseClass]](insertSimpleSql).analysis)) *>
+      assertSuccessTypecheckWrite(
+        sql"create temp table tab(c1 int, c2 varchar, c3 varchar, c4 int, c5 varchar, c6 varchar, c7 int, c8 varchar not null)"
+          .update.run
+          .flatMap(_ => Update[ComplexCaseClass](insertComplexSql).analysis)
+      ) *>
+      assertTypeErrorTypecheckWrite(
+        sql"create temp table tab(c1 int, c2 varchar, c3 varchar, c4 BINARY, c5 varchar, c6 varchar, c7 int, c8 varchar not null)"
+          .update.run
+          .flatMap(_ => Update[ComplexCaseClass](insertComplexSql).analysis)
+      )
   }
 
-  private def assertSuccessTypecheckWrite(connio: ConnectionIO[Analysis])(implicit loc: Location): Unit = {
-    val analysisResult = connio.transact(xa).unsafeRunSync()
-    assertEquals(analysisResult.parameterAlignmentErrors, Nil)
+  private def assertSuccessTypecheckWrite(connio: ConnectionIO[Analysis])(implicit loc: Location): IO[Unit] = {
+    connio.transact(xa).map(_.parameterAlignmentErrors).assertEquals(Nil)
   }
 
-  private def assertMisalignedTypecheckWrite(connio: ConnectionIO[Analysis])(implicit loc: Location): Unit = {
-    val analysisResult = connio.transact(xa).unsafeRunSync()
-    val errorClasses = analysisResult.parameterAlignmentErrors.map(_.getClass)
-    assertEquals(errorClasses, List(classOf[ParameterMisalignment]))
+  private def assertMisalignedTypecheckWrite(connio: ConnectionIO[Analysis])(implicit loc: Location): IO[Unit] = {
+    connio.transact(xa).map(_.parameterAlignmentErrors.map(_.getClass)).assertEquals(List(
+      classOf[ParameterMisalignment]))
   }
 
-  private def assertTypeErrorTypecheckWrite(connio: ConnectionIO[Analysis])(implicit loc: Location): Unit = {
-    val analysisResult = connio.transact(xa).unsafeRunSync()
-    val errorClasses = analysisResult.parameterAlignmentErrors.map(_.getClass)
-    assertEquals(errorClasses, List(classOf[ParameterTypeError]))
+  private def assertTypeErrorTypecheckWrite(connio: ConnectionIO[Analysis])(implicit loc: Location): IO[Unit] = {
+    connio.transact(xa).map(_.parameterAlignmentErrors.map(_.getClass)).assertEquals(List(classOf[ParameterTypeError]))
   }
 
   private def writeAndCheckTuple2[A: Write, Tup <: (?, ?): Read](in: A, expectedOut: Tup)(implicit
       loc: Location
-  ): Unit = {
-    val res = Query[A, Tup]("SELECT ?, ?").unique(in).transact(xa)
-      .unsafeRunSync()
-    assertEquals(res, expectedOut)
-  }
+  ): IO[Unit] =
+    Query[A, Tup]("SELECT ?, ?").unique(in).transact(xa).assertEquals(expectedOut)
 
   private def writeAndCheckTuple3[A: Write, Tup <: (?, ?, ?): Read](in: A, expectedOut: Tup)(implicit
       loc: Location
-  ): Unit = {
-    val res = Query[A, Tup]("SELECT ?, ?, ?").unique(in).transact(xa)
-      .unsafeRunSync()
-    assertEquals(res, expectedOut)
-  }
+  ): IO[Unit] =
+    Query[A, Tup]("SELECT ?, ?, ?").unique(in).transact(xa).assertEquals(expectedOut)
 
-  private def testNullPut(input: (String, Option[String])): Int = {
+  private def testNullPut(input: (String, Option[String])): IO[Int] = {
     import doobie.implicits.*
 
     (for {
@@ -276,7 +265,6 @@ class WriteSuite extends munit.FunSuite with WriteSuitePlatform {
       n <- Update[(String, Option[String])]("insert into t0 (a, b) values (?, ?)").run(input)
     } yield n)
       .transact(xa)
-      .unsafeRunSync()
   }
 
 }
