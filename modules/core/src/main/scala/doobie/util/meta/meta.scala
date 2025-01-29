@@ -130,13 +130,13 @@ trait MetaConstructors {
       )
 
     def array[A >: Null <: AnyRef](
-        elementType: String,
-        schemaH: String,
-        schemaT: String*
+        elementTypeName: String, // Used in Put to set the array element type
+        arrayTypeName: String,
+        additionalArrayTypeNames: String*
     ): Meta[Array[A]] =
       new Meta[Array[A]](
-        Get.Advanced.array[A](NonEmptyList(schemaH, schemaT.toList)),
-        Put.Advanced.array[A](NonEmptyList(schemaH, schemaT.toList), elementType)
+        Get.Advanced.array[A](NonEmptyList(arrayTypeName, additionalArrayTypeNames.toList)),
+        Put.Advanced.array[A](NonEmptyList(arrayTypeName, additionalArrayTypeNames.toList), elementTypeName)
       )
 
     def other[A >: Null <: AnyRef: TypeName: ClassTag](

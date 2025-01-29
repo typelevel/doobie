@@ -4,24 +4,26 @@
 
 package doobie.util
 
-import scala.deriving.Mirror
+trait WritePlatform extends LowestPriorityWrite:
 
-trait WritePlatform:
+  given tupleBase[H](
+      using H: Write[H]
+  ): Write[H *: EmptyTuple] =
+    Write.Composite[H *: EmptyTuple](
+      List(H),
+      {
+        case h *: EmptyTuple => List(h)
+      }
+    )
 
-  // Derivation for product types (i.e. case class)
-  given derivedTuple[P <: Tuple, A](
+  given tuple[H, T <: Tuple](
       using
-      m: Mirror.ProductOf[P],
-      i: m.MirroredElemTypes =:= A,
-      w: MkWrite[A]
-  ): MkWrite[P] =
-    MkWrite.derived[P, A]
-
-  // Derivation for optional product types
-  given derivedOptionTuple[P <: Tuple, A](
-      using
-      m: Mirror.ProductOf[P],
-      i: m.MirroredElemTypes =:= A,
-      w: MkWrite[Option[A]]
-  ): MkWrite[Option[P]] =
-    MkWrite.derivedOption[P, A]
+      H: Write[H],
+      T: Write[T]
+  ): Write[H *: T] =
+    Write.Composite(
+      List(H, T),
+      {
+        case h *: t => List(h, t)
+      }
+    )

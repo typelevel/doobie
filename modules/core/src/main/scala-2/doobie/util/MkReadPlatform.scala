@@ -4,142 +4,91 @@
 
 package doobie.util
 
-import shapeless.{HList, HNil, ::, Generic, Lazy, <:!<, OrElse}
-import shapeless.labelled.{field, FieldType}
+import shapeless.{HList, HNil, ::, Generic, Lazy, OrElse}
+import shapeless.labelled.FieldType
 
-trait MkReadPlatform extends LowerPriorityRead {
+trait MkReadPlatform extends LowerPriorityMkRead {
 
   // Derivation base case for product types (1-element)
   implicit def productBase[H](
-      implicit H: Read[H] OrElse MkRead[H]
-  ): MkRead[H :: HNil] = {
-    val head = H.unify
+      implicit H: Read[H] OrElse Derived[MkRead[H]]
+  ): Derived[MkRead[H :: HNil]] = {
+    val headInstance = H.fold(identity, _.instance)
 
-    new MkRead[H :: HNil](
-      head.gets,
-      (rs, n) => head.unsafeGet(rs, n) :: HNil
+    new Derived(
+      new MkRead(
+        headInstance.map(_ :: HNil)
+      )
     )
   }
 
   // Derivation base case for shapeless record (1-element)
   implicit def recordBase[K <: Symbol, H](
-      implicit H: Read[H] OrElse MkRead[H]
-  ): MkRead[FieldType[K, H] :: HNil] = {
-    val head = H.unify
+      implicit H: Read[H] OrElse Derived[MkRead[H]]
+  ): Derived[MkRead[FieldType[K, H] :: HNil]] = {
+    val headInstance = H.fold(identity, _.instance)
 
-    new MkRead[FieldType[K, H] :: HNil](
-      head.gets,
-      (rs, n) => field[K](head.unsafeGet(rs, n)) :: HNil
+    new Derived(
+      new MkRead(
+        new Read.Transform[FieldType[K, H] :: HNil, H](
+          headInstance,
+          h => shapeless.labelled.field[K].apply(h) :: HNil
+        )
+      )
     )
   }
 }
 
-trait LowerPriorityRead extends EvenLowerPriorityRead {
+trait LowerPriorityMkRead {
 
   // Derivation inductive case for product types
   implicit def product[H, T <: HList](
       implicit
-      H: Read[H] OrElse MkRead[H],
-      T: MkRead[T]
-  ): MkRead[H :: T] = {
-    val head = H.unify
+      H: Read[H] OrElse Derived[MkRead[H]],
+      T: Read[T] OrElse Derived[MkRead[T]]
+  ): Derived[MkRead[H :: T]] = {
+    val headInstance = H.fold(identity, _.instance)
+    val tailInstance = T.fold(identity, _.instance)
 
-    new MkRead[H :: T](
-      head.gets ++ T.gets,
-      (rs, n) => head.unsafeGet(rs, n) :: T.unsafeGet(rs, n + head.length)
+    new Derived(
+      new MkRead(
+        new Read.Composite[H :: T, H, T](
+          headInstance,
+          tailInstance,
+          (h, t) => h :: t
+        )
+      )
     )
   }
 
   // Derivation inductive case for shapeless records
   implicit def record[K <: Symbol, H, T <: HList](
       implicit
-      H: Read[H] OrElse MkRead[H],
-      T: MkRead[T]
-  ): MkRead[FieldType[K, H] :: T] = {
-    val head = H.unify
+      H: Read[H] OrElse Derived[MkRead[H]],
+      T: Read[T] OrElse Derived[MkRead[T]]
+  ): Derived[MkRead[FieldType[K, H] :: T]] = {
+    val headInstance = H.fold(identity, _.instance)
+    val tailInstance = T.fold(identity, _.instance)
 
-    new MkRead[FieldType[K, H] :: T](
-      head.gets ++ T.gets,
-      (rs, n) => field[K](head.unsafeGet(rs, n)) :: T.unsafeGet(rs, n + head.length)
+    new Derived(
+      new MkRead(
+        new Read.Composite[FieldType[K, H] :: T, H, T](
+          headInstance,
+          tailInstance,
+          (h, t) => shapeless.labelled.field[K].apply(h) :: t
+        )
+      )
     )
   }
 
   // Derivation for product types (i.e. case class)
-  implicit def generic[T, Repr](implicit gen: Generic.Aux[T, Repr], G: Lazy[MkRead[Repr]]): MkRead[T] =
-    new MkRead[T](G.value.gets, (rs, n) => gen.from(G.value.unsafeGet(rs, n)))
-
-  // Derivation base case for Option of product types (1-element)
-  implicit def optProductBase[H](
+  implicit def genericRead[T, Repr](
       implicit
-      H: Read[Option[H]] OrElse MkRead[Option[H]],
-      N: H <:!< Option[α] forSome { type α }
-  ): MkRead[Option[H :: HNil]] = {
-    void(N)
-    val head = H.unify
-
-    new MkRead[Option[H :: HNil]](
-      head.gets,
-      (rs, n) =>
-        head.unsafeGet(rs, n).map(_ :: HNil)
-    )
+      gen: Generic.Aux[T, Repr],
+      hlistRead: Lazy[Read[Repr] OrElse Derived[MkRead[Repr]]]
+  ): Derived[MkRead[T]] = {
+    val hlistInstance: Read[Repr] = hlistRead.value.fold(identity, _.instance)
+    new Derived(new MkRead(hlistInstance.map(gen.from)))
   }
-
-  // Derivation base case for Option of product types (where the head element is Option)
-  implicit def optProductOptBase[H](
-      implicit H: Read[Option[H]] OrElse MkRead[Option[H]]
-  ): MkRead[Option[Option[H] :: HNil]] = {
-    val head = H.unify
-
-    new MkRead[Option[Option[H] :: HNil]](
-      head.gets,
-      (rs, n) => head.unsafeGet(rs, n).map(h => Some(h) :: HNil)
-    )
-  }
-
-}
-
-trait EvenLowerPriorityRead {
-
-  // Read[Option[H]], Read[Option[T]] implies Read[Option[H *: T]]
-  implicit def optProduct[H, T <: HList](
-      implicit
-      H: Read[Option[H]] OrElse MkRead[Option[H]],
-      T: MkRead[Option[T]],
-      N: H <:!< Option[α] forSome { type α }
-  ): MkRead[Option[H :: T]] = {
-    void(N)
-    val head = H.unify
-
-    new MkRead[Option[H :: T]](
-      head.gets ++ T.gets,
-      (rs, n) =>
-        for {
-          h <- head.unsafeGet(rs, n)
-          t <- T.unsafeGet(rs, n + head.length)
-        } yield h :: t
-    )
-  }
-
-  // Read[Option[H]], Read[Option[T]] implies Read[Option[Option[H] *: T]]
-  implicit def optProductOpt[H, T <: HList](
-      implicit
-      H: Read[Option[H]] OrElse MkRead[Option[H]],
-      T: MkRead[Option[T]]
-  ): MkRead[Option[Option[H] :: T]] = {
-    val head = H.unify
-
-    new MkRead[Option[Option[H] :: T]](
-      head.gets ++ T.gets,
-      (rs, n) => T.unsafeGet(rs, n + head.length).map(head.unsafeGet(rs, n) :: _)
-    )
-  }
-
-  // Derivation for optional of product types (i.e. case class)
-  implicit def ogeneric[A, Repr <: HList](
-      implicit
-      G: Generic.Aux[A, Repr],
-      B: Lazy[MkRead[Option[Repr]]]
-  ): MkRead[Option[A]] =
-    new MkRead[Option[A]](B.value.gets, B.value.unsafeGet(_, _).map(G.from))
 
 }
