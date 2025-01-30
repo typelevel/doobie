@@ -168,6 +168,37 @@ class ReadSuite extends munit.FunSuite with ReadSuitePlatform {
     assertEquals(o2, List(None))
   }
 
+  test("Read should read correct columns for instances with Option (None) with left join between two tables") {
+    import doobie.implicits.*
+
+    case class Foo(foo_key: Int, b: String)
+    case class Bar(bar_key: Int, d: Option[String])
+
+    val result: List[(Foo, Option[Bar])] = (for {
+      _ <- sql"drop table if exists foo".update.run
+      _ <- sql"drop table if exists bar".update.run
+      _ <- sql"create table foo(foo_key int, foo_value varchar not null)".update.run
+      _ <- sql"create table bar(bar_key int, foo_key int, bar_value varchar)".update.run
+
+      _ <- sql"insert into foo values (1, 'a'), (2, 'b'), (3, 'c')".update.run
+      _ <- sql"insert into bar values (1, 1, 'c'), (2, 2, null)".update.run
+
+      q <-
+        sql"select f.foo_key, f.foo_value, b.bar_key, b.bar_value from foo f left join bar b on f.foo_key = b.foo_key"
+          .query[(Foo, Option[Bar])].to[List]
+    } yield q)
+      .transact(xa)
+      .unsafeRunSync()
+
+    assertEquals(
+      result,
+      List(
+        (Foo(1, "a"), Some(Bar(1, Some("c")))),
+        (Foo(2, "b"), Some(Bar(2, None))),
+        (Foo(3, "c"), None)
+      ))
+  }
+
   test("Read should read correct columns for instances with Option (Some)") {
     import doobie.implicits.*
 
