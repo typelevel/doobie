@@ -16,22 +16,22 @@ import doobie.util.update.Update
 
 class QueryLogSuite extends munit.CatsEffectSuite with QueryLogSuitePlatform {
 
-  val logEventRef: IO[Ref[IO, LogEvent]] =
-    Ref.of[IO, LogEvent](null)
+  val logEventRef: Ref[IO, LogEvent] =
+    Ref.of[IO, LogEvent](null).unsafeRunSync()
 
   val xa = Transactor.fromDriverManager[IO](
     "org.h2.Driver",
     "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
     "sa",
     "",
-    logHandler = Some(ev => logEventRef.unsafeRunSync().set(ev))
+    logHandler = Some(ev => logEventRef.set(ev))
   )
 
   def eventForCIO[A](cio: ConnectionIO[A]): IO[LogEvent] = {
     for {
-      _ <- logEventRef.flatMap(_.set(null))
+      _ <- logEventRef.set(null)
       _ <- cio.transact(xa).attempt
-      log <- logEventRef.flatMap(_.get)
+      log <- logEventRef.get
     } yield log
   }
 
