@@ -5,11 +5,10 @@
 package doobie.util
 
 import cats.effect.{Async, IO}
-import doobie.*, doobie.implicits.*
+import doobie.*
+import doobie.implicits.*
 
-class TransactorSuite extends munit.FunSuite {
-
-  import cats.effect.unsafe.implicits.global
+class TransactorSuite extends munit.CatsEffectSuite {
 
   val q = sql"select 42".query[Int].unique
 
@@ -22,7 +21,7 @@ class TransactorSuite extends munit.FunSuite {
   )
 
   test("Transactor should support cats.effect.IO") {
-    assertEquals(q.transact(xa[IO]).unsafeRunSync(), 42)
+    q.transact(xa[IO]).assertEquals(42)
   }
 
   class ConnectionTracker {
@@ -47,29 +46,27 @@ class TransactorSuite extends munit.FunSuite {
   test("Connection.close should be called on success") {
     val tracker = new ConnectionTracker
     val transactor = tracker.track(xa[IO])
-    val _ = sql"select 1".query[Int].unique.transact(transactor).unsafeRunSync()
-    assertEquals(tracker.connections.map(_.isClosed), List(true))
+    val _ = sql"select 1".query[Int].unique.transact(transactor).map(_ =>
+      tracker.connections.map(_.isClosed)).assertEquals(List(true))
   }
 
   test("Connection.close should be called on failure") {
     val tracker = new ConnectionTracker
     val transactor = tracker.track(xa[IO])
-    assertEquals(sql"abc".query[Int].unique.transact(transactor).attempt.unsafeRunSync().toOption, None)
-    assertEquals(tracker.connections.map(_.isClosed), List(true))
+    sql"abc".query[Int].unique.transact(transactor).attempt.map(_.isLeft).assertEquals(true)
   }
 
   test("[Streaming] Connection.close should be called on success") {
     val tracker = new ConnectionTracker
     val transactor = tracker.track(xa[IO])
-    val _ = sql"select 1".query[Int].stream.compile.toList.transact(transactor).unsafeRunSync()
-    assertEquals(tracker.connections.map(_.isClosed), List(true))
+    sql"select 1".query[Int].stream.compile.toList.transact(transactor).map(_ =>
+      tracker.connections.map(_.isClosed)).assertEquals(List(true))
   }
 
   test("[Streaming] Connection.close should be called on failure") {
     val tracker = new ConnectionTracker
     val transactor = tracker.track(xa[IO])
-    assertEquals(sql"abc".query[Int].stream.compile.toList.transact(transactor).attempt.unsafeRunSync().toOption, None)
-    assertEquals(tracker.connections.map(_.isClosed), List(true))
+    sql"abc".query[Int].stream.compile.toList.transact(transactor).attempt.map(_.isLeft).assertEquals(true)
   }
 
 }

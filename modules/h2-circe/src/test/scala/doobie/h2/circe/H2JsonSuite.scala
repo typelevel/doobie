@@ -8,10 +8,9 @@ import cats.effect.IO
 import doobie.*
 import doobie.implicits.*
 import io.circe.{Decoder, Encoder, Json}
+import munit.CatsEffectSuite
 
-class H2JsonSuite extends munit.FunSuite {
-
-  import cats.effect.unsafe.implicits.global
+class H2JsonSuite extends CatsEffectSuite {
 
   val xa = Transactor.fromDriverManager[IO](
     driver = "org.h2.Driver",
@@ -29,13 +28,13 @@ class H2JsonSuite extends munit.FunSuite {
 
   def testInOut[A](col: String, a: A, t: Transactor[IO])(implicit m: Get[A], p: Put[A]) = {
     test(s"Mapping for $col as ${m.typeStack} - write+read $col as ${m.typeStack}") {
-      assertEquals(inOut(col, a).transact(t).attempt.unsafeRunSync(), Right(a))
+      inOut(col, a).transact(t).attempt.assertEquals(Right(a))
     }
     test(s"Mapping for $col as ${m.typeStack} - write+read $col as Option[${m.typeStack}] (Some)") {
-      assertEquals(inOut[Option[A]](col, Some(a)).transact(t).attempt.unsafeRunSync(), Right(Some(a)))
+      inOut[Option[A]](col, Some(a)).transact(t).attempt.assertEquals(Right(Some(a)))
     }
     test(s"Mapping for $col as ${m.typeStack} - write+read $col as Option[${m.typeStack}] (None)") {
-      assertEquals(inOut[Option[A]](col, None).transact(t).attempt.unsafeRunSync(), Right(None))
+      inOut[Option[A]](col, None).transact(t).attempt.assertEquals(Right(None))
     }
   }
 
@@ -48,15 +47,12 @@ class H2JsonSuite extends munit.FunSuite {
 
   test("json should check ok for read") {
     import doobie.h2.circe.json.implicits.*
-
-    val a = sql"SELECT '{}' FORMAT JSON".query[Json].analysis.transact(xa).unsafeRunSync()
-    assertEquals(a.columnTypeErrors, Nil)
+    sql"SELECT '{}' FORMAT JSON".query[Json].analysis.transact(xa).map(_.columnTypeErrors).assertEquals(Nil)
   }
+
   test("json should check ok for write") {
     import doobie.h2.circe.json.implicits.*
-
-    val a = sql"SELECT ${Json.obj()} FORMAT JSON".query[Json].analysis.transact(xa).unsafeRunSync()
-    assertEquals(a.parameterTypeErrors, Nil)
+    sql"SELECT ${Json.obj()} FORMAT JSON".query[Json].analysis.transact(xa).map(_.parameterTypeErrors).assertEquals(Nil)
   }
 
   // Encoder / Decoders
@@ -70,12 +66,12 @@ class H2JsonSuite extends munit.FunSuite {
   }
 
   test("fooGet should check ok for read") {
-    val a = sql"SELECT '{}' FORMAT JSON".query[Foo].analysis.transact(xa).unsafeRunSync()
-    assertEquals(a.columnTypeErrors, Nil)
+    sql"SELECT '{}' FORMAT JSON".query[Foo].analysis.transact(xa).map(_.columnTypeErrors).assertEquals(Nil)
   }
+
   test("fooPut check ok for write") {
-    val a = sql"SELECT ${Foo(Json.obj())} FORMAT JSON".query[Foo].analysis.transact(xa).unsafeRunSync()
-    assertEquals(a.parameterTypeErrors, Nil)
+    sql"SELECT ${Foo(Json.obj())} FORMAT JSON".query[Foo].analysis.transact(xa).map(_.parameterTypeErrors).assertEquals(
+      Nil)
   }
 
 }

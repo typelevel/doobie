@@ -5,7 +5,6 @@
 package doobie
 
 import cats.effect.*
-import cats.effect.unsafe.implicits.global
 import com.zaxxer.hikari.HikariConfig
 import doobie.hikari.HikariTransactor
 import doobie.implicits.*
@@ -14,7 +13,7 @@ import fs2.Stream
 
 import scala.concurrent.duration.DurationInt
 
-class HikariQueryCancellationSuite extends munit.FunSuite {
+class HikariQueryCancellationSuite extends munit.CatsEffectSuite {
 
   // Typically you construct a transactor this way, using lifetime-managed thread pools.
   val transactorRes: Resource[IO, Transactor[IO]] =
@@ -46,12 +45,10 @@ class HikariQueryCancellationSuite extends munit.FunSuite {
         _ <- IO.sleep(3.second)
         _ <- fiber.join.attempt
         result <- sql"select * from query_cancel_test order by i".query[String].to[List].transact(xa)
-      } yield {
-        assertEquals(result, List("1"))
-      }
+      } yield result
     }
 
-    scenario.unsafeRunSync()
+    assertIO(scenario, List("1"))
   }
 
   test("Stream query cancel with Hikari") {
@@ -69,11 +66,9 @@ class HikariQueryCancellationSuite extends munit.FunSuite {
         _ <- IO.sleep(3.second)
         _ <- fiber.join.attempt
         result <- sql"select * from stream_cancel_test order by i".query[String].to[List].transact(xa)
-      } yield {
-        assertEquals(result, List("1"))
-      }
+      } yield result
     }
 
-    scenario.unsafeRunSync()
+    assertIO(scenario, List("1"))
   }
 }
