@@ -22,19 +22,19 @@ class QuerySuite extends munit.CatsEffectSuite {
   val pairQuery = Query[String, (String, Int)]("select 'xxx', 123 where ? = 'foo'", None)
 
   test("Query (non-empty) to") {
-    q.to[List]("foo").transact(xa) assertEquals (List(123))
+    q.to[List]("foo").transact(xa).assertEquals(List(123))
   }
   test("Query (non-empty) toMap") {
-    pairQuery.toMap[String, Int]("foo").transact(xa) assertEquals (Map("xxx" -> 123))
+    pairQuery.toMap[String, Int]("foo").transact(xa).assertEquals(Map("xxx" -> 123))
   }
   test("Query (non-empty) unique") {
     q.unique("foo").transact(xa).assertEquals(123)
   }
   test("Query (non-empty) option") {
-    q.option("foo").transact(xa) assertEquals (Some(123))
+    q.option("foo").transact(xa).assertEquals(Some(123))
   }
   test("Query (non-empty) map") {
-    q.map("x" * _).to[List]("foo").transact(xa) assertEquals (List("x" * 123))
+    q.map("x" * _).to[List]("foo").transact(xa).assertEquals(List("x" * 123))
   }
   test("Query (non-empty) contramap") {
     q.contramap[Int](n => "foo" * n).to[List](1).transact(xa).assertEquals(List(123))

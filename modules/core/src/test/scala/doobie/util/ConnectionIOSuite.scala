@@ -27,7 +27,7 @@ class ConnectionIOSuite extends munit.CatsEffectSuite {
   }
 
   test("Monoid ConnectionIO") {
-    Monoid[ConnectionIO[List[Int]]].empty.transact(xa) assertEquals (Nil)
+    Monoid[ConnectionIO[List[Int]]].empty.transact(xa).assertEquals(Nil)
   }
 
 }

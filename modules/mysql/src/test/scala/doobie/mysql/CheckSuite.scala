@@ -12,7 +12,6 @@ import doobie.util.analysis.ColumnTypeError
 import munit.CatsEffectSuite
 
 class CheckSuite extends CatsEffectSuite {
-  import cats.effect.unsafe.implicits.global
   import MySQLTestTransactor.xa
 
   // note selecting from a table because a value cannot be cast to a timestamp
