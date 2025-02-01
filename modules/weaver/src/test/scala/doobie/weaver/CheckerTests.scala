@@ -20,7 +20,8 @@ object CheckerTests extends IOSuite with IOChecker {
       url = "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
       user = "sa",
       password = "",
-      logHandler = None
+      logHandler =
+        None
     ))
 
   test("trivial") { implicit transactor =>

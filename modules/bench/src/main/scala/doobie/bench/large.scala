@@ -50,7 +50,8 @@ class LargeRow {
                   col8 VARCHAR(50)
               );""".update.run
       _ <- sql"select setseed(0.5)".query[Unit].unique // deterministic seed
-      _ <- sql"""INSERT INTO data (col1, col2, col3, col4, col5, col6, col7, col8)
+      _ <-
+        sql"""INSERT INTO data (col1, col2, col3, col4, col5, col6, col7, col8)
               SELECT random(), random() :: text, (random() * 1000) :: int, random() :: text, random(), random(), random() :: text, random() :: text
               FROM generate_series(1, 10000)
           """.update.run
@@ -74,7 +75,15 @@ class LargeRow {
   @Benchmark
   def tupleOpt(bh: Blackhole): Unit = {
     bh.consume(sql"""SELECT col1, col2, col3, col4, col5, col6, col7, col8 FROM data"""
-      .query[Option[(Double, String, Int, String, Double, Double, String, String)]].to[List].transact(xa).unsafeRunSync())
+      .query[Option[(
+          Double,
+          String,
+          Int,
+          String,
+          Double,
+          Double,
+          String,
+          String)]].to[List].transact(xa).unsafeRunSync())
   }
 
   @Benchmark

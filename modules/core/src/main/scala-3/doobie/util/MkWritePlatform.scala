@@ -32,7 +32,9 @@ trait MkWritePlatform:
     new Derived(
       new MkWrite(Write.Composite(
         List(headInstance),
-        { case h *: EmptyTuple => List(h) }
+        { case h *: EmptyTuple =>
+          List(h)
+        }
       ))
     )
   }
@@ -49,7 +51,9 @@ trait MkWritePlatform:
     new Derived(
       new MkWrite(Write.Composite(
         List(headWrite, tailWrite),
-        { case h *: t => List(h, t) }
+        { case h *: t =>
+          List(h, t)
+        }
       ))
     )
   }

@@ -70,7 +70,9 @@ object analysis {
     override def msg = this match {
       case ColumnMisalignment(_, Left((get, n))) =>
         s"""|Too few columns are selected, which will result in a runtime failure. Add a column or
-            |remove mapped ${typeName(get.typeStack.last, n)} from the result type.""".stripMargin.linesIterator.mkString(
+            |remove mapped ${typeName(
+             get.typeStack.last,
+             n)} from the result type.""".stripMargin.linesIterator.mkString(
           " ")
       case ColumnMisalignment(_, Right(_)) =>
         s"""Column is unused. Remove it from the SELECT statement."""
