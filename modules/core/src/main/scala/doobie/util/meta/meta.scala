@@ -181,7 +181,8 @@ trait MetaInstances {
       List(TinyInt, Integer, BigInt, Real, Float, Double, Decimal, Numeric, Bit, Char, VarChar, LongVarChar),
       _.getShort(_),
       _.setShort(_, _),
-      _.updateShort(_, _))
+      _.updateShort(_, _)
+    )
 
   /** @group Instances */
   implicit val IntMeta: Meta[Int] =
@@ -208,7 +209,8 @@ trait MetaInstances {
       List(TinyInt, Integer, SmallInt, BigInt, Float, Double, Decimal, Numeric, Bit, Char, VarChar, LongVarChar),
       _.getFloat(_),
       _.setFloat(_, _),
-      _.updateFloat(_, _))
+      _.updateFloat(_, _)
+    )
 
   /** @group Instances */
   implicit val DoubleMeta: Meta[Double] =
