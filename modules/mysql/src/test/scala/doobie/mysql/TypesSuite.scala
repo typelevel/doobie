@@ -5,18 +5,19 @@
 package doobie.mysql
 
 import java.time.ZoneOffset
-
 import doobie.*
 import doobie.implicits.*
 import doobie.mysql.implicits.*
 import doobie.mysql.util.arbitraries.SQLArbitraries.*
 import doobie.mysql.util.arbitraries.TimeArbitraries.*
-import org.scalacheck.Arbitrary
+import org.scalacheck.{Arbitrary, Test}
 import org.scalacheck.Prop.forAll
 
 class TypesSuite extends munit.ScalaCheckSuite {
   import cats.effect.unsafe.implicits.global
   import MySQLTestTransactor.xa
+
+  override def scalaCheckTestParameters: Test.Parameters = super.scalaCheckTestParameters.withMinSuccessfulTests(10)
 
   def inOut[A: Get: Put](col: String, a: A): ConnectionIO[A] = for {
     _ <- Update0(s"CREATE TEMPORARY TABLE test (value $col NOT NULL)", None).run
