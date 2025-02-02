@@ -3,7 +3,7 @@ import scala.sys.process._
 import org.typelevel.sbt.tpolecat.{DevMode, CiMode}
 
 // Library versions all in one place, for convenience and sanity.
-lazy val catsVersion = "2.12.0"
+lazy val catsVersion = "2.13.0"
 lazy val catsEffectVersion = "3.5.7"
 lazy val circeVersion = "0.14.10"
 lazy val fs2Version = "3.11.0"
@@ -17,7 +17,7 @@ lazy val postgresVersion = "42.7.5"
 lazy val refinedVersion = "0.11.3"
 lazy val scalaCheckVersion = "1.15.4"
 lazy val scalatestVersion = "3.2.18"
-lazy val munitVersion = "1.0.4"
+lazy val munitVersion = "1.1.0"
 lazy val shapelessVersion = "2.3.12"
 lazy val silencerVersion = "1.7.1"
 lazy val specs2Version = "4.20.9"
@@ -148,8 +148,8 @@ lazy val commonSettings =
 
       // MUnit
       libraryDependencies ++= Seq(
-        "org.typelevel" %% "scalacheck-effect-munit" % "1.0.4" % Test,
-        "org.typelevel" %% "munit-cats-effect-3" % "1.0.7" % Test,
+        "org.typelevel" %% "scalacheck-effect-munit" % "2.0.0-M2" % Test,
+        "org.typelevel" %% "munit-cats-effect" % "2.0.0" % Test,
         "org.typelevel" %% "cats-effect-testkit" % catsEffectVersion % Test
       ),
       testFrameworks += new TestFramework("munit.Framework"),
