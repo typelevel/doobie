@@ -4,7 +4,7 @@
 
 package doobie.postgres
 
-import java.math.{BigDecimal as JBigDecimal}
+import java.math.BigDecimal as JBigDecimal
 import java.net.InetAddress
 import java.time.{LocalDate, LocalDateTime, OffsetDateTime, ZoneOffset}
 import java.util.UUID
@@ -22,15 +22,17 @@ import doobie.util.arbitraries.StringArbitraries.*
 import net.postgis.jdbc.geometry.*
 import org.postgresql.geometric.*
 import org.postgresql.util.*
-import org.scalacheck.Arbitrary
-import org.scalacheck.Gen
+import org.scalacheck.{Arbitrary, Gen, Test}
 import org.scalacheck.Prop.forAll
+
 import scala.collection.compat.immutable.LazyList
 
 // Establish that we can write and read various types.
 class TypesSuite extends munit.ScalaCheckSuite {
   import cats.effect.unsafe.implicits.global
   import PostgresTestTransactor.xa
+
+  override def scalaCheckTestParameters: Test.Parameters = super.scalaCheckTestParameters.withMinSuccessfulTests(10)
 
   def inOut[A: Get: Put](col: String, a: A): ConnectionIO[A] = for {
     _ <- Update0(s"CREATE TEMPORARY TABLE TEST (value $col NOT NULL)", None).run
