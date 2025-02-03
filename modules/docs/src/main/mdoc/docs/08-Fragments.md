@@ -105,6 +105,23 @@ fr0"IN (" ++ List(1, 2, 3).map(n => fr0"$n").intercalate(fr",") ++ fr")"
 ```
 Note that the `sql` interpolator is simply an alias for `fr0`.
 
+Additionally, you can use the `+~+` operator to concatenate two fragments, ensuring at least one space between them.
+This is useful when you want to maintain proper spacing without worrying about trailing spaces in individual fragments.
+
+```scala mdoc
+import Fragment.const0
+
+// Assume we don't know (or don't want to worry) if `codeCondFrag` or `populationCondFrag` end with whitespaces or not.
+def codeCondFrag: Fragment = fr0"code = 'USA'"
+def populationCondFrag: Fragment = fr0"population > 1000000"
+
+const0("SELECT code, name, population FROM country\n") +~+ // a newline will be preserved, no extra whitespace added
+  fr0"WHERE" +~+ codeCondFrag +~+ fr0"AND" +~+ populationCondFrag +~+
+  fr0"ORDER BY population DESC"
+```
+
+In the above example, spaces will be added between fragments where needed automatically.
+
 ### The `Fragments` Module
 
 The `Fragments` module provides some combinators for common patterns when working with fragments. The following example illustrates a few of them. See the Scaladoc or source for more information.
@@ -147,4 +164,3 @@ select(None, None, Nil, 10).check.unsafeRunSync() // no filters
 select(Some("U%"), None, Nil, 10).check.unsafeRunSync() // one filter
 select(Some("U%"), Some(12345), List("FRA", "GBR"), 10).check.unsafeRunSync() // three filters
 ```
-
