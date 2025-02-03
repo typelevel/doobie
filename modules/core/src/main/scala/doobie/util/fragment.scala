@@ -57,6 +57,23 @@ object fragment {
     def ++(fb: Fragment): Fragment =
       new Fragment(sql + fb.sql, elems ++ fb.elems, pos orElse fb.pos)
 
+    /** Concatenate this fragment with another, yielding a larger fragment and making sure there is at least one
+      * whitespace between the source fragments.
+      */
+    def +~+(that: Fragment): Fragment = {
+      val res =
+        if (sql.isEmpty) that.sql
+        else if (that.sql.isEmpty) sql
+        else if (sql.last.isWhitespace || that.sql.head.isWhitespace) sql + that.sql
+        else sql + " " + that.sql
+
+      new Fragment(
+        res,
+        elems ++ that.elems,
+        pos orElse that.pos
+      )
+    }
+
     def stripMargin(marginChar: Char): Fragment =
       new Fragment(sql.stripMargin(marginChar), elems, pos)
 
