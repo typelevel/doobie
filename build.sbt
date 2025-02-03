@@ -137,7 +137,7 @@ lazy val commonSettings =
         "-sourcepath",
         (LocalRootProject / baseDirectory).value.getAbsolutePath,
         "-doc-source-url",
-        "https://github.com/tpolecat/doobie/blob/v" + version.value + "€{FILE_PATH}.scala"
+        "https://github.com/typelevel/doobie/blob/v" + version.value + "€{FILE_PATH}.scala"
       ),
 
       // Kind Projector (Scala 2 only)
@@ -514,7 +514,7 @@ lazy val docs = project
   .enablePlugins(MdocPlugin)
   .settings(doobieSettings)
   .settings(
-    scalacOptions := Nil,
+    scalacOptions := Nil, // Seq("-Xsource:3"),
     libraryDependencies ++= Seq(
       "io.circe" %% "circe-core" % circeVersion,
       "io.circe" %% "circe-generic" % circeVersion,
@@ -524,7 +524,7 @@ lazy val docs = project
 
     // postgis is `provided` dependency for users, and section from book of doobie needs it
     libraryDependencies += postgisDep,
-    git.remoteRepo := "git@github.com:tpolecat/doobie.git",
+    git.remoteRepo := "git@github.com:typelevel/doobie.git",
     ghpagesNoJekyll := true,
     publish / skip := true,
     paradoxTheme := Some(builtinParadoxTheme("generic")),
@@ -544,9 +544,11 @@ lazy val docs = project
       "shapelessVersion" -> shapelessVersion,
       "h2Version" -> h2Version,
       "postgresVersion" -> postgresVersion,
-      "scalaVersion" -> scalaVersion.value
+      "scalaVersion" -> scalaVersion.value,
+      "canonical.base_url" -> "https://github.com/typelevel/doobie/"
     ),
     mdocIn := baseDirectory.value / "src" / "main" / "mdoc",
+    ghpagesRepository := (ThisBuild / baseDirectory).value / "doc_worktree",
     mdocExtraArguments ++= Seq("--no-link-hygiene"),
     Compile / paradox / sourceDirectory := mdocOut.value,
     makeSite := makeSite.dependsOn(mdoc.toTask("")).value

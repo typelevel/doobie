@@ -36,7 +36,7 @@ implicit val mdocColors: doobie.util.Colors = doobie.util.Colors.None
 
 ### How do I do an `IN` clause?
 
-This used to be very irritating, but as of 0.4.0 there is a good solution. See the section on `IN` clauses in [Chapter 5](05-Parameterized.html) and [Chapter 8](08-Fragments.html) on statement fragments.
+See the section on `IN` clauses in [Chapter 5](05-Parameterized.html) and [Chapter 8](08-Fragments.html) on statement fragments.
 
 ### How do I ascribe an SQL type to an interpolated parameter?
 
@@ -74,8 +74,6 @@ Note that you need both of these operations if you are using a `Transactor` beca
 
 
 ### How do I turn an arbitrary SQL string into a `Query0/Update0`?
-
-As of **doobie** 0.4.0 this is done via [statement fragments](08-Fragments.html). Here we choose the sort order dynamically.
 
 ```scala mdoc:silent
 case class Code(country: String)
@@ -143,7 +141,7 @@ Some examples, filtered for size.
 
 ### How do I log the SQL produced for my query after interpolation?
 
-As of **doobie** 0.4 there is a reasonable solution to the logging/instrumentation question. See [Chapter 10](10-Logging.html) for more details.
+See [Chapter 10](10-Logging.html).
 
 ### Why is there no `Get` or `Put` for `SQLXML`?
 
