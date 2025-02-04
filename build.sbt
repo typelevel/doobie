@@ -334,7 +334,7 @@ lazy val postgres = project
       "co.fs2" %% "fs2-io" % fs2Version,
       "org.postgresql" % "postgresql" % postgresVersion,
       postgisDep % "provided",
-      "org.scala-lang.modules" %% "scala-collection-compat" % "2.12.0" % Test
+      "org.scala-lang.modules" %% "scala-collection-compat" % "2.13.0" % Test
     ),
     freeGen2Dir := (Compile / scalaSource).value / "doobie" / "postgres" / "free",
     freeGen2Package := "doobie.postgres.free",
@@ -498,7 +498,7 @@ lazy val bench = project
   .enablePlugins(JmhPlugin)
   .settings(
     libraryDependencies ++= (if (scalaVersion.value == scala212Version)
-                               Seq("org.scala-lang.modules" %% "scala-collection-compat" % "2.12.0")
+                               Seq("org.scala-lang.modules" %% "scala-collection-compat" % "2.13.0")
                              else Seq.empty)
   )
   .dependsOn(core, postgres, hikari)
