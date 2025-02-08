@@ -329,11 +329,11 @@ implicit val jsonGet: Get[Json] =
 <p>Consider the <code>Point</code> class from Java AWT, which is logically a pair of <code>Int</code>s but is not a case class and is thus not eligible for automatic derivation of <code>Read</code> and <code>Write</code> instances. We can define these by hand by mapping to and from the Scala type <code>(Int, Int)</code> which <em>does</em> have automatically-derived instances.</p>
 <pre class="prettyprint"><code class="language-scala">implicit val pointRead: Read[Point] =
   Read[(Int, Int)].map { case (x, y) =&gt; new Point(x, y) }
-// pointRead: Read[Point] = doobie.util.Read$Transform@3db8ae
+// pointRead: Read[Point] = doobie.util.Read$Transform@773aebcf
 
 implicit val pointWrite: Write[Point] =
   Write[(Int, Int)].contramap(p =&gt; (p.x, p.y))
-// pointWrite: Write[Point] = doobie.util.Write$Composite@444b97a7
+// pointWrite: Write[Point] = doobie.util.Write$Composite@597b3257
 </code></pre>
 <p>There is no equivalent to <code>Meta</code> for bidirectional column vector mappings.</p>
 <div class="source-github">

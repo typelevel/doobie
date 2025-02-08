@@ -173,7 +173,7 @@ val xa = Transactor.fromDriverManager[IO](
 )
 </code></pre>
 <h3><a href="#how-do-i-do-an-in-clause-" name="how-do-i-do-an-in-clause-" class="anchor"><span class="anchor-link"></span></a>How do I do an <code>IN</code> clause?</h3>
-<p>This used to be very irritating, but as of 0.4.0 there is a good solution. See the section on <code>IN</code> clauses in <a href="05-Parameterized.html">Chapter 5</a> and <a href="08-Fragments.html">Chapter 8</a> on statement fragments.</p>
+<p>See the section on <code>IN</code> clauses in <a href="05-Parameterized.html">Chapter 5</a> and <a href="08-Fragments.html">Chapter 8</a> on statement fragments.</p>
 <h3><a href="#how-do-i-ascribe-an-sql-type-to-an-interpolated-parameter-" name="how-do-i-ascribe-an-sql-type-to-an-interpolated-parameter-" class="anchor"><span class="anchor-link"></span></a>How do I ascribe an SQL type to an interpolated parameter?</h3>
 <p>Interpolated parameters are replaced with <code>?</code> placeholders, so if you need to ascribe an SQL type you can use vendor-specific syntax in conjunction with the interpolated value. For example, in PostgreSQL you use <code>:: type</code>:</p>
 <pre class="prettyprint"><code class="language-scala">{
@@ -198,7 +198,6 @@ def withoutTransaction[A](p: ConnectionIO[A]): ConnectionIO[A] =
 </code></pre>
 <p>Note that you need both of these operations if you are using a <code>Transactor</code> because it will always start a transaction and will try to commit on completion.</p>
 <h3><a href="#how-do-i-turn-an-arbitrary-sql-string-into-a-query0-update0-" name="how-do-i-turn-an-arbitrary-sql-string-into-a-query0-update0-" class="anchor"><span class="anchor-link"></span></a>How do I turn an arbitrary SQL string into a <code>Query0/Update0</code>?</h3>
-<p>As of <strong>doobie</strong> 0.4.0 this is done via <a href="08-Fragments.html">statement fragments</a>. Here we choose the sort order dynamically.</p>
 <pre class="prettyprint"><code class="language-scala">case class Code(country: String)
 case class City(code: Code, name: String, population: Int)
 
@@ -249,7 +248,7 @@ val join =
 }
 </code></pre>
 <h3><a href="#how-do-i-log-the-sql-produced-for-my-query-after-interpolation-" name="how-do-i-log-the-sql-produced-for-my-query-after-interpolation-" class="anchor"><span class="anchor-link"></span></a>How do I log the SQL produced for my query after interpolation?</h3>
-<p>As of <strong>doobie</strong> 0.4 there is a reasonable solution to the logging/instrumentation question. See <a href="10-Logging.html">Chapter 10</a> for more details.</p>
+<p>See <a href="10-Logging.html">Chapter 10</a>.</p>
 <h3><a href="#why-is-there-no-get-or-put-for-sqlxml-" name="why-is-there-no-get-or-put-for-sqlxml-" class="anchor"><span class="anchor-link"></span></a>Why is there no <code>Get</code> or <code>Put</code> for <code>SQLXML</code>?</h3>
 <p>There are a lot of ways to handle <code>SQLXML</code> so there is no pre-defined strategy, but here is one that maps <code>scala.xml.Elem</code> to <code>SQLXML</code> via streaming.</p>
 <pre class="prettyprint"><code class="language-scala">import doobie.enumerated.JdbcType.Other

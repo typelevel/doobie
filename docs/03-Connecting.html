@@ -185,7 +185,7 @@ val xa = Transactor.fromDriverManager[IO](
 <p>And here we go.</p>
 <pre class="prettyprint"><code class="language-scala">val io = program1.transact(xa)
 // io: IO[Int] = Uncancelable(
-//   body = cats.effect.IO$$$Lambda$36525/0x00000008086af040@39aa1276,
+//   body = cats.effect.IO$$$Lambda$65357/0x000000080e3fd040@78285e8e,
 //   event = cats.effect.tracing.TracingEvent$StackTrace
 // )
 io.unsafeRunSync()
@@ -201,12 +201,12 @@ io.unsafeRunSync()
 <pre class="prettyprint"><code class="language-scala">val program2 = sql&quot;select 42&quot;.query[Int].unique
 // program2: ConnectionIO[Int] = Suspend(
 //   a = Uncancelable(
-//     body = cats.effect.kernel.MonadCancel$$Lambda$36612/0x0000000808708840@95cf19f
+//     body = cats.effect.kernel.MonadCancel$$Lambda$65444/0x000000080e44b840@7da4d7b0
 //   )
 // )
 val io2 = program2.transact(xa)
 // io2: IO[Int] = Uncancelable(
-//   body = cats.effect.IO$$$Lambda$36525/0x00000008086af040@15e4a8e7,
+//   body = cats.effect.IO$$$Lambda$65357/0x000000080e3fd040@4fa3e635,
 //   event = cats.effect.tracing.TracingEvent$StackTrace
 // )
 io2.unsafeRunSync()
@@ -223,7 +223,7 @@ io2.unsafeRunSync()
 </code></pre>
 <p>And behold!</p>
 <pre class="prettyprint"><code class="language-scala">program3.transact(xa).unsafeRunSync()
-// res2: (Int, Double) = (42, 0.16162146022654467)
+// res2: (Int, Double) = (42, 3.5764402544691265E-4)
 </code></pre>
 <p>The astute among you will note that we don&rsquo;t actually need a monad to do this; an applicative functor is all we need here. So we could also write <code>program3</code> as:</p>
 <pre class="prettyprint"><code class="language-scala">val program3a = {
@@ -234,7 +234,7 @@ io2.unsafeRunSync()
 </code></pre>
 <p>And lo, it was good:</p>
 <pre class="prettyprint"><code class="language-scala">program3a.transact(xa).unsafeRunSync()
-// res3: (Int, Double) = (42, 0.9994130460564297)
+// res3: (Int, Double) = (42, 0.9451599333718155)
 </code></pre>
 <p>And of course this composition can continue indefinitely.</p>
 <pre class="prettyprint"><code class="language-scala">val valuesList = program3a.replicateA(5)
@@ -247,34 +247,34 @@ io2.unsafeRunSync()
 //             c = FlatMapped(
 //               c = Suspend(
 //                 a = Uncancelable(
-//                   body = cats.effect.kernel.MonadCancel$$Lambda$36612/0x0000000808708840@367ed90f
+//                   body = cats.effect.kernel.MonadCancel$$Lambda$65444/0x000000080e44b840@56fa6d6e
 //                 )
 //               ),
-//               f = cats.FlatMap$$Lambda$36658/0x0000000808741840@619a9ac0
+//               f = cats.FlatMap$$Lambda$65490/0x000000080e48f840@6f304837
 //             ),
-//             f = cats.Monad$$Lambda$36509/0x000000080869e840@1f0a0f25
+//             f = cats.Monad$$Lambda$65341/0x000000080e3ee840@10287c8c
 //           ),
-//           f = cats.Monad$$Lambda$36509/0x000000080869e840@129f3b49
+//           f = cats.Monad$$Lambda$65341/0x000000080e3ee840@77a43433
 //         ),
-//         f = cats.FlatMap$$Lambda$36718/0x000000080877a040@35fd4798
+//         f = cats.FlatMap$$Lambda$65550/0x000000080e4c8040@1cfd44b4
 //       ),
-//       f = cats.FlatMap$$Lambda$36718/0x000000080877a040@29054843
+//       f = cats.FlatMap$$Lambda$65550/0x000000080e4c8040@34be6be5
 //     ),
-//     f = cats.FlatMap$$Lambda$36718/0x000000080877a040@52e2cede
+//     f = cats.FlatMap$$Lambda$65550/0x000000080e4c8040@40b5d6e6
 //   ),
-//   f = cats.Monad$$Lambda$36509/0x000000080869e840@394cf2b8
+//   f = cats.Monad$$Lambda$65341/0x000000080e3ee840@1666676f
 // )
 val result = valuesList.transact(xa)
 // result: IO[List[(Int, Double)]] = Uncancelable(
-//   body = cats.effect.IO$$$Lambda$36525/0x00000008086af040@6652a38e,
+//   body = cats.effect.IO$$$Lambda$65357/0x000000080e3fd040@60c859f3,
 //   event = cats.effect.tracing.TracingEvent$StackTrace
 // )
 result.unsafeRunSync().foreach(println)
-// (42,0.15514274620652513)
-// (42,0.4949001511636453)
-// (42,0.7535019816041952)
-// (42,0.9998523038507365)
-// (42,0.1994147888222897)
+// (42,0.24379474139749613)
+// (42,0.6486124952200536)
+// (42,0.6896024388635351)
+// (42,0.7341717805430479)
+// (42,0.9400751324318006)
 </code></pre>
 <h3><a href="#diving-deeper" name="diving-deeper" class="anchor"><span class="anchor-link"></span></a>Diving Deeper</h3>
 <p>All of the <strong>doobie</strong> monads are implemented via <code>Free</code> and have no operational semantics; we can only &ldquo;run&rdquo; a <strong>doobie</strong> program by transforming <code>FooIO</code> (for some carrier type <code>java.sql.Foo</code>) to a monad that actually has some meaning.</p>
@@ -285,10 +285,10 @@ import doobie.free.connection.ConnectionOp
 import java.sql.Connection
 
 val interpreter = KleisliInterpreter[IO](LogHandler.noop).ConnectionInterpreter
-// interpreter: ConnectionOp ~&gt; [γ$9$]Kleisli[IO, Connection, γ$9$] = doobie.free.KleisliInterpreter$$anon$10@7fc1f1a7
+// interpreter: ConnectionOp ~&gt; [γ$9$]Kleisli[IO, Connection, γ$9$] = doobie.free.KleisliInterpreter$$anon$10@6c7a5cf1
 val kleisli = program1.foldMap(interpreter)
 // kleisli: Kleisli[IO, Connection, Int] = Kleisli(
-//   run = cats.data.KleisliFlatMap$$Lambda$36614/0x000000080870e840@c7c7302
+//   run = cats.data.KleisliFlatMap$$Lambda$65446/0x000000080e468040@4e5f974c
 // )
 val io3 = IO(null: java.sql.Connection) &gt;&gt;= kleisli.run
 // io3: IO[Int] = FlatMap(
@@ -296,7 +296,7 @@ val io3 = IO(null: java.sql.Connection) &gt;&gt;= kleisli.run
 //     thunk = &lt;function0&gt;,
 //     event = cats.effect.tracing.TracingEvent$StackTrace
 //   ),
-//   f = cats.data.KleisliFlatMap$$Lambda$36614/0x000000080870e840@c7c7302,
+//   f = cats.data.KleisliFlatMap$$Lambda$65446/0x000000080e468040@4e5f974c,
 //   event = cats.effect.tracing.TracingEvent$StackTrace
 // )
 io3.unsafeRunSync() // sneaky; program1 never looks at the connection

@@ -279,9 +279,9 @@ def proc(range: Range): Stream[ConnectionIO, Country] = {
 <p>When setting parameters in the high-level API, we require an instance of <code>Write[A]</code> for the input type. It is not immediately obvious when using the <code>sql</code> interpolator, but the parameters (each of which require a <code>Put</code> instance, to be discussed in a later chapter) are gathered into an <code>HList</code> and treated as a single writable parameter.</p>
 <p><code>Write</code> instances are derived automatically for column types (and options thereof) that have <code>Put</code> instances, and for products of other writable types. We can summon their instances thus:</p>
 <pre class="prettyprint"><code class="language-scala">Write[(String, Boolean)]
-// res5: Write[(String, Boolean)] = doobie.util.MkWrite@3ddadb10
+// res5: Write[(String, Boolean)] = doobie.util.MkWrite@7f9f8c48
 Write[Country]
-// res6: Write[Country] = doobie.util.MkWrite@2a53db63
+// res6: Write[Country] = doobie.util.MkWrite@7ec3a35e
 </code></pre>
 <p>The <code>set</code> constructor takes an argument of any type with a <code>Write</code> instance and returns a program that sets the unrolled sequence of values starting at parameter index 1 by default. Some other variations are shown here.</p>
 <pre class="prettyprint"><code class="language-scala">// Set parameters as (String, Boolean) starting at index 1 (default)
