@@ -6,7 +6,7 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <meta name="description" content='docs'/>
-<link rel="canonical" href="https://github.com/tpolecat/doobieindex.html"/>
+<link rel="canonical" href="https://github.com/typelevel/doobieindex.html"/>
 <link href="https://fonts.googleapis.com/css?family=Roboto:100normal,100italic,300normal,300italic,400normal,400italic,500normal,500italic,700normal,700italic,900normal,900italicc" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="lib/jquery/jquery.min.js"></script>
 <script type="text/javascript" src="js/page.js"></script>
@@ -32,7 +32,7 @@
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-1.0.0-RC4
+1.0.0-RC7
 </div>
 </div>
 <div class="nav-toc">
@@ -58,6 +58,7 @@
     <li><a href="docs/15-Extensions-PostgreSQL.html" class="page">Extensions for PostgreSQL</a></li>
     <li><a href="docs/16-Extensions-H2.html" class="page">Extensions for H2</a></li>
     <li><a href="docs/17-FAQ.html" class="page">Frequently-Asked Questions</a></li>
+    <li><a href="docs/18-Related-Projects.html" class="page">Related Projects</a></li>
   </ul></li>
 </ul>
 </div>
@@ -90,7 +91,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-1.0.0-RC4
+1.0.0-RC7
 </div>
 </div>
 <div class="nav-toc">
@@ -116,6 +117,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
     <li><a href="docs/15-Extensions-PostgreSQL.html" class="page">Extensions for PostgreSQL</a></li>
     <li><a href="docs/16-Extensions-H2.html" class="page">Extensions for H2</a></li>
     <li><a href="docs/17-FAQ.html" class="page">Frequently-Asked Questions</a></li>
+    <li><a href="docs/18-Related-Projects.html" class="page">Related Projects</a></li>
   </ul></li>
 </ul>
 </div>
@@ -163,24 +165,24 @@ def find(n: String): ConnectionIO[Option[Country]] =
 </code></pre>
 <p><strong>doobie</strong> is a <a href="http://typelevel.org/"><strong>Typelevel</strong></a> project. This means we embrace pure, typeful, functional programming, and provide a safe and friendly environment for teaching, learning, and contributing as described in the Scala <a href="http://scala-lang.org/conduct.html"><strong>Code of Conduct</strong></a>.</p>
 <h2><a href="#quick-start" name="quick-start" class="anchor"><span class="anchor-link"></span></a>Quick Start</h2>
-<p>The current version is <strong>1.0.0-RC4</strong> for <strong>Scala 2.12/13 and 3</strong> with</p>
+<p>The current version is <strong>1.0.0-RC7</strong> for <strong>Scala 2.12/13 and 3</strong> with</p>
 <ul>
-  <li><a href="http://typelevel.org/cats/"><strong>cats</strong></a> 2.9.0</li>
-  <li><a href="https://github.com/functional-streams-for-scala/fs2"><strong>fs2</strong></a> 3.7.0</li>
-  <li><a href="https://github.com/milessabin/shapeless"><strong>shapeless</strong></a> 2.3.10</li>
+  <li><a href="http://typelevel.org/cats/"><strong>cats</strong></a> 2.13.0</li>
+  <li><a href="https://github.com/functional-streams-for-scala/fs2"><strong>fs2</strong></a> 3.11.0</li>
+  <li><a href="https://github.com/milessabin/shapeless"><strong>shapeless</strong></a> 2.3.12</li>
 </ul>
 <p>To use <strong>doobie</strong> you need to add the following to your <code>build.sbt</code>. If you&rsquo;re not using the Postgres or H2 add-ons you&rsquo;ll also need to provide a JDBC driver for the database you&rsquo;re using.</p>
 <pre class="prettyprint"><code class="language-scala">libraryDependencies ++= Seq(
 
   // Start with this one
-  &quot;org.tpolecat&quot; %% &quot;doobie-core&quot;      % &quot;1.0.0-RC4&quot;,
+  &quot;org.tpolecat&quot; %% &quot;doobie-core&quot;      % &quot;1.0.0-RC7&quot;,
 
   // And add any of these as needed
-  &quot;org.tpolecat&quot; %% &quot;doobie-h2&quot;        % &quot;1.0.0-RC4&quot;,          // H2 driver 1.4.200 + type mappings.
-  &quot;org.tpolecat&quot; %% &quot;doobie-hikari&quot;    % &quot;1.0.0-RC4&quot;,          // HikariCP transactor.
-  &quot;org.tpolecat&quot; %% &quot;doobie-postgres&quot;  % &quot;1.0.0-RC4&quot;,          // Postgres driver 42.6.0 + type mappings.
-  &quot;org.tpolecat&quot; %% &quot;doobie-specs2&quot;    % &quot;1.0.0-RC4&quot; % &quot;test&quot;, // Specs2 support for typechecking statements.
-  &quot;org.tpolecat&quot; %% &quot;doobie-scalatest&quot; % &quot;1.0.0-RC4&quot; % &quot;test&quot;  // ScalaTest support for typechecking statements.
+  &quot;org.tpolecat&quot; %% &quot;doobie-h2&quot;        % &quot;1.0.0-RC7&quot;,          // H2 driver 1.4.200 + type mappings.
+  &quot;org.tpolecat&quot; %% &quot;doobie-hikari&quot;    % &quot;1.0.0-RC7&quot;,          // HikariCP transactor.
+  &quot;org.tpolecat&quot; %% &quot;doobie-postgres&quot;  % &quot;1.0.0-RC7&quot;,          // Postgres driver 42.7.5 + type mappings.
+  &quot;org.tpolecat&quot; %% &quot;doobie-specs2&quot;    % &quot;1.0.0-RC7&quot; % &quot;test&quot;, // Specs2 support for typechecking statements.
+  &quot;org.tpolecat&quot; %% &quot;doobie-scalatest&quot; % &quot;1.0.0-RC7&quot; % &quot;test&quot;  // ScalaTest support for typechecking statements.
 
 )
 </code></pre>
@@ -209,6 +211,10 @@ def find(n: String): ConnectionIO[Option[Country]] =
   <li><a href="http://underscore.io/blog/posts/2015/05/28/typechecking-sql.html">Typechecking SQL in Slick and doobie</a> by Richard Dallaway</li>
   <li><a href="http://da_terry.bitbucket.org/slides/presentation-scalasyd-functional-jdbc-http/#/">DB to JSON with a Microservice</a> by Da Terry - <a href="https://bitbucket.org/da_terry/scalasyd-doobie-http4s">code</a></li>
 </ul>
+<h2><a href="#related-tooling" name="related-tooling" class="anchor"><span class="anchor-link"></span></a>Related tooling</h2>
+<ul>
+  <li><a href="https://arturaz.github.io/doobie-typesafe/">doobie-typesafe</a> by Artūras Šlajus - a typesafe layer for doobie for typesafe table and column definitions.  <a href="https://jatcwang.github.io/doobieroll/">doobieroll</a> by Jacob Wang - a collection of utilities to make working with Doobie / SQL even easier.</li>
+</ul>
 <h2><a href="#testing" name="testing" class="anchor"><span class="anchor-link"></span></a>Testing</h2>
 <p>If you want to build and run the tests for yourself, you&rsquo;ll need a local postgresql database. The easiest way to do this is to run <code>docker-compose up</code> from the project root.</p>
 <h2><a href="#building-the-doc-site" name="building-the-doc-site" class="anchor"><span class="anchor-link"></span></a>Building the Doc Site</h2>
@@ -231,6 +237,8 @@ sbt:doce&gt; ghpagesPushSite
   <li><a href="https://www.findynamic.com/en">FinDynamic</a></li>
   <li><a href="https://fivebox.com/">Fivebox</a></li>
   <li><a href="https://hi.fi">HIFI</a></li>
+  <li><a href="https://inputobjects.eu">Input Objects</a></li>
+  <li><a href="https://intenthq.com">Intent HQ</a></li>
   <li><a href="https://www.itv.com/">ITV</a></li>
   <li><a href="https://lenses.io">lences.io</a></li>
   <li><a href="https://www.medidata.com/">Medidata</a></li>
@@ -247,7 +255,7 @@ sbt:doce&gt; ghpagesPushSite
   <li><a href="https://www.theguardian.com">The Guardian</a></li>
 </ul>
 <div class="source-github">
-The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/v1.0.0-RC4/modules/docs/target/mdoc/index.md">here</a>.
+The source code for this page can be found <a href="https://github.com/typelevel/doobie/tree/master/modules/docs/target/mdoc/index.md">here</a>.
 </div>
 
 <div class="nav-next">
@@ -265,6 +273,7 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
     <li><a href="index.html#quick-start" class="header">Quick Start</a></li>
     <li><a href="index.html#documentation-and-support" class="header">Documentation and Support</a></li>
     <li><a href="index.html#presentations-blog-posts-etc-" class="header">Presentations, Blog Posts, etc.</a></li>
+    <li><a href="index.html#related-tooling" class="header">Related tooling</a></li>
     <li><a href="index.html#testing" class="header">Testing</a></li>
     <li><a href="index.html#building-the-doc-site" class="header">Building the Doc Site</a></li>
     <li><a href="index.html#adopters" class="header">Adopters</a></li>
@@ -310,7 +319,7 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
 
 <!--
 <div class="copyright">
-<span class="text">&copy; 2023</span>
+<span class="text">&copy; 2025</span>
 <a href="https://www.example.com" class="logo">logo</a>
 </div>
 -->
@@ -335,7 +344,7 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
 <script type="text/javascript" src="lib/prettify/prettify.js"></script>
 <script type="text/javascript" src="lib/prettify/lang-scala.js"></script>
 <script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
-<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.0.0-RC4', 'https://github.com/tpolecat/doobie')});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.0.0-RC7', 'https://github.com/typelevel/doobie')});</script>
 
 
 </html>

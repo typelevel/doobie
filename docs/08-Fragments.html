@@ -6,7 +6,7 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <meta name="description" content='docs'/>
-<link rel="canonical" href="https://github.com/tpolecat/doobiedocs/08-Fragments.html"/>
+<link rel="canonical" href="https://github.com/typelevel/doobiedocs/08-Fragments.html"/>
 <link href="https://fonts.googleapis.com/css?family=Roboto:100normal,100italic,300normal,300italic,400normal,400italic,500normal,500italic,700normal,700italic,900normal,900italicc" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="../lib/jquery/jquery.min.js"></script>
 <script type="text/javascript" src="../js/page.js"></script>
@@ -32,7 +32,7 @@
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-1.0.0-RC4
+1.0.0-RC7
 </div>
 </div>
 <div class="nav-toc">
@@ -58,6 +58,7 @@
     <li><a href="../docs/15-Extensions-PostgreSQL.html" class="page">Extensions for PostgreSQL</a></li>
     <li><a href="../docs/16-Extensions-H2.html" class="page">Extensions for H2</a></li>
     <li><a href="../docs/17-FAQ.html" class="page">Frequently-Asked Questions</a></li>
+    <li><a href="../docs/18-Related-Projects.html" class="page">Related Projects</a></li>
   </ul></li>
 </ul>
 </div>
@@ -90,7 +91,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-1.0.0-RC4
+1.0.0-RC7
 </div>
 </div>
 <div class="nav-toc">
@@ -116,6 +117,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
     <li><a href="../docs/15-Extensions-PostgreSQL.html" class="page">Extensions for PostgreSQL</a></li>
     <li><a href="../docs/16-Extensions-H2.html" class="page">Extensions for H2</a></li>
     <li><a href="../docs/17-FAQ.html" class="page">Frequently-Asked Questions</a></li>
+    <li><a href="../docs/18-Related-Projects.html" class="page">Related Projects</a></li>
   </ul></li>
 </ul>
 </div>
@@ -187,7 +189,7 @@ import y._
 val b = fr&quot;where code = &#39;USA&#39;&quot;
 // b: Fragment = Fragment(&quot;where code = &#39;USA&#39; &quot;)
 val c = a ++ b // concatenation by ++
-// c: Fragment = Fragment(&quot;select name from country where code = &#39;USA&#39; &quot;) // concatenation by ++
+// c: Fragment = Fragment(&quot;select name from country where code = &#39;USA&#39; &quot;)
 c.query[String].unique.quick.unsafeRunSync()
 </code></pre>
 <p>Fragments can capture arguments of any type with a <code>Put</code> instance, just as the <code>sql</code> interpolator does.</p>
@@ -226,6 +228,20 @@ fr0&quot;IN (&quot; ++ List(1, 2, 3).map(n =&gt; fr0&quot;$n&quot;).intercalate(
 // res5: Fragment = Fragment(&quot;IN (?, ?, ?) &quot;)
 </code></pre>
 <p>Note that the <code>sql</code> interpolator is simply an alias for <code>fr0</code>.</p>
+<p>Additionally, you can use the <code>+~+</code> operator to concatenate two fragments, ensuring at least one space between them. This is useful when you want to maintain proper spacing without worrying about trailing spaces in individual fragments.</p>
+<pre class="prettyprint"><code class="language-scala">import Fragment.const0
+
+// Assume we don&#39;t know (or don&#39;t want to worry) if `codeCondFrag` or `populationCondFrag` end with whitespaces or not.
+def codeCondFrag: Fragment = fr0&quot;code = &#39;USA&#39;&quot;
+def populationCondFrag: Fragment = fr0&quot;population &gt; 1000000&quot;
+
+const0(&quot;SELECT code, name, population FROM country\n&quot;) +~+ // a newline will be preserved, no extra whitespace added
+  fr0&quot;WHERE&quot; +~+ codeCondFrag +~+ fr0&quot;AND&quot; +~+ populationCondFrag +~+
+  fr0&quot;ORDER BY population DESC&quot;
+// res6: Fragment = Fragment(&quot;SELECT code, name, population FROM country
+// WHERE code = &#39;USA&#39; AND population &gt; 1000000 ORDER BY population DESC&quot;)
+</code></pre>
+<p>In the above example, spaces will be added between fragments where needed automatically.</p>
 <h3><a href="#the-fragments-module" name="the-fragments-module" class="anchor"><span class="anchor-link"></span></a>The <code>Fragments</code> Module</h3>
 <p>The <code>Fragments</code> module provides some combinators for common patterns when working with fragments. The following example illustrates a few of them. See the Scaladoc or source for more information.</p>
 <p>Here we define a query with a three optional filter conditions.</p>
@@ -256,12 +272,12 @@ def select(name: Option[String], pop: Option[Int], codes: List[String], limit: L
 </code></pre>
 <p>We first construct three optional filters, the third of which uses the <code>in</code> combinator to construct an SQL <code>IN</code> clause. The final statement uses the <code>whereAndOpt</code> combinator that constructs a <code>WHERE</code> clause with the passed sequence of <code>Option[Fragment]</code> joined with <code>AND</code> if any are defined, otherwise it evaluates to the empty fragment. The end result is that the <code>WHERE</code> clause appears only if at least one filter is defined.</p>
 <p>Let&rsquo;s look at a few possibilities.</p>
-<pre class="prettyprint"><code class="language-scala">select(None, None, Nil, 10).check.unsafeRunSync() // no filters // no filters
-select(Some(&quot;U%&quot;), None, Nil, 10).check.unsafeRunSync() // one filter // one filter
+<pre class="prettyprint"><code class="language-scala">select(None, None, Nil, 10).check.unsafeRunSync() // no filters
+select(Some(&quot;U%&quot;), None, Nil, 10).check.unsafeRunSync() // one filter
 select(Some(&quot;U%&quot;), Some(12345), List(&quot;FRA&quot;, &quot;GBR&quot;), 10).check.unsafeRunSync() // three filters
 </code></pre>
 <div class="source-github">
-The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/v1.0.0-RC4/modules/docs/target/mdoc/docs/08-Fragments.md">here</a>.
+The source code for this page can be found <a href="https://github.com/typelevel/doobie/tree/master/modules/docs/target/mdoc/docs/08-Fragments.md">here</a>.
 </div>
 
 <div class="nav-next">
@@ -322,7 +338,7 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
 
 <!--
 <div class="copyright">
-<span class="text">&copy; 2023</span>
+<span class="text">&copy; 2025</span>
 <a href="https://www.example.com" class="logo">logo</a>
 </div>
 -->
@@ -347,7 +363,7 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
 <script type="text/javascript" src="../lib/prettify/prettify.js"></script>
 <script type="text/javascript" src="../lib/prettify/lang-scala.js"></script>
 <script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
-<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.0.0-RC4', 'https://github.com/tpolecat/doobie')});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.0.0-RC7', 'https://github.com/typelevel/doobie')});</script>
 
 
 </html>

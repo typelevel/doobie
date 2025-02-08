@@ -6,7 +6,7 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <meta name="description" content='docs'/>
-<link rel="canonical" href="https://github.com/tpolecat/doobiedocs/04-Selecting.html"/>
+<link rel="canonical" href="https://github.com/typelevel/doobiedocs/04-Selecting.html"/>
 <link href="https://fonts.googleapis.com/css?family=Roboto:100normal,100italic,300normal,300italic,400normal,400italic,500normal,500italic,700normal,700italic,900normal,900italicc" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="../lib/jquery/jquery.min.js"></script>
 <script type="text/javascript" src="../js/page.js"></script>
@@ -32,7 +32,7 @@
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-1.0.0-RC4
+1.0.0-RC7
 </div>
 </div>
 <div class="nav-toc">
@@ -58,6 +58,7 @@
     <li><a href="../docs/15-Extensions-PostgreSQL.html" class="page">Extensions for PostgreSQL</a></li>
     <li><a href="../docs/16-Extensions-H2.html" class="page">Extensions for H2</a></li>
     <li><a href="../docs/17-FAQ.html" class="page">Frequently-Asked Questions</a></li>
+    <li><a href="../docs/18-Related-Projects.html" class="page">Related Projects</a></li>
   </ul></li>
 </ul>
 </div>
@@ -90,7 +91,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-1.0.0-RC4
+1.0.0-RC7
 </div>
 </div>
 <div class="nav-toc">
@@ -116,6 +117,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
     <li><a href="../docs/15-Extensions-PostgreSQL.html" class="page">Extensions for PostgreSQL</a></li>
     <li><a href="../docs/16-Extensions-H2.html" class="page">Extensions for H2</a></li>
     <li><a href="../docs/17-FAQ.html" class="page">Frequently-Asked Questions</a></li>
+    <li><a href="../docs/18-Related-Projects.html" class="page">Related Projects</a></li>
   </ul></li>
 </ul>
 </div>
@@ -323,10 +325,22 @@ p.take(5).compile.toVector.unsafeRunSync().foreach(println)
 </code></pre>
 <h3><a href="#diving-deeper" name="diving-deeper" class="anchor"><span class="anchor-link"></span></a>Diving Deeper</h3>
 <p>The <code>sql</code> interpolator is sugar for constructors defined in the <code>doobie.hi.connection</code> module, aliased as <code>HC</code> if you use the standard imports. Using these constructors directly, the above program would look like this:</p>
-<pre class="prettyprint"><code class="language-scala">val proc = HC.stream[(Code, Country2)](
-  &quot;select code, name, population, gnp from country&quot;, // statement
-  ().pure[PreparedStatementIO],                      // prep (none)
-  512                                                // chunk size
+<pre class="prettyprint"><code class="language-scala">import doobie.hi.HC
+import doobie.free.{FC, FPS}
+import doobie.util.log.{LoggingInfo, Parameters}
+
+val sql = &quot;select code, name, population, gnp from country&quot;
+// sql: String = &quot;select code, name, population, gnp from country&quot;
+val proc = HC.stream[(Code, Country2)](
+  create = FC.prepareStatement(sql), // Create prepared statement
+  prep = FPS.unit,                   // prepare steps (none)
+  exec = FPS.executeQuery,           // execute the query
+  chunkSize = 512,                   // chunk size
+  loggingInfo = LoggingInfo(
+    sql = sql,
+    params = Parameters.NonBatch(List.empty), // No parameters
+    label = &quot;unlabeled&quot;
+  )
 )
 // proc: Stream[ConnectionIO, (Code, Country2)] = Stream(..)
 
@@ -338,7 +352,7 @@ proc.take(5)        // Stream[ConnectionIO, (Code, Country2)]
 </code></pre>
 <p>The <code>stream</code> combinator is parameterized on the element type and consumes a statement and a program in <code>PreparedStatementIO</code> that sets input parameters and any other pre-execution configuration. In this case the &ldquo;prepare&rdquo; program is a no-op.</p>
 <div class="source-github">
-The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/v1.0.0-RC4/modules/docs/target/mdoc/docs/04-Selecting.md">here</a>.
+The source code for this page can be found <a href="https://github.com/typelevel/doobie/tree/master/modules/docs/target/mdoc/docs/04-Selecting.md">here</a>.
 </div>
 
 <div class="nav-next">
@@ -402,7 +416,7 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
 
 <!--
 <div class="copyright">
-<span class="text">&copy; 2023</span>
+<span class="text">&copy; 2025</span>
 <a href="https://www.example.com" class="logo">logo</a>
 </div>
 -->
@@ -427,7 +441,7 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
 <script type="text/javascript" src="../lib/prettify/prettify.js"></script>
 <script type="text/javascript" src="../lib/prettify/lang-scala.js"></script>
 <script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
-<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.0.0-RC4', 'https://github.com/tpolecat/doobie')});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.0.0-RC7', 'https://github.com/typelevel/doobie')});</script>
 
 
 </html>

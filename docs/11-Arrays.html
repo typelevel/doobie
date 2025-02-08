@@ -6,7 +6,7 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <meta name="description" content='docs'/>
-<link rel="canonical" href="https://github.com/tpolecat/doobiedocs/11-Arrays.html"/>
+<link rel="canonical" href="https://github.com/typelevel/doobiedocs/11-Arrays.html"/>
 <link href="https://fonts.googleapis.com/css?family=Roboto:100normal,100italic,300normal,300italic,400normal,400italic,500normal,500italic,700normal,700italic,900normal,900italicc" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="../lib/jquery/jquery.min.js"></script>
 <script type="text/javascript" src="../js/page.js"></script>
@@ -32,7 +32,7 @@
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-1.0.0-RC4
+1.0.0-RC7
 </div>
 </div>
 <div class="nav-toc">
@@ -58,6 +58,7 @@
     <li><a href="../docs/15-Extensions-PostgreSQL.html" class="page">Extensions for PostgreSQL</a></li>
     <li><a href="../docs/16-Extensions-H2.html" class="page">Extensions for H2</a></li>
     <li><a href="../docs/17-FAQ.html" class="page">Frequently-Asked Questions</a></li>
+    <li><a href="../docs/18-Related-Projects.html" class="page">Related Projects</a></li>
   </ul></li>
 </ul>
 </div>
@@ -90,7 +91,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-1.0.0-RC4
+1.0.0-RC7
 </div>
 </div>
 <div class="nav-toc">
@@ -116,6 +117,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
     <li><a href="../docs/15-Extensions-PostgreSQL.html" class="page">Extensions for PostgreSQL</a></li>
     <li><a href="../docs/16-Extensions-H2.html" class="page">Extensions for H2</a></li>
     <li><a href="../docs/17-FAQ.html" class="page">Frequently-Asked Questions</a></li>
+    <li><a href="../docs/18-Related-Projects.html" class="page">Related Projects</a></li>
   </ul></li>
 </ul>
 </div>
@@ -188,7 +190,7 @@ val create =
 </code></pre>
 <pre class="prettyprint"><code class="language-scala">(drop *&gt; create).unsafeRunSync()
 </code></pre>
-<p><strong>doobie</strong> maps SQL array columns to <code>Array</code>, <code>List</code>, and <code>Vector</code> by default. No special handling is required, other than importing the vendor-specific array support above.</p>
+<p><strong>doobie</strong> maps SQL array columns to <code>Array</code>, <code>List</code>, and <code>Vector</code> by default for standard types like <code>String</code> or <code>Int</code>. No special handling is required, other than importing the vendor-specific array support above.</p>
 <pre class="prettyprint"><code class="language-scala">case class Person(id: Long, name: String, pets: List[String])
 
 def insert(name: String, pets: List[String]): ConnectionIO[Person] = {
@@ -210,8 +212,45 @@ sql&quot;select array[&#39;foo&#39;,&#39;bar&#39;,&#39;baz&#39;]&quot;.query[Opt
 sql&quot;select array[&#39;foo&#39;,NULL,&#39;baz&#39;]&quot;.query[List[Option[String]]].quick.unsafeRunSync()
 sql&quot;select array[&#39;foo&#39;,NULL,&#39;baz&#39;]&quot;.query[Option[List[Option[String]]]].quick.unsafeRunSync()
 </code></pre>
+<h3><a href="#array-of-enums" name="array-of-enums" class="anchor"><span class="anchor-link"></span></a>Array of enums</h3>
+<p>For reading from and writing to a column that is an array of enum, you can use <code>doobie.postgres.implicits.arrayOfEnum</code> to create a <code>Meta</code> instance for your enum type:</p>
+<pre class="prettyprint"><code class="language-scala">import doobie.postgres.implicits.arrayOfEnum
+
+sealed trait MyEnum
+
+object MyEnum {
+  case object Foo extends MyEnum
+
+  case object Bar extends MyEnum
+
+  private val typeName = &quot;myenum&quot;
+
+  def fromStrUnsafe(s: String): MyEnum = s match {
+    case &quot;foo&quot; =&gt; Foo
+    case &quot;bar&quot; =&gt; Bar
+    case other =&gt; throw new RuntimeException(s&quot;Unexpected value &#39;$other&#39; for MyEnum&quot;)
+  }
+
+  def toStr(e: MyEnum): String = e match {
+    case Foo =&gt; &quot;foo&quot;
+    case Bar =&gt; &quot;bar&quot;
+  }
+
+  implicit val MyEnumArrayMeta: Meta[Array[MyEnum]] =
+    arrayOfEnum[MyEnum](
+      enumTypeName = typeName,
+      fromStr = fromStrUnsafe,
+      toStr = toStr
+    )
+    
+}
+</code></pre>
+<p>and you can now map the array of enum column into an <code>Array[MyEnum]</code>, <code>List[MyEnum]</code>, <code>Vector[MyEnum]</code>:</p>
+<pre class="prettyprint"><code class="language-scala">sql&quot;select array[&#39;foo&#39;, &#39;bar&#39;] :: myenum[]&quot;.query[List[MyEnum]].quick.unsafeRunSync()
+</code></pre>
+<p>For an example of using an enum type from another schema, please see <a href="https://github.com/typelevel/doobie/blob/main/modules/postgres/src/test/scala/doobie/postgres/enums/OtherEnum.scala">OtherEnum.scala</a></p>
 <div class="source-github">
-The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/v1.0.0-RC4/modules/docs/target/mdoc/docs/11-Arrays.md">here</a>.
+The source code for this page can be found <a href="https://github.com/typelevel/doobie/tree/master/modules/docs/target/mdoc/docs/11-Arrays.md">here</a>.
 </div>
 
 <div class="nav-next">
@@ -229,6 +268,7 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
     <li><a href="../docs/11-Arrays.html#setting-up" class="header">Setting Up</a></li>
     <li><a href="../docs/11-Arrays.html#reading-and-writing-arrays" class="header">Reading and Writing Arrays</a></li>
     <li><a href="../docs/11-Arrays.html#lamentations-of-null" class="header">Lamentations of <code>NULL</code></a></li>
+    <li><a href="../docs/11-Arrays.html#array-of-enums" class="header">Array of enums</a></li>
   </ul></li>
 </ul>
 </div>
@@ -271,7 +311,7 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
 
 <!--
 <div class="copyright">
-<span class="text">&copy; 2023</span>
+<span class="text">&copy; 2025</span>
 <a href="https://www.example.com" class="logo">logo</a>
 </div>
 -->
@@ -296,7 +336,7 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
 <script type="text/javascript" src="../lib/prettify/prettify.js"></script>
 <script type="text/javascript" src="../lib/prettify/lang-scala.js"></script>
 <script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
-<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.0.0-RC4', 'https://github.com/tpolecat/doobie')});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.0.0-RC7', 'https://github.com/typelevel/doobie')});</script>
 
 
 </html>

@@ -6,7 +6,7 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <meta name="description" content='docs'/>
-<link rel="canonical" href="https://github.com/tpolecat/doobiedocs/15-Extensions-PostgreSQL.html"/>
+<link rel="canonical" href="https://github.com/typelevel/doobiedocs/15-Extensions-PostgreSQL.html"/>
 <link href="https://fonts.googleapis.com/css?family=Roboto:100normal,100italic,300normal,300italic,400normal,400italic,500normal,500italic,700normal,700italic,900normal,900italicc" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="../lib/jquery/jquery.min.js"></script>
 <script type="text/javascript" src="../js/page.js"></script>
@@ -32,7 +32,7 @@
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-1.0.0-RC4
+1.0.0-RC7
 </div>
 </div>
 <div class="nav-toc">
@@ -58,6 +58,7 @@
     <li><a href="../docs/15-Extensions-PostgreSQL.html" class="active page">Extensions for PostgreSQL</a></li>
     <li><a href="../docs/16-Extensions-H2.html" class="page">Extensions for H2</a></li>
     <li><a href="../docs/17-FAQ.html" class="page">Frequently-Asked Questions</a></li>
+    <li><a href="../docs/18-Related-Projects.html" class="page">Related Projects</a></li>
   </ul></li>
 </ul>
 </div>
@@ -90,7 +91,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-1.0.0-RC4
+1.0.0-RC7
 </div>
 </div>
 <div class="nav-toc">
@@ -116,6 +117,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
     <li><a href="../docs/15-Extensions-PostgreSQL.html" class="active page">Extensions for PostgreSQL</a></li>
     <li><a href="../docs/16-Extensions-H2.html" class="page">Extensions for H2</a></li>
     <li><a href="../docs/17-FAQ.html" class="page">Frequently-Asked Questions</a></li>
+    <li><a href="../docs/18-Related-Projects.html" class="page">Related Projects</a></li>
   </ul></li>
 </ul>
 </div>
@@ -144,11 +146,11 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <div class="small-12 large-9 column" id="docs">
 <h2><a href="#extensions-for-postgresql" name="extensions-for-postgresql" class="anchor"><span class="anchor-link"></span></a>Extensions for PostgreSQL</h2>
 <p>In this chapter we discuss the extended support that <strong>doobie</strong> offers for users of <a href="http://www.postgresql.org/">PostgreSQL</a>. To use these extensions you must add an additional dependency to your project:</p>
-<pre class="prettyprint"><code class="language-scala">libraryDependencies += &quot;org.tpolecat&quot; %% &quot;doobie-postgres&quot; % &quot;1.0.0-RC4&quot;
+<pre class="prettyprint"><code class="language-scala">libraryDependencies += &quot;org.tpolecat&quot; %% &quot;doobie-postgres&quot; % &quot;1.0.0-RC7&quot;
 </code></pre>
 <p>This library pulls in <a href="https://jdbc.postgresql.org">PostgreSQL JDBC Driver</a> as a transitive dependency.</p>
 <p>There are extensions available for dealing with JSON by using Circe, if you like to use those, include this dependency:</p>
-<pre class="prettyprint"><code class="language-scala">libraryDependencies += &quot;org.tpolecat&quot; %% &quot;doobie-postgres-circe&quot; % &quot;1.0.0-RC4&quot;
+<pre class="prettyprint"><code class="language-scala">libraryDependencies += &quot;org.tpolecat&quot; %% &quot;doobie-postgres-circe&quot; % &quot;1.0.0-RC7&quot;
 </code></pre>
 <p>Then, you will be able to import the implicits for dealing with JSON:</p>
 <pre class="prettyprint"><code class="language-scala">import doobie.postgres.circe.json.implicits._
@@ -184,13 +186,10 @@ val xa = Transactor.fromDriverManager[IO](
 import doobie.postgres.implicits._
 </code></pre>
 <h3><a href="#java-8-time-types-jsr310-" name="java-8-time-types-jsr310-" class="anchor"><span class="anchor-link"></span></a>Java 8 Time Types (JSR310)</h3>
-<p>An explicit import is required to bring in mappings for <code>java.time.OffsetDateTime</code> / <code>java.time.Instant</code> / <code>java.time.ZonedDateTime</code> / <code>java.time.LocalDateTime</code> / <code>java.time.LocalDate</code> / <code>java.time.LocalTime</code></p>
-<pre class="prettyprint"><code class="language-scala">import doobie.postgres.implicits._
-</code></pre>
 <p>To ensure <strong>doobie</strong> performs the conversion correctly between Java 8 time types and PostgreSQL Date/Time types when handling timezones or the lack thereof. The correct combination of date/time types should be used:</p>
 <ul>
   <li><code>TIMESTAMP</code> maps to <code>java.time.LocalDateTime</code></li>
-  <li><code>TIMESTAMPTZ</code> maps to <code>java.time.Instant</code>, <code>java.time.ZonedDateTime</code> or <code>java.time.OffsetDateTime</code></li>
+  <li><code>TIMESTAMPTZ</code> maps to <code>java.time.Instant</code> or <code>java.time.OffsetDateTime</code></li>
   <li><code>DATE</code> maps to <code>java.time.LocalDate</code></li>
   <li><code>TIME</code> maps to <code>java.time.LocalTime</code></li>
 </ul>
@@ -216,7 +215,7 @@ import doobie.postgres.implicits._
   val foo, bar = Value
 }
 
-implicit val MyEnumMeta = pgEnum(MyEnum, &quot;myenum&quot;)
+implicit val MyEnumMeta: Meta[MyEnum.Value] = pgEnum(MyEnum, &quot;myenum&quot;)
 </code></pre>
 <pre class="prettyprint"><code class="language-scala">sql&quot;select &#39;foo&#39;::myenum&quot;.query[MyEnum.Value].unique.transact(xa).unsafeRunSync()
 // res0: MyEnum.Value = foo
@@ -267,7 +266,7 @@ implicit val FoobarMeta: Meta[FooBar] =
 </ul>
 <p>It is expected that these will be mapped to application-specific types via <code>xmap</code> as described in <strong>Custom Mappings</strong>.</p>
 <h3><a href="#postgis-types" name="postgis-types" class="anchor"><span class="anchor-link"></span></a>PostGIS Types</h3>
-<p><strong>doobie</strong> provides mappings for the top-level PostGIS geometric types provided by the <code>org.postgis</code> driver extension.</p>
+<p><strong>doobie</strong> provides mappings for the top-level PostGIS geometric types provided by the <code>net.postgis</code> driver extension.</p>
 <p>Mappings for postgis are provided in the <code>pgistypes</code> module. Doobie expects postgis dependency to be provided, so if you use this module you should add postgis as a dependency.</p>
 <pre class="prettyprint"><code class="language-scala">libraryDependencies += &quot;net.postgis&quot; % &quot;postgis-jdbc&quot; % &quot;2.3.0&quot;
 </code></pre>
@@ -293,12 +292,11 @@ import doobie.postgres.pgisimplicits._
   <li><code>Point</code></li>
 </ul>
 <p><a href="http://postgis.net/workshops/postgis-intro/geography.html">Geographic types</a> mappings are defined in a different object (<code>pgisgeographyimplicits</code>), to allow geometric types using geodetic coordinates.</p>
-<pre><code>import doobie.postgres.pgisgeographyimplicits._
+<pre class="prettyprint"><code class="language-scala">import doobie.postgres.pgisgeographyimplicits._
 
 // or define the implicit conversion manually
 
-implicit val geographyPoint: Meta[Point] =
-  doobie.postgres.pgisgeographyimplicits.PointType
+implicit val geographyPoint: Meta[Point] = doobie.postgres.pgisgeographyimplicits.PointType
 </code></pre>
 <ul>
   <li>Point</li>
@@ -309,6 +307,47 @@ implicit val geographyPoint: Meta[Point] =
   <li>MultiPolygon</li>
   <li>MultiLineString</li>
 </ul>
+<h3><a href="#range-types" name="range-types" class="anchor"><span class="anchor-link"></span></a>Range types</h3>
+<p>The following range types are supported, and map to <strong>doobie</strong> generic <code>Range[T]</code> class:</p>
+<ul>
+  <li>the <code>int4range</code> schema type maps to <code>Range[Int]</code></li>
+  <li>the <code>int8range</code> schema type maps to <code>Range[Long]</code></li>
+  <li>the <code>numrange</code> schema type maps to <code>Range[BigDecimal]</code></li>
+  <li>the <code>daterange</code> schema type maps to <code>Range[java.time.LocalDate]</code></li>
+  <li>the <code>tsrange</code> schema type maps to <code>Range[java.time.LocalDateTime]</code></li>
+  <li>the <code>tstzrange</code> schema type maps to <code>Range[java.time.OffsetDateTime]</code></li>
+</ul>
+<p>Non empty range maps to:</p>
+<pre class="prettyprint"><code class="language-scala">case class NonEmptyRange[T](lowerBound: Option[T], upperBound: Option[T], edge: Edge) extends Range[T]
+</code></pre>
+<p>Empty range maps to:</p>
+<pre class="prettyprint"><code class="language-scala">case object EmptyRange extends Range[Nothing]
+</code></pre>
+<p>To control the inclusive and exclusive bounds according to the <a href="https://www.postgresql.org/docs/current/rangetypes.html#RANGETYPES-INCLUSIVITY">PostgreSQL</a> specification you need to use a special <code>Edge</code> enumeration when creating a <code>Range</code>:</p>
+<pre class="prettyprint"><code class="language-scala">object Edge {
+  case object ExclExcl extends Edge
+  case object ExclIncl extends Edge
+  case object InclExcl extends Edge
+  case object InclIncl extends Edge
+}
+</code></pre>
+<blockquote>
+  <h2><a href="#in-the-text-form-of-a-range-an-inclusive-lower-bound-is-represented-by-while-an-exclusive-upper-bound-is-represented-by-" name="in-the-text-form-of-a-range-an-inclusive-lower-bound-is-represented-by-while-an-exclusive-upper-bound-is-represented-by-" class="anchor"><span class="anchor-link"></span></a>In the text form of a range, an inclusive lower bound is represented by &lsquo;[&lsquo; while an exclusive lower bound is represented by &rsquo;(&lsquo;. Likewise, an inclusive upper bound is represented by &rsquo;]&rsquo;, while an exclusive upper bound is represented by &lsquo;)&rsquo;.</h2>
+  <p>Note: the <a href="https://www.postgresql.org/docs/current/rangetypes.html#RANGETYPES">range types</a> mappings are defined in a different object (<code>rangeimplicits</code>). To enable it you must import them explicitly:</p>
+</blockquote>
+<pre class="prettyprint"><code class="language-scala">import doobie.postgres.rangeimplicits._
+</code></pre>
+<p>To create for example custom implementation of <code>Range[Byte]</code> you can use the public method which declared in the following package <code>doobie.postgres.rangeimplicits</code>:</p>
+<pre class="prettyprint"><code class="language-scala">def rangeMeta[T](sqlRangeType: String)(encode: T =&gt; String, decode: String =&gt; T): Meta[Range[T]]
+</code></pre>
+<p>For a <code>Range[Byte]</code>, the meta and bounds encoder and decoder would appear as follows:</p>
+<pre class="prettyprint"><code class="language-scala">import doobie.postgres.rangeimplicits._
+import doobie.postgres.types.Range
+
+implicit val byteRangeMeta: Meta[Range[Byte]] = rangeMeta[Byte](&quot;int4range&quot;)(_.toString, _.toByte)
+
+val int4rangeWithByteBoundsQuery = sql&quot;select &#39;[-128, 127)&#39;::int4range&quot;.query[Range[Byte]]
+</code></pre>
 <h3><a href="#other-nonstandard-types" name="other-nonstandard-types" class="anchor"><span class="anchor-link"></span></a>Other Nonstandard Types</h3>
 <ul>
   <li>The <code>uuid</code> schema type is supported and maps to <code>java.util.UUID</code>.</li>
@@ -324,19 +363,19 @@ implicit val geographyPoint: Meta[Point] =
 // res2: Either[Throwable, String] = Left(
 //   value = org.postgresql.util.PSQLException: ERROR: syntax error at or near &quot;oops&quot;
 //   Position: 1
-// ) // attempt is provided by ApplicativeError instance
+// )
 
 p.attemptSqlState.transact(xa).unsafeRunSync() // this catches only SQL exceptions
-// res3: Either[SqlState, String] = Left(value = SqlState(value = &quot;42601&quot;)) // this catches only SQL exceptions
+// res3: Either[SqlState, String] = Left(value = SqlState(value = &quot;42601&quot;))
 
 p.attemptSomeSqlState { case SqlState(&quot;42601&quot;) =&gt; &quot;caught!&quot; } .transact(xa).unsafeRunSync() // catch it
-// res4: Either[String, String] = Left(value = &quot;caught!&quot;) // catch it
+// res4: Either[String, String] = Left(value = &quot;caught!&quot;)
 
 p.attemptSomeSqlState { case sqlstate.class42.SYNTAX_ERROR =&gt; &quot;caught!&quot; } .transact(xa).unsafeRunSync() // same, w/constant
-// res5: Either[String, String] = Left(value = &quot;caught!&quot;) // same, w/constant
+// res5: Either[String, String] = Left(value = &quot;caught!&quot;)
 
 p.exceptSomeSqlState { case sqlstate.class42.SYNTAX_ERROR =&gt; &quot;caught!&quot;.pure[ConnectionIO] } .transact(xa).unsafeRunSync() // recover
-// res6: String = &quot;caught!&quot; // recover
+// res6: String = &quot;caught!&quot;
 
 p.onSyntaxError(&quot;caught!&quot;.pure[ConnectionIO]).transact(xa).unsafeRunSync() // using recovery combinator
 // res7: String = &quot;caught!&quot;
@@ -347,7 +386,7 @@ p.onSyntaxError(&quot;caught!&quot;.pure[ConnectionIO]).transact(xa).unsafeRunSy
   <li>For a given <code>Connection</code> you can set and query the prepare threshold with the <code>ConnectionIO</code> constructors <code>doobie.postgres.hi.connection.pgSetPrepareThreshold</code> and <code>pgGetPrepareThreshold</code>.</li>
   <li>For a specific <code>PreparedStatement</code> you can set and query the prepare threshold with the <code>PreparedStatementIO</code> constructors <code>doobie.postgres.hi.preparedstatement.pgSetPrepareThreshold</code> and <code>pgGetPrepareThreshold</code>.</li>
 </ul>
-<p>See the <a href="https://jdbc.postgresql.org/documentation/93/server-prepare.html">JDBC driver documentation</a> for more information.</p>
+<p>See the <a href="https://jdbc.postgresql.org/documentation/server-prepare">JDBC driver documentation</a> for more information.</p>
 <h3><a href="#listen-and-notify" name="listen-and-notify" class="anchor"><span class="anchor-link"></span></a><code>LISTEN</code> and <code>NOTIFY</code></h3>
 <p>PostgreSQL provides a simple transactional message queue that can be used to notify a connection that something interesting has happened. Such notifications can be tied to database triggers, which provides a way to notify clients that data has changed. Which is cool.</p>
 <p><strong>doobie</strong> provides <code>ConnectionIO</code> constructors for SQL <code>LISTEN</code>, <code>UNLISTEN</code>, and <code>NOTIFY</code> in the <code>doobie.postgres.hi.connection</code> module. New notifications are retrieved (synchronously, sadly, that&rsquo;s all the driver provides) via <code>pgGetNotifications</code>. Note that all of the &ldquo;listening&rdquo; operations apply to the <strong>current connection</strong>, which must therefore be long-running and typically off to the side from normal transactional operations. Further note that you must <code>setAutoCommit(false)</code> on this connection or <code>commit</code> between each call in order to retrieve messages. The <code>examples</code> project includes a program that demonstrates how to present a channel as a <code>Stream[IO, PGNotification]</code>.</p>
@@ -420,13 +459,13 @@ val foods = List(
   .transact(xa)
   .unsafeRunSync()
   .foreach(println)
-// Seq Scan on country  (cost=0.00..7.39 rows=239 width=11) (actual time=0.004..0.027 rows=239 loops=1)
-// Planning Time: 0.111 ms
-// Execution Time: 0.056 ms
+// Seq Scan on country  (cost=0.00..7.39 rows=239 width=11) (actual time=0.008..0.030 rows=239 loops=1)
+// Planning Time: 0.175 ms
+// Execution Time: 0.069 ms
 </code></pre>
 <p><code>explain</code> and <code>explainAnalyze</code> both return a <code>ConnectinIO[List[String]]</code> result, where each member of the list is one row of the query planner&rsquo;s output.</p>
 <div class="source-github">
-The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/v1.0.0-RC4/modules/docs/target/mdoc/docs/15-Extensions-PostgreSQL.md">here</a>.
+The source code for this page can be found <a href="https://github.com/typelevel/doobie/tree/master/modules/docs/target/mdoc/docs/15-Extensions-PostgreSQL.md">here</a>.
 </div>
 
 <div class="nav-next">
@@ -447,6 +486,7 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
     <li><a href="../docs/15-Extensions-PostgreSQL.html#enum-types" class="header">Enum Types</a></li>
     <li><a href="../docs/15-Extensions-PostgreSQL.html#geometric-types" class="header">Geometric Types</a></li>
     <li><a href="../docs/15-Extensions-PostgreSQL.html#postgis-types" class="header">PostGIS Types</a></li>
+    <li><a href="../docs/15-Extensions-PostgreSQL.html#range-types" class="header">Range types</a></li>
     <li><a href="../docs/15-Extensions-PostgreSQL.html#other-nonstandard-types" class="header">Other Nonstandard Types</a></li>
     <li><a href="../docs/15-Extensions-PostgreSQL.html#extended-error-handling" class="header">Extended Error Handling</a></li>
     <li><a href="../docs/15-Extensions-PostgreSQL.html#server-side-statements" class="header">Server-Side Statements</a></li>
@@ -497,7 +537,7 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
 
 <!--
 <div class="copyright">
-<span class="text">&copy; 2023</span>
+<span class="text">&copy; 2025</span>
 <a href="https://www.example.com" class="logo">logo</a>
 </div>
 -->
@@ -522,7 +562,7 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
 <script type="text/javascript" src="../lib/prettify/prettify.js"></script>
 <script type="text/javascript" src="../lib/prettify/lang-scala.js"></script>
 <script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
-<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.0.0-RC4', 'https://github.com/tpolecat/doobie')});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.0.0-RC7', 'https://github.com/typelevel/doobie')});</script>
 
 
 </html>

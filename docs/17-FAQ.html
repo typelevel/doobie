@@ -6,7 +6,7 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <meta name="description" content='docs'/>
-<link rel="canonical" href="https://github.com/tpolecat/doobiedocs/17-FAQ.html"/>
+<link rel="canonical" href="https://github.com/typelevel/doobiedocs/17-FAQ.html"/>
 <link href="https://fonts.googleapis.com/css?family=Roboto:100normal,100italic,300normal,300italic,400normal,400italic,500normal,500italic,700normal,700italic,900normal,900italicc" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="../lib/jquery/jquery.min.js"></script>
 <script type="text/javascript" src="../js/page.js"></script>
@@ -32,7 +32,7 @@
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-1.0.0-RC4
+1.0.0-RC7
 </div>
 </div>
 <div class="nav-toc">
@@ -58,6 +58,7 @@
     <li><a href="../docs/15-Extensions-PostgreSQL.html" class="page">Extensions for PostgreSQL</a></li>
     <li><a href="../docs/16-Extensions-H2.html" class="page">Extensions for H2</a></li>
     <li><a href="../docs/17-FAQ.html" class="active page">Frequently-Asked Questions</a></li>
+    <li><a href="../docs/18-Related-Projects.html" class="page">Related Projects</a></li>
   </ul></li>
 </ul>
 </div>
@@ -90,7 +91,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-1.0.0-RC4
+1.0.0-RC7
 </div>
 </div>
 <div class="nav-toc">
@@ -116,6 +117,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
     <li><a href="../docs/15-Extensions-PostgreSQL.html" class="page">Extensions for PostgreSQL</a></li>
     <li><a href="../docs/16-Extensions-H2.html" class="page">Extensions for H2</a></li>
     <li><a href="../docs/17-FAQ.html" class="active page">Frequently-Asked Questions</a></li>
+    <li><a href="../docs/18-Related-Projects.html" class="page">Related Projects</a></li>
   </ul></li>
 </ul>
 </div>
@@ -250,7 +252,7 @@ val join =
 <p>As of <strong>doobie</strong> 0.4 there is a reasonable solution to the logging/instrumentation question. See <a href="10-Logging.html">Chapter 10</a> for more details.</p>
 <h3><a href="#why-is-there-no-get-or-put-for-sqlxml-" name="why-is-there-no-get-or-put-for-sqlxml-" class="anchor"><span class="anchor-link"></span></a>Why is there no <code>Get</code> or <code>Put</code> for <code>SQLXML</code>?</h3>
 <p>There are a lot of ways to handle <code>SQLXML</code> so there is no pre-defined strategy, but here is one that maps <code>scala.xml.Elem</code> to <code>SQLXML</code> via streaming.</p>
-<pre class="prettyprint"><code class="language-scala">import doobie.enum.JdbcType.Other
+<pre class="prettyprint"><code class="language-scala">import doobie.enumerated.JdbcType.Other
 import java.sql.SQLXML
 import scala.xml.{ XML, Elem }
 
@@ -275,7 +277,7 @@ implicit val XmlMeta: Meta[Elem] =
 <p>Domains with check constraints will type check as DISTINCT. For Doobie later than 0.4.4, in order to get the type checks to pass, you can define a <code>Meta</code> of with target type Distinct and <code>xmap</code> that instances. For example,</p>
 <pre class="prettyprint"><code class="language-scala">import cats.data.NonEmptyList
 import doobie._
-import doobie.enum.JdbcType
+import doobie.enumerated.JdbcType
 
 object distinct {
 
@@ -297,38 +299,37 @@ implicit val nesMeta: Meta[NonEmptyString] = {
 }
 </code></pre>
 <h2><a href="#how-do-i-use-java-time-types-with-doobie-" name="how-do-i-use-java-time-types-with-doobie-" class="anchor"><span class="anchor-link"></span></a>How do I use <code>java.time</code> types with Doobie?</h2>
-<p>This depends on whether the underlying JDBC driver you&rsquo;re using supports <code>java.time.*</code> types natively. (&ldquo;native support&rdquo; means that you can hand the driver e.g. a value of java.time.Instant and it will know how to convert that to a value on-the-wire that the actual database can understand)</p>
-<p>If you&rsquo;re using PostgreSQL, you can import that instances via <code>import doobie.postgres.implicits._</code></p>
-<p>If your JDBC driver supports the java.time types you&rsquo;re using natively, use <code>import doobie.implicits.javatimedrivernative._</code>.</p>
+<p>The following imports will provide <code>Meta</code> instances for common java.time.* types:</p>
 <table>
   <thead>
     <tr>
       <th>Database driver </th>
-      <th>java.time.Instant </th>
-      <th>java.time.LocalDate </th>
+      <th>Import </th>
     </tr>
   </thead>
   <tbody>
     <tr>
       <td>Postgres (org.postgresql.Driver) </td>
-      <td><code>doobie.postgres.implicits._</code> </td>
-      <td><code>doobie.postgres.implicits._</code> </td>
+      <td><code>doobie.postgres.implicits.*</code> </td>
     </tr>
     <tr>
       <td>MySQL (com.mysql.jdbc.Driver) </td>
-      <td><code>doobie.implicits.legacy.instant._</code> </td>
-      <td><code>doobie.implicits.legacy.localdate._</code> </td>
+      <td><code>doobie.mysql.implicits.*</code> </td>
     </tr>
   </tbody>
 </table>
+<p>For other databases, if your JDBC driver supports the java.time types natively, you can use <code>import doobie.implicits.javatimedrivernative._</code>.</p>
 <p>References:</p>
 <ul>
   <li><a href="https://jdbc.postgresql.org/documentation/query/#using-java-8-date-and-time-classes">Postgres JDBC - Using Java 8 Date and Time classes</a></li>
 </ul>
 <div class="source-github">
-The source code for this page can be found <a href="https://github.com/tpolecat/doobie/tree/v1.0.0-RC4/modules/docs/target/mdoc/docs/17-FAQ.md">here</a>.
+The source code for this page can be found <a href="https://github.com/typelevel/doobie/tree/master/modules/docs/target/mdoc/docs/17-FAQ.md">here</a>.
 </div>
 
+<div class="nav-next">
+<p><strong>Next:</strong> <a href="../docs/18-Related-Projects.html">Related Projects</a></p>
+</div>
 </div>
 <div class="large-3 show-for-large column" data-sticky-container>
 <nav class="sidebar sticky" data-sticky data-anchor="docs" data-sticky-on="large">
@@ -391,7 +392,7 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
 
 <!--
 <div class="copyright">
-<span class="text">&copy; 2023</span>
+<span class="text">&copy; 2025</span>
 <a href="https://www.example.com" class="logo">logo</a>
 </div>
 -->
@@ -416,7 +417,7 @@ The source code for this page can be found <a href="https://github.com/tpolecat/
 <script type="text/javascript" src="../lib/prettify/prettify.js"></script>
 <script type="text/javascript" src="../lib/prettify/lang-scala.js"></script>
 <script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
-<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.0.0-RC4', 'https://github.com/tpolecat/doobie')});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.0.0-RC7', 'https://github.com/typelevel/doobie')});</script>
 
 
 </html>

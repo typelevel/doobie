@@ -2,11 +2,11 @@
 <html class="no-js" lang="en">
 
 <head>
-<title>Toolkit · doobie</title>
+<title>Related Projects · doobie</title>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <meta name="description" content='docs'/>
-<link rel="canonical" href="https://github.com/typelevel/doobiedocs/02-Toolkit.html"/>
+<link rel="canonical" href="https://github.com/typelevel/doobiedocs/18-Related-Projects.html"/>
 <link href="https://fonts.googleapis.com/css?family=Roboto:100normal,100italic,300normal,300italic,400normal,400italic,500normal,500italic,700normal,700italic,900normal,900italicc" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="../lib/jquery/jquery.min.js"></script>
 <script type="text/javascript" src="../js/page.js"></script>
@@ -42,7 +42,7 @@
   <li><a href="../docs/index.html" class="page">Book of Doobie</a>
   <ul>
     <li><a href="../docs/01-Introduction.html" class="page">Introduction</a></li>
-    <li><a href="../docs/02-Toolkit.html" class="active page">Toolkit</a></li>
+    <li><a href="../docs/02-Toolkit.html" class="page">Toolkit</a></li>
     <li><a href="../docs/03-Connecting.html" class="page">Connecting to a Database</a></li>
     <li><a href="../docs/04-Selecting.html" class="page">Selecting Data</a></li>
     <li><a href="../docs/05-Parameterized.html" class="page">Parameterized Queries</a></li>
@@ -58,7 +58,7 @@
     <li><a href="../docs/15-Extensions-PostgreSQL.html" class="page">Extensions for PostgreSQL</a></li>
     <li><a href="../docs/16-Extensions-H2.html" class="page">Extensions for H2</a></li>
     <li><a href="../docs/17-FAQ.html" class="page">Frequently-Asked Questions</a></li>
-    <li><a href="../docs/18-Related-Projects.html" class="page">Related Projects</a></li>
+    <li><a href="../docs/18-Related-Projects.html" class="active page">Related Projects</a></li>
   </ul></li>
 </ul>
 </div>
@@ -101,7 +101,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
   <li><a href="../docs/index.html" class="page">Book of Doobie</a>
   <ul>
     <li><a href="../docs/01-Introduction.html" class="page">Introduction</a></li>
-    <li><a href="../docs/02-Toolkit.html" class="active page">Toolkit</a></li>
+    <li><a href="../docs/02-Toolkit.html" class="page">Toolkit</a></li>
     <li><a href="../docs/03-Connecting.html" class="page">Connecting to a Database</a></li>
     <li><a href="../docs/04-Selecting.html" class="page">Selecting Data</a></li>
     <li><a href="../docs/05-Parameterized.html" class="page">Parameterized Queries</a></li>
@@ -117,7 +117,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
     <li><a href="../docs/15-Extensions-PostgreSQL.html" class="page">Extensions for PostgreSQL</a></li>
     <li><a href="../docs/16-Extensions-H2.html" class="page">Extensions for H2</a></li>
     <li><a href="../docs/17-FAQ.html" class="page">Frequently-Asked Questions</a></li>
-    <li><a href="../docs/18-Related-Projects.html" class="page">Related Projects</a></li>
+    <li><a href="../docs/18-Related-Projects.html" class="active page">Related Projects</a></li>
   </ul></li>
 </ul>
 </div>
@@ -136,7 +136,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <ul>
   <li><a href="../index.html">doobie</a></li>
   <li><a href="../docs/index.html">Book of Doobie</a></li>
-  <li>Toolkit</li>
+  <li>Related Projects</li>
 </ul>
 </div>
 </div>
@@ -144,62 +144,21 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 
 <div class="page-content row">
 <div class="small-12 large-9 column" id="docs">
-<h2><a href="#toolkit" name="toolkit" class="anchor"><span class="anchor-link"></span></a>Toolkit</h2>
-<p>Before we get into writing <strong>doobie</strong> programs it&rsquo;s worth spending a moment to explain the big picture. The short explanation is:</p>
-<blockquote>
-  <p><strong>doobie</strong> programs are values. You can compose small programs to build larger programs. Once you have constructed a program you wish to run, you interpret it into an effectful target monad of your choice (<code>IO</code> for example) and drop it into your main application wherever you like.</p>
-</blockquote>
-<p>If you want a slightly longer explanation in video form, you might enjoy this lecture from Scala by the Bay 2015.</p>
-<p class="text-center" style="padding-top: 12pt">
-  <iframe width="560" height="315" src="https://www.youtube.com/embed/M5MF6M7FHPo" frameborder="0" allowfullscreen></iframe>
-</p>
-<h3><a href="#nested-programs" name="nested-programs" class="anchor"><span class="anchor-link"></span></a>Nested Programs</h3>
-<p><strong>doobie</strong> is a monadic API that provides a number of data types that all work the same way but describe computations in different contexts. For example <code>ConnectionIO</code> describes computations that take place in a context where a <code>java.sql.Connection</code> is available. Similar data types exist for each major type in <code>java.sql</code>. Programs written in these contexts compose naturally via lifting, mirroring the lifecycles of each contexts&rsquo;s carrier type.</p>
-<p class="text-center"><img src="../img/nesting.png"></p>
-<p>Some patterns of composition are so common and generic that they can be provided for you, as <strong>doobie</strong> does with its high-level API. As a result many programs can be written entirely in terms of <code>ConnectionIO</code>. Some examples are:</p>
+<h2><a href="#related-projects" name="related-projects" class="anchor"><span class="anchor-link"></span></a>Related Projects</h2>
+<p>A non-exhaustive list of projects that supplement Doobie:</p>
 <ul>
-  <li>Performing a query and reading the results as a stream.</li>
-  <li>Performing an update and returning updated rows as a stream.</li>
-  <li>Validating a query or update in terms of the schema and JDBC ⟷ Scala type mappings.</li>
+  <li><a href="https://github.com/jatcwang/doobieroll">DoobieRoll</a> - collection of utilities to make working with Doobie / SQL even easier.</li>
+  <li><a href="https://jatcwang.github.io/doobieroll/docs/tablecolumns">TableColumns</a> - Ensure fields in your SQL are consistently named and ordered.</li>
+  <li><a href="https://jatcwang.github.io/doobieroll/docs/assembler">Assembler</a> - Assemble SQL query results into hierarchical domain models.</li>
+  <li><a href="https://github.com/arturaz/doobie-typesafe">doobie-typesafe</a> - type-safe table definitions for Doobie.</li>
+  <li><a href="https://github.com/arturaz/otel4s-doobie">otel4s-doobie</a> - <a href="https://github.com/typelevel/otel4s">Otel4s</a> integration.</li>
 </ul>
-<p>This book largely focuses on these common interactions, but also explains their representation at lower levels in case you wish to do something other than what you get for free.</p>
-<h3><a href="#low-and-high-level-apis" name="low-and-high-level-apis" class="anchor"><span class="anchor-link"></span></a>Low and High level APIs</h3>
-<p><strong>doobie</strong> provides two APIs intended for different audiences.</p>
-<p>The <strong>low-level API</strong> in <code>doobie.free</code> provides a direct 1:1 mapping to the underlying JDBC API, giving library implementors a pure functional wrapper for the full JDBC 4.0 API. This API provides no resource safety, <code>NULL</code> checking, or type mapping; and it directly exposes lifetime-managed JDBC objects; programs written at this level have desirable compositional properties but still require a great deal of care. For example, <code>doobie.free.FC</code> contains the low-level API for JDBC <code>Connection</code>, and <code>doobie.free.FPS</code> contains the low-level API for <code>PreparedStatement</code>. (The &ldquo;F&rdquo; in the alias stands for &ldquo;Free&rdquo;)</p>
-<p>The <strong>high-level API</strong> in <code>doobie.hi</code> (implemented entirely in terms of the low-level API) provides a safe subset of the JDBC API. Programs written with this API have no access to the underlying JDBC objects and cannot leak references. Features of this API include:</p>
-<ul>
-  <li>Typeclass-based mapping of scalar, array, and vendor-specific types to columns.</li>
-  <li>Typeclass-based mapping of product types to rows.</li>
-  <li>Trivial custom two-way row/column mapping via invariant functors.</li>
-  <li>Nullability via <code>Option</code> (SQL <code>NULL</code> cannot be observed).</li>
-  <li>Proper enumerated types for all JDBC constants.</li>
-  <li>Result sets as fs2 streams.</li>
-  <li>Typesafe string interpolator for SQL literals.</li>
-</ul>
-<p>The types used for both APIs are identical; the difference lies only in the exposed constructors. This means that a program otherwise written in the <code>doobie.hi</code> API can use constructors from <code>doobie.free</code> to implement advanced or vendor-specific behavior directly, without translation or lifting. Some examples of high-level APIs are <code>doobie.hi.HC</code> for JDBC <code>Connection</code> as well as <code>doobie.hi.HPS</code> for <code>PreparedStatement</code>. (The &ldquo;H&rdquo; in the alias stands for &ldquo;High&rdquo;)</p>
 <div class="source-github">
-The source code for this page can be found <a href="https://github.com/typelevel/doobie/tree/master/modules/docs/target/mdoc/docs/02-Toolkit.md">here</a>.
+The source code for this page can be found <a href="https://github.com/typelevel/doobie/tree/master/modules/docs/target/mdoc/docs/18-Related-Projects.md">here</a>.
 </div>
 
-<div class="nav-next">
-<p><strong>Next:</strong> <a href="../docs/03-Connecting.html">Connecting to a Database</a></p>
-</div>
 </div>
 <div class="large-3 show-for-large column" data-sticky-container>
-<nav class="sidebar sticky" data-sticky data-anchor="docs" data-sticky-on="large">
-<div class="page-nav">
-<div class="nav-title">On this page:</div>
-<div class="nav-toc">
-<ul>
-  <li><a href="../docs/02-Toolkit.html#toolkit" class="header">Toolkit</a>
-  <ul>
-    <li><a href="../docs/02-Toolkit.html#nested-programs" class="header">Nested Programs</a></li>
-    <li><a href="../docs/02-Toolkit.html#low-and-high-level-apis" class="header">Low and High level APIs</a></li>
-  </ul></li>
-</ul>
-</div>
-</div>
-</nav>
 </div>
 </div>
 
