@@ -92,7 +92,7 @@ object fragment {
     def update: Update0 =
       updateWithLabel(unlabeled)
 
-    /** Construct an [[Update0]] from this fragment with the given `LogHandler`. */
+    /** Construct an [[Update0]] from this fragment with the given label. */
     def updateWithLabel(label: String): Update0 =
       Update[elems.type](sql, pos, label)(implicitly[Write[elems.type]]).toUpdate0(elems)
 
