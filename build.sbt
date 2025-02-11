@@ -15,6 +15,7 @@ lazy val log4catsVersion = "2.7.0"
 lazy val postGisVersion = "2024.1.0"
 lazy val postgresVersion = "42.7.5"
 lazy val refinedVersion = "0.11.3"
+lazy val scalaCollectionCompatVersion = "2.13.0"
 lazy val scalaCheckVersion = "1.15.4"
 lazy val scalatestVersion = "3.2.18"
 lazy val munitVersion = "1.1.0"
@@ -249,12 +250,17 @@ lazy val core = project
     name := "doobie-core",
     description := "Pure functional JDBC layer for Scala.",
     libraryDependencies ++= Seq(
-      "com.chuusai" %% "shapeless" % shapelessVersion
-    ).filterNot(_ => tlIsScala3.value) ++ Seq(
       "org.tpolecat" %% "typename" % "1.1.0",
       "com.h2database" % "h2" % h2Version % "test",
       "org.postgresql" % "postgresql" % postgresVersion % "test"
     ),
+    libraryDependencies ++= (if (tlIsScala3.value)
+                               Seq.empty
+                             else
+                               Seq("com.chuusai" %% "shapeless" % shapelessVersion)),
+    libraryDependencies ++= (if (scalaVersion.value == scala212Version)
+                               Seq("org.scala-lang.modules" %% "scala-collection-compat" % scalaCollectionCompatVersion)
+                             else Seq.empty),
     Compile / unmanagedSourceDirectories += {
       val sourceDir = (Compile / sourceDirectory).value
       CrossVersion.partialVersion(scalaVersion.value) match {
@@ -334,7 +340,7 @@ lazy val postgres = project
       "co.fs2" %% "fs2-io" % fs2Version,
       "org.postgresql" % "postgresql" % postgresVersion,
       postgisDep % "provided",
-      "org.scala-lang.modules" %% "scala-collection-compat" % "2.13.0" % Test
+      "org.scala-lang.modules" %% "scala-collection-compat" % scalaCollectionCompatVersion % Test
     ),
     freeGen2Dir := (Compile / scalaSource).value / "doobie" / "postgres" / "free",
     freeGen2Package := "doobie.postgres.free",
@@ -496,11 +502,6 @@ lazy val bench = project
   .enablePlugins(NoPublishPlugin)
   .enablePlugins(AutomateHeaderPlugin)
   .enablePlugins(JmhPlugin)
-  .settings(
-    libraryDependencies ++= (if (scalaVersion.value == scala212Version)
-                               Seq("org.scala-lang.modules" %% "scala-collection-compat" % "2.13.0")
-                             else Seq.empty)
-  )
   .dependsOn(core, postgres, hikari)
   .settings(doobieSettings)
 

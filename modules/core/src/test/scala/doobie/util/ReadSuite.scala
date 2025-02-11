@@ -201,6 +201,56 @@ class ReadSuite extends munit.CatsEffectSuite with ReadSuitePlatform {
       q2.transact(xa).assertEquals(List(Some((1, 2, 3, 4))))
   }
 
+  test("Read.CompositeOfInstances reads columns correctly") {
+    import cats.syntax.functor.*
+    val rscc: Read[SimpleCaseClass] = Read.derived[SimpleCaseClass]
+
+    implicit val read: Read[ComplexCaseClass] =
+      new Read.CompositeOfInstances(Array(
+        rscc.widen[Any],
+        rscc.toOpt.widen[Any],
+        Read[Option[Int]].widen[Any],
+        Read[String].widen[Any]))
+        .map { arr =>
+          ComplexCaseClass(
+            arr(0).asInstanceOf[SimpleCaseClass],
+            arr(1).asInstanceOf[Option[SimpleCaseClass]],
+            arr(2).asInstanceOf[Option[Int]],
+            arr(3).asInstanceOf[String])
+        }
+
+    for {
+      _ <- IO(assertEquals(read.length, 8))
+      _ <-
+        sql"SELECT 1, '2', '3', 4, '5', '6', 7, '8'"
+          .query[ComplexCaseClass].unique.transact(xa)
+          .assertEquals(
+            ComplexCaseClass(
+              SimpleCaseClass(Some(1), "2", Some("3")),
+              Some(SimpleCaseClass(Some(4), "5", Some("6"))),
+              Some(7),
+              "8"
+            )
+          )
+      _ <-
+        // The 's' field in Option[SimpleCaseClass] is NULL, so whole case class value is None
+        sql"SELECT NULL, '2', '3', 4, NULL, '6', 7, '8'"
+          .query[ComplexCaseClass].unique.transact(xa)
+          .assertEquals(
+            ComplexCaseClass(
+              SimpleCaseClass(None, "2", Some("3")),
+              None,
+              Some(7),
+              "8"
+            )
+          )
+      _ <-
+        sql"SELECT 1, NULL, '3', 4, '5', '6', 7, '8'"
+          .query[Option[ComplexCaseClass]].unique.transact(xa)
+          .assertEquals(None)
+    } yield ()
+  }
+
   test("Read should select correct columns when combined with `ap`") {
     import cats.syntax.all.*
     import doobie.implicits.*
