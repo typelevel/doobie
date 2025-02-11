@@ -37,7 +37,7 @@ final class Primary[+A](value: A) extends OrElse[A, Nothing] {
   def fold[C](prim: A => C, sec: Nothing => C) = prim(value)
 }
 
-final class Secondary[+B](value: => B) extends OrElse[Nothing, B] {
+final class Secondary[+B](value: B) extends OrElse[Nothing, B] {
   def fold[C](prim: Nothing => C, sec: B => C) = sec(value)
 }
 
