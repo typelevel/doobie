@@ -12,6 +12,7 @@ import doobie.free.resultset as IFRS
 
 import java.sql.ResultSet
 import scala.annotation.implicitNotFound
+import scala.reflect.ClassTag
 
 @implicitNotFound("""
 Cannot find or construct a Read instance for type:
@@ -119,7 +120,7 @@ object Read extends LowerPriority1Read {
     override lazy val length: Int = underlyingRead.length
   }
 
-  /** A Read instance consists of multiple underlying Read instances */
+  /** A Read instance consists of two underlying Read instances */
   class Composite[A, S0, S1](read0: Read[S0], read1: Read[S1], f: (S0, S1) => A) extends Read[A] {
     override def unsafeGet(rs: ResultSet, startIdx: Int): A = {
       val r0 = read0.unsafeGet(rs, startIdx)
@@ -143,6 +144,30 @@ object Read extends LowerPriority1Read {
 
     }
     override lazy val length: Int = read0.length + read1.length
+  }
+
+  /** A Composite made up of a list of underlying Read instances. This class but is intended to provide a simpler
+    * interface for other libraries that uses Doobie. This isn't used by Doobie itself for its derived instances.
+    *
+    * For large number of columns, this class may be more performant than chain of Read.Composite.
+    */
+  class CompositeOfInstances[A: ClassTag](readInstances: Array[Read[A]]) extends Read[Array[A]] {
+    override def unsafeGet(rs: ResultSet, startIdx: Int): Array[A] = {
+      var columnIdx = startIdx
+      readInstances.map { r =>
+        val res = r.unsafeGet(rs, columnIdx)
+        columnIdx += r.length // This Read instance "consumed" x number of columns
+        res
+      }
+    }
+
+    override def gets: List[(Get[?], NullabilityKnown)] = readInstances.flatMap(_.gets).toList
+
+    override def toOpt: Read[Option[Array[A]]] = {
+      new CompositeOfInstances(readInstances.map(_.toOpt)).map(arraySequence)
+    }
+
+    override def length: Int = readInstances.map(_.length).sum
   }
 
 }
