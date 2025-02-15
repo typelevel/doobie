@@ -170,6 +170,28 @@ trait Instances {
     .timap(_.map(_.map(a => if (a == null) null else BigDecimal.apply(a))))(_.map(_.map(a =>
       if (a == null) null else a.bigDecimal)))
 
+  /** Create a Meta instance to allow reading and writing into an array of enum, with stricter typechecking support to
+    * verify that the column we're inserting into must match the enum array type.
+    *
+    * @param enumTypeName
+    *   Name of the enum type
+    * @param fromStr
+    *   Function to convert each element to the Scala type when reading from the database
+    * @param toStr
+    *   Function to convert each element to string when writing to the database
+    * @return
+    */
+  def arrayOfEnum[A: ClassTag](
+      enumTypeName: String,
+      fromStr: String => A,
+      toStr: A => String
+  ): Meta[Array[A]] = {
+    Meta.Advanced.array[String](
+      enumTypeName,
+      arrayTypeName = s"_$enumTypeName"
+    ).timap(arr => arr.map(fromStr))(arr => arr.map(toStr))
+  }
+
   // So, it turns out that arrays of structs don't work because something is missing from the
   // implementation. So this means we will only be able to support primitive types for arrays.
   //

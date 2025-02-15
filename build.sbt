@@ -3,27 +3,28 @@ import scala.sys.process._
 import org.typelevel.sbt.tpolecat.{DevMode, CiMode}
 
 // Library versions all in one place, for convenience and sanity.
-lazy val catsVersion = "2.12.0"
+lazy val catsVersion = "2.13.0"
 lazy val catsEffectVersion = "3.5.7"
 lazy val circeVersion = "0.14.10"
 lazy val fs2Version = "3.11.0"
 lazy val h2Version = "1.4.200"
 lazy val hikariVersion = "6.2.1" // N.B. Hikari v4 introduces a breaking change via slf4j v2
 lazy val kindProjectorVersion = "0.11.2"
-lazy val mysqlVersion = "9.1.0"
+lazy val mysqlVersion = "9.2.0"
 lazy val log4catsVersion = "2.7.0"
 lazy val postGisVersion = "2024.1.0"
-lazy val postgresVersion = "42.7.4"
-lazy val refinedVersion = "0.11.2"
+lazy val postgresVersion = "42.7.5"
+lazy val refinedVersion = "0.11.3"
+lazy val scalaCollectionCompatVersion = "2.13.0"
 lazy val scalaCheckVersion = "1.15.4"
 lazy val scalatestVersion = "3.2.18"
-lazy val munitVersion = "1.0.2"
+lazy val munitVersion = "1.1.0"
 lazy val shapelessVersion = "2.3.12"
 lazy val silencerVersion = "1.7.1"
 lazy val specs2Version = "4.20.9"
 lazy val scala212Version = "2.12.20"
-lazy val scala213Version = "2.13.15"
-lazy val scala3Version = "3.3.4"
+lazy val scala213Version = "2.13.16"
+lazy val scala3Version = "3.3.5"
 // scala-steward:off
 lazy val slf4jVersion = "1.7.36"
 // scala-steward:on
@@ -33,6 +34,7 @@ lazy val weaverVersion = "0.8.4"
 ThisBuild / tlBaseVersion := "1.0"
 ThisBuild / tlCiReleaseBranches := Seq("main") // publish snapshots on `main`
 ThisBuild / tlCiScalafmtCheck := true
+//ThisBuild / scalaVersion := scala212Version
 ThisBuild / scalaVersion := scala213Version
 //ThisBuild / scalaVersion := scala3Version
 ThisBuild / crossScalaVersions := Seq(scala212Version, scala213Version, scala3Version)
@@ -98,9 +100,12 @@ lazy val compilerFlags = Seq(
   Compile / doc / scalacOptions --= Seq(
     "-Xfatal-warnings"
   ),
-//  Test / scalacOptions --= Seq(
-//    "-Xfatal-warnings"
-//  ),
+  // Disable warning when @nowarn annotation isn't suppressing a warning
+  // to simplify cross-building
+  // because 2.12 @nowarn doesn't actually do anything.. https://github.com/scala/bug/issues/12313
+  scalacOptions ++= Seq(
+    "-Wconf:cat=unused-nowarn:s"
+  ),
   scalacOptions ++= (if (tlIsScala3.value)
                        // Handle irrefutable patterns in for comprehensions
                        Seq("-source:future", "-language:adhocExtensions")
@@ -133,7 +138,7 @@ lazy val commonSettings =
         "-sourcepath",
         (LocalRootProject / baseDirectory).value.getAbsolutePath,
         "-doc-source-url",
-        "https://github.com/tpolecat/doobie/blob/v" + version.value + "€{FILE_PATH}.scala"
+        "https://github.com/typelevel/doobie/blob/v" + version.value + "€{FILE_PATH}.scala"
       ),
 
       // Kind Projector (Scala 2 only)
@@ -144,8 +149,8 @@ lazy val commonSettings =
 
       // MUnit
       libraryDependencies ++= Seq(
-        "org.typelevel" %% "scalacheck-effect-munit" % "1.0.4" % Test,
-        "org.typelevel" %% "munit-cats-effect-3" % "1.0.7" % Test,
+        "org.typelevel" %% "scalacheck-effect-munit" % "2.0.0-M2" % Test,
+        "org.typelevel" %% "munit-cats-effect" % "2.0.0" % Test,
         "org.typelevel" %% "cats-effect-testkit" % catsEffectVersion % Test
       ),
       testFrameworks += new TestFramework("munit.Framework"),
@@ -245,13 +250,17 @@ lazy val core = project
     name := "doobie-core",
     description := "Pure functional JDBC layer for Scala.",
     libraryDependencies ++= Seq(
-      "com.chuusai" %% "shapeless" % shapelessVersion
-    ).filterNot(_ => tlIsScala3.value) ++ Seq(
       "org.tpolecat" %% "typename" % "1.1.0",
       "com.h2database" % "h2" % h2Version % "test",
-      "org.postgresql" % "postgresql" % postgresVersion % "test",
-      "org.mockito" % "mockito-core" % "5.12.0" % Test
+      "org.postgresql" % "postgresql" % postgresVersion % "test"
     ),
+    libraryDependencies ++= (if (tlIsScala3.value)
+                               Seq.empty
+                             else
+                               Seq("com.chuusai" %% "shapeless" % shapelessVersion)),
+    libraryDependencies ++= (if (scalaVersion.value == scala212Version)
+                               Seq("org.scala-lang.modules" %% "scala-collection-compat" % scalaCollectionCompatVersion)
+                             else Seq.empty),
     Compile / unmanagedSourceDirectories += {
       val sourceDir = (Compile / sourceDirectory).value
       CrossVersion.partialVersion(scalaVersion.value) match {
@@ -331,7 +340,7 @@ lazy val postgres = project
       "co.fs2" %% "fs2-io" % fs2Version,
       "org.postgresql" % "postgresql" % postgresVersion,
       postgisDep % "provided",
-      "org.scala-lang.modules" %% "scala-collection-compat" % "2.12.0" % Test
+      "org.scala-lang.modules" %% "scala-collection-compat" % scalaCollectionCompatVersion % Test
     ),
     freeGen2Dir := (Compile / scalaSource).value / "doobie" / "postgres" / "free",
     freeGen2Package := "doobie.postgres.free",
@@ -493,7 +502,7 @@ lazy val bench = project
   .enablePlugins(NoPublishPlugin)
   .enablePlugins(AutomateHeaderPlugin)
   .enablePlugins(JmhPlugin)
-  .dependsOn(core, postgres)
+  .dependsOn(core, postgres, hikari)
   .settings(doobieSettings)
 
 lazy val docs = project
@@ -506,7 +515,7 @@ lazy val docs = project
   .enablePlugins(MdocPlugin)
   .settings(doobieSettings)
   .settings(
-    scalacOptions := Nil,
+    scalacOptions := Nil, // Seq("-Xsource:3"),
     libraryDependencies ++= Seq(
       "io.circe" %% "circe-core" % circeVersion,
       "io.circe" %% "circe-generic" % circeVersion,
@@ -516,7 +525,7 @@ lazy val docs = project
 
     // postgis is `provided` dependency for users, and section from book of doobie needs it
     libraryDependencies += postgisDep,
-    git.remoteRepo := "git@github.com:tpolecat/doobie.git",
+    git.remoteRepo := "git@github.com:typelevel/doobie.git",
     ghpagesNoJekyll := true,
     publish / skip := true,
     paradoxTheme := Some(builtinParadoxTheme("generic")),
@@ -536,9 +545,11 @@ lazy val docs = project
       "shapelessVersion" -> shapelessVersion,
       "h2Version" -> h2Version,
       "postgresVersion" -> postgresVersion,
-      "scalaVersion" -> scalaVersion.value
+      "scalaVersion" -> scalaVersion.value,
+      "canonical.base_url" -> "https://github.com/typelevel/doobie/"
     ),
     mdocIn := baseDirectory.value / "src" / "main" / "mdoc",
+    ghpagesRepository := (ThisBuild / baseDirectory).value / "doc_worktree",
     mdocExtraArguments ++= Seq("--no-link-hygiene"),
     Compile / paradox / sourceDirectory := mdocOut.value,
     makeSite := makeSite.dependsOn(mdoc.toTask("")).value

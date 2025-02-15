@@ -70,7 +70,9 @@ object analysis {
     override def msg = this match {
       case ColumnMisalignment(_, Left((get, n))) =>
         s"""|Too few columns are selected, which will result in a runtime failure. Add a column or
-            |remove mapped ${typeName(get.typeStack.last, n)} from the result type.""".stripMargin.linesIterator.mkString(
+            |remove mapped ${typeName(
+             get.typeStack.last,
+             n)} from the result type.""".stripMargin.linesIterator.mkString(
           " ")
       case ColumnMisalignment(_, Right(_)) =>
         s"""Column is unused. Remove it from the SELECT statement."""
@@ -135,11 +137,12 @@ object analysis {
       columnAlignment: List[(Get[?], NullabilityKnown) `Ior` ColumnMeta]
   ) {
 
-    def parameterMisalignments: List[ParameterMisalignment] =
+    def parameterMisalignments: List[ParameterMisalignment] = {
       parameterAlignment.zipWithIndex.collect {
         case (Ior.Left(_), n)  => ParameterMisalignment(n + 1, None)
         case (Ior.Right(p), n) => ParameterMisalignment(n + 1, Some(p))
       }
+    }
 
     private def hasParameterTypeErrors[A](put: Put[A], paramMeta: ParameterMeta): Boolean = {
       !put.jdbcTargets.contains_(paramMeta.jdbcType) ||

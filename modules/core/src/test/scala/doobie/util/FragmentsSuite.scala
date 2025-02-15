@@ -9,9 +9,8 @@ import cats.effect.IO
 import doobie.*
 import doobie.implicits.*
 
-class FragmentsSuite extends munit.FunSuite {
+class FragmentsSuite extends munit.CatsEffectSuite {
   import Fragments.*
-  import cats.effect.unsafe.implicits.global
 
   val xa = Transactor.fromDriverManager[IO](
     driver = "org.h2.Driver",
@@ -389,13 +388,13 @@ class FragmentsSuite extends munit.FunSuite {
   test("values (1)") {
     val c = Contact(Person("Bob", 42), Some("addr"))
     val f = sql"select" ++ Fragments.values(c)
-    assertEquals(f.query[Contact].unique.transact(xa).unsafeRunSync(), c)
+    f.query[Contact].unique.transact(xa).assertEquals(c)
   }
 
   test("values (2)") {
     val c = Contact(Person("Bob", 42), None)
     val f = sql"select" ++ Fragments.values(c)
-    assertEquals(f.query[Contact].unique.transact(xa).unsafeRunSync(), c)
+    f.query[Contact].unique.transact(xa).assertEquals(c)
   }
 
 }

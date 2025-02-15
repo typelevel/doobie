@@ -37,7 +37,7 @@ final class Primary[+A](value: A) extends OrElse[A, Nothing] {
   def fold[C](prim: A => C, sec: Nothing => C) = prim(value)
 }
 
-final class Secondary[+B](value: => B) extends OrElse[Nothing, B] {
+final class Secondary[+B](value: B) extends OrElse[Nothing, B] {
   def fold[C](prim: Nothing => C, sec: B => C) = sec(value)
 }
 
@@ -46,5 +46,5 @@ object OrElse extends OrElse0 {
 }
 
 private[shapeless] abstract class OrElse0 {
-  implicit def secondary[A, B](implicit b: => B): A `OrElse` B = new Secondary(b)
+  implicit def secondary[A, B](implicit b: B): A `OrElse` B = new Secondary(b)
 }

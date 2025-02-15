@@ -6,16 +6,12 @@ package doobie.util
 
 import cats.*
 import cats.data.Chain
-import doobie.enumerated.Nullability.*
 import doobie.free.connection.ConnectionIO
 import doobie.free.preparedstatement.PreparedStatementIO
 import doobie.util.pos.Pos
 import doobie.hi.connection as IHC
 import doobie.util.query.{Query, Query0}
 import doobie.util.update.{Update, Update0}
-
-import java.sql.{PreparedStatement, ResultSet}
-import scala.Predef.{augmentString, implicitly}
 
 /** Module defining the `Fragment` data type. */
 object fragment {
@@ -35,42 +31,20 @@ object fragment {
     private implicit lazy val write: Write[elems.type] = {
       import Elem.*
 
-      val puts: List[(Put[?], NullabilityKnown)] =
+      val writes: List[Write[?]] =
         elems.map {
-          case Arg(_, p) => (p, NoNulls)
-          case Opt(_, p) => (p, Nullable)
+          case Arg(_, p) => new Write.Single(p)
+          case Opt(_, p) => new Write.SingleOpt(p)
         }.toList
 
-      val toList: elems.type => List[Any] = elems =>
-        elems.map {
-          case Arg(a, _) => a
-          case Opt(a, _) => a
-        }.toList
-
-      val unsafeSet: (PreparedStatement, Int, elems.type) => Unit = { (ps, n, elems) =>
-        var index = n
-        elems.iterator.foreach { e =>
-          e match {
-            case Arg(a, p) => p.unsafeSetNonNullable(ps, index, a)
-            case Opt(a, p) => p.unsafeSetNullable(ps, index, a)
-          }
-          index += 1
-        }
-      }
-
-      val unsafeUpdate: (ResultSet, Int, elems.type) => Unit = { (ps, n, elems) =>
-        var index = n
-        elems.iterator.foreach { e =>
-          e match {
-            case Arg(a, p) => p.unsafeUpdateNonNullable(ps, index, a)
-            case Opt(a, p) => p.unsafeUpdateNullable(ps, index, a)
-          }
-          index += 1
-        }
-      }
-
-      Write(puts, toList, unsafeSet, unsafeUpdate)
-
+      new Write.Composite(
+        writes,
+        elems =>
+          elems.map {
+            case Arg(a, _)    => a
+            case Opt(aOpt, _) => aOpt
+          }.toList
+      )
     }
 
     /** Construct a program in ConnectionIO that constructs and prepares a PreparedStatement, with further handling
@@ -82,6 +56,23 @@ object fragment {
     /** Concatenate this fragment with another, yielding a larger fragment. */
     def ++(fb: Fragment): Fragment =
       new Fragment(sql + fb.sql, elems ++ fb.elems, pos orElse fb.pos)
+
+    /** Concatenate this fragment with another, yielding a larger fragment and making sure there is at least one
+      * whitespace between the source fragments.
+      */
+    def +~+(that: Fragment): Fragment = {
+      val res =
+        if (sql.isEmpty) that.sql
+        else if (that.sql.isEmpty) sql
+        else if (sql.last.isWhitespace || that.sql.head.isWhitespace) sql + that.sql
+        else sql + " " + that.sql
+
+      new Fragment(
+        res,
+        elems ++ that.elems,
+        pos orElse that.pos
+      )
+    }
 
     def stripMargin(marginChar: Char): Fragment =
       new Fragment(sql.stripMargin(marginChar), elems, pos)
@@ -101,7 +92,7 @@ object fragment {
     def update: Update0 =
       updateWithLabel(unlabeled)
 
-    /** Construct an [[Update0]] from this fragment with the given `LogHandler`. */
+    /** Construct an [[Update0]] from this fragment with the given label. */
     def updateWithLabel(label: String): Update0 =
       Update[elems.type](sql, pos, label)(implicitly[Write[elems.type]]).toUpdate0(elems)
 

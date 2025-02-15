@@ -20,7 +20,8 @@ object CheckerTests extends IOSuite with IOChecker {
       url = "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
       user = "sa",
       password = "",
-      logHandler = None
+      logHandler =
+        None
     ))
 
   test("trivial") { implicit transactor =>
@@ -54,8 +55,6 @@ object CheckerTests extends IOSuite with IOChecker {
   }
 
   test("Read should select correct columns for checking when combined with `ap`") { implicit transactor =>
-    import doobie.generic.auto.*
-
     val readInt = Read[(Int, Int)]
     val readIntToInt: Read[Tuple2[Int, Int] => String] =
       Read[(String, String)].map(i => k => s"$i,$k")

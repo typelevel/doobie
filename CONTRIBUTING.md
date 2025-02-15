@@ -43,16 +43,17 @@ doobie uses [sbt-ci-release](https://github.com/olafurpg/sbt-ci-release) which m
 
 ### Releases
 
-To make a release, make sure you're on the right commit, then tag it using the format here. This will trigger a release build.
+In Github Releases, create and publish new release with format v1.2.3. (This creates an annotated tag)
 
-```bash
-git tag -a v1.2.3 -m v1.2.3
-git push --tags
+When publishing docs, ensure that the version in the sbt build is set to a "nice" tag.
+This can be achieved by either checking the release itself (`git checkout v1.2.3`)
+or explicitly overriding the version in sbt using `set ThisBuild / version := "1.2.3"`
+
+After the version is set correctly:
 ```
-
-To update the doc site, check out the tag first.
-
-```
-git checkout v1.2.3
-sbt docs/publishMicrosite
+# Make the git worktree where gh-page branch will be checked out and docs copied over
+git fetch && git worktree add doc_worktree gh-pages
+sbtn makeSite ghpagesSynchLocal 
+# Check doc changes are expected
+sbtn ghpagesPushSite
 ```

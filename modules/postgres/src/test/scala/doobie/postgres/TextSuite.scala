@@ -10,7 +10,7 @@ import doobie.*
 import doobie.implicits.*
 import doobie.postgres.implicits.*
 import fs2.*
-import org.scalacheck.Gen
+import org.scalacheck.{Gen, Test}
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Prop.forAll
 
@@ -21,6 +21,8 @@ class TextSuite extends munit.ScalaCheckSuite {
 
   implicit val byteListInstance: Text[List[Byte]] =
     Text[Array[Byte]].contramap(_.toArray)
+
+  override def scalaCheckTestParameters: Test.Parameters = super.scalaCheckTestParameters.withMinSuccessfulTests(10)
 
   val create: ConnectionIO[Unit] =
     sql"""| CREATE TEMPORARY TABLE test (

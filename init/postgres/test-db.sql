@@ -6,6 +6,14 @@ create extension postgis;
 create extension hstore;
 create type myenum as enum ('foo', 'bar', 'invalid');
 
+create schema other_schema;
+
+set search_path to other_schema;
+
+create type other_enum as enum ('a', 'b');
+
+set search_path to public;
+
 --
 -- The sample data used in the world database is Copyright Statistics
 -- Finland, http://www.stat.fi/worldinfigures.

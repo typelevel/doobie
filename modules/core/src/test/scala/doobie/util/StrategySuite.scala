@@ -12,13 +12,12 @@ import doobie.*
 import doobie.free.{connection, preparedstatement, resultset}
 import doobie.implicits.*
 import doobie.util.transactor.Transactor.Aux
+import munit.CatsEffectSuite
 
 import java.sql.{Connection, PreparedStatement, ResultSet}
 import java.util
 
-class StrategySuite extends munit.FunSuite {
-
-  import cats.effect.unsafe.implicits.global
+class StrategySuite extends CatsEffectSuite {
 
   val baseXa: Aux[IO, Unit] = Transactor.fromDriverManager[IO](
     driver = "org.h2.Driver",
@@ -75,115 +74,109 @@ class StrategySuite extends munit.FunSuite {
     Transactor.interpret.set(baseXa, i.ConnectionInterpreter)
 
   test("Connection.autoCommit should be set to false") {
-    val i = new Interp
-    val _ = sql"select 1".query[Int].unique.transact(xa(i)).unsafeRunSync()
-    assertEquals(i.Connection.autoCommit, Some(false))
+    IO.pure(new Interp).flatTap(i => sql"select 1".query[Int].unique.transact(xa(i))).map(_.Connection.autoCommit)
+      .assertEquals(Some(false))
   }
 
   test("Connection.commit should be called on success") {
-    val i = new Interp
-    val _ = sql"select 1".query[Int].unique.transact(xa(i)).unsafeRunSync()
-    assertEquals(i.Connection.commit, Some(()))
+    IO.pure(new Interp).flatTap(i => sql"select 1".query[Int].unique.transact(xa(i))).map(_.Connection.commit)
+      .assertEquals(Some(()))
   }
 
   test("Connection.commit should NOT be called on failure") {
-    val i = new Interp
-    assertEquals(sql"abc".query[Int].unique.transact(xa(i)).attempt.unsafeRunSync().toOption, None)
-    assertEquals(i.Connection.commit, None)
+    IO.pure(new Interp).flatTap(i =>
+      sql"abc".query[Int].unique.transact(xa(i)).attempt.map(_.isLeft).assert).map(
+      _.Connection.commit)
+      .assertEquals(None)
   }
 
   test("Connection.rollback should NOT be called on success") {
-    val i = new Interp
-    val _ = sql"select 1".query[Int].unique.transact(xa(i)).unsafeRunSync()
-    assertEquals(i.Connection.rollback, None)
+    IO.pure(new Interp).flatTap(i => sql"select 1".query[Int].unique.transact(xa(i))).map(_.Connection.rollback)
+      .assertEquals(None)
   }
 
   test("Connection.rollback should be called on failure") {
-    val i = new Interp
-    assertEquals(sql"abc".query[Int].unique.transact(xa(i)).attempt.unsafeRunSync().toOption, None)
-    assertEquals(i.Connection.rollback, Some(()))
+    IO.pure(new Interp).flatTap(i =>
+      sql"abc".query[Int].unique.transact(xa(i)).attempt.map(_.isLeft).assert).map(
+      _.Connection.rollback)
+      .assertEquals(Some(()))
   }
 
   test("[Streaming] Connection.autoCommit should be set to false") {
-    val i = new Interp
-    val _ = sql"select 1".query[Int].stream.compile.toList.transact(xa(i)).unsafeRunSync()
-    assertEquals(i.Connection.autoCommit, Some(false))
+    IO.pure(new Interp).flatTap(i => sql"select 1".query[Int].stream.compile.toList.transact(xa(i))).map(
+      _.Connection.autoCommit).assertEquals(Some(false))
   }
 
   test("[Streaming] Connection.commit should be called on success") {
-    val i = new Interp
-    val _ = sql"select 1".query[Int].stream.compile.toList.transact(xa(i)).unsafeRunSync()
-    assertEquals(i.Connection.commit, Some(()))
+    IO.pure(new Interp).flatTap(i => sql"select 1".query[Int].stream.compile.toList.transact(xa(i))).map(
+      _.Connection.commit).assertEquals(Some(()))
   }
 
   test("[Streaming] Connection.commit should NOT be called on failure") {
-    val i = new Interp
-    assertEquals(sql"abc".query[Int].stream.compile.toList.transact(xa(i)).attempt.unsafeRunSync().toOption, None)
-    assertEquals(i.Connection.commit, None)
+    IO.pure(new Interp).flatTap(i =>
+      sql"abc".query[Int].stream.compile.toList.transact(xa(i)).attempt.map(_.isLeft).assert).map(
+      _.Connection.commit)
+      .assertEquals(None)
   }
 
   test("[Streaming] Connection.rollback should NOT be called on success") {
-    val i = new Interp
-    val _ = sql"select 1".query[Int].stream.compile.toList.transact(xa(i)).unsafeRunSync()
-    assertEquals(i.Connection.rollback, None)
+    IO.pure(new Interp).flatTap(i => sql"select 1".query[Int].stream.compile.toList.transact(xa(i))).map(
+      _.Connection.rollback).assertEquals(None)
   }
 
   test("[Streaming] Connection.rollback should be called on failure") {
-    val i = new Interp
-    assertEquals(sql"abc".query[Int].stream.compile.toList.transact(xa(i)).attempt.unsafeRunSync().toOption, None)
-    assertEquals(i.Connection.rollback, Some(()))
+    IO.pure(new Interp).flatTap(i =>
+      sql"abc".query[Int].stream.compile.toList.transact(xa(i)).attempt.map(_.isLeft).assert).map(
+      _.Connection.rollback)
+      .assertEquals(Some(()))
   }
 
   test("PreparedStatement.close should be called on success") {
-    val i = new Interp
-    val _ = sql"select 1".query[Int].unique.transact(xa(i)).unsafeRunSync()
-    assertEquals(i.PreparedStatement.close, Some(()))
+    IO.pure(new Interp).flatTap(i => sql"select 1".query[Int].unique.transact(xa(i))).map(
+      _.PreparedStatement.close).assertEquals(Some(()))
   }
 
   test("PreparedStatement.close should be called on failure") {
-    val i = new Interp
-    assertEquals(sql"select 'x'".query[Int].unique.transact(xa(i)).attempt.unsafeRunSync().toOption, None)
-    assertEquals(i.PreparedStatement.close, Some(()))
+    IO.pure(new Interp).flatTap(i =>
+      sql"select 'x'".query[Int].unique.transact(xa(i)).attempt.map(_.isLeft).assert).map(
+      _.PreparedStatement.close)
+      .assertEquals(Some(()))
   }
 
   test("[Streaming] PreparedStatement.close should be called on success") {
-    val i = new Interp
-    val _ = sql"select 1".query[Int].stream.compile.toList.transact(xa(i)).unsafeRunSync()
-    assertEquals(i.PreparedStatement.close, Some(()))
+    IO.pure(new Interp).flatTap(i => sql"select 1".query[Int].stream.compile.toList.transact(xa(i))).map(
+      _.PreparedStatement.close).assertEquals(Some(()))
   }
 
   test("[Streaming] PreparedStatement.close should be called on failure") {
-    val i = new Interp
-    assertEquals(
-      sql"select 'x'".query[Int].stream.compile.toList.transact(xa(i)).attempt.unsafeRunSync().toOption,
-      None)
-    assertEquals(i.PreparedStatement.close, Some(()))
+    IO.pure(new Interp).flatTap(i =>
+      sql"select 'x'".query[Int].stream.compile.toList.transact(xa(i)).attempt.map(_.isLeft).assert).map(
+      _.PreparedStatement.close)
+      .assertEquals(Some(()))
   }
 
   test("ResultSet.close should be called on success") {
-    val i = new Interp
-    val _ = sql"select 1".query[Int].unique.transact(xa(i)).unsafeRunSync()
-    assertEquals(i.ResultSet.close, Some(()))
+    IO.pure(new Interp).flatTap(i => sql"select 1".query[Int].unique.transact(xa(i))).map(
+      _.ResultSet.close).assertEquals(Some(()))
   }
 
   test("ResultSet.close should be called on failure") {
-    val i = new Interp
-    assertEquals(sql"select 'x'".query[Int].unique.transact(xa(i)).attempt.unsafeRunSync().toOption, None)
-    assertEquals(i.ResultSet.close, Some(()))
+    IO.pure(new Interp).flatTap(i =>
+      sql"select 'x'".query[Int].unique.transact(xa(i)).attempt.map(_.isLeft).assert).map(
+      _.ResultSet.close)
+      .assertEquals(Some(()))
   }
 
   test("[Streaming] ResultSet.close should be called on success") {
-    val i = new Interp
-    val _ = sql"select 1".query[Int].stream.compile.toList.transact(xa(i)).unsafeRunSync()
-    assertEquals(i.ResultSet.close, Some(()))
+    IO.pure(new Interp).flatTap(i => sql"select 1".query[Int].stream.compile.toList.transact(xa(i))).map(
+      _.ResultSet.close).assertEquals(Some(()))
   }
 
   test("[Streaming] ResultSet.close should be called on failure") {
-    val i = new Interp
-    assertEquals(
-      sql"select 'x'".query[Int].stream.compile.toList.transact(xa(i)).attempt.unsafeRunSync().toOption,
-      None)
-    assertEquals(i.ResultSet.close, Some(()))
+    IO.pure(new Interp).flatTap(i =>
+      sql"select 'x'".query[Int].stream.compile.toList.transact(xa(i)).attempt.map(_.isLeft).assert).map(
+      _.ResultSet.close)
+      .assertEquals(Some(()))
   }
 
 }

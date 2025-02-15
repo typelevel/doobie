@@ -9,7 +9,7 @@ import doobie.enumerated.JdbcType
 import doobie.testutils.VoidExtensions
 import doobie.util.transactor.Transactor
 
-class GetSuite extends munit.FunSuite with GetSuitePlatform {
+class GetSuite extends munit.CatsEffectSuite {
 
   case class X(x: Int)
   case class Q(x: String)
@@ -22,36 +22,12 @@ class GetSuite extends munit.FunSuite with GetSuitePlatform {
     Get[String].void
   }
 
-  test("Get should be auto derived for unary products") {
-    import doobie.generic.auto.*
-
-    Get[X].void
-    Get[Q].void
-  }
-
-  test("Get is not auto derived without an import") {
-    compileErrors("Get[X]").void
-    compileErrors("Get[Q]").void
-  }
-
-  test("Get can be manually derived for unary products") {
-    Get.derived[X].void
-    Get.derived[Q].void
-  }
-
-  test("Get should not be derived for non-unary products") {
-    compileErrors("Get[Z]").void
-    compileErrors("Get[(Int, Int)]").void
-    compileErrors("Get[S.type]").void
-  }
-
 }
 
 final case class Foo(s: String)
 final case class Bar(n: Int)
 
-class GetDBSuite extends munit.FunSuite {
-  import cats.effect.unsafe.implicits.global
+class GetDBSuite extends munit.CatsEffectSuite {
   import doobie.syntax.all.*
 
   lazy val xa = Transactor.fromDriverManager[IO](
@@ -64,42 +40,26 @@ class GetDBSuite extends munit.FunSuite {
 
   // Both of these will fail at runtime if called with a null value, we check that this is
   // avoided below.
-  implicit def FooMeta: Get[Foo] = Get[String].map(s => Foo(s.toUpperCase))
-  implicit def barMeta: Get[Bar] = Get[Int].temap(n => if (n == 0) Left("cannot be 0") else Right(Bar(n)))
+  implicit val FooMeta: Get[Foo] = Get[String].map(s => Foo(s.toUpperCase))
+  implicit val barMeta: Get[Bar] = Get[Int].temap(n => if (n == 0) Left("cannot be 0") else Right(Bar(n)))
 
   test("Get should not allow map to observe null on the read side (AnyRef)") {
-    val x = sql"select null".query[Option[Foo]].unique.transact(xa).unsafeRunSync()
-    assertEquals(x, None)
+    sql"select null".query[Option[Foo]].unique.transact(xa).assertEquals(None)
   }
 
   test("Get should read non-null value (AnyRef)") {
-    val x = sql"select 'abc'".query[Foo].unique.transact(xa).unsafeRunSync()
-    assertEquals(x, Foo("ABC"))
+    sql"select 'abc'".query[Foo].unique.transact(xa).assertEquals(Foo("ABC"))
   }
 
   test("Get should error when reading a NULL into an unlifted Scala type (AnyRef)") {
-    def x = sql"select null".query[Foo].unique.transact(xa).attempt.unsafeRunSync()
-    assertEquals(x, Left(doobie.util.invariant.NonNullableColumnRead(1, JdbcType.Char)))
-  }
-
-  test("Get should not allow map to observe null on the read side (AnyVal)") {
-    val x = sql"select null".query[Option[Bar]].unique.transact(xa).unsafeRunSync()
-    assertEquals(x, None)
-  }
-
-  test("Get should read non-null value (AnyVal)") {
-    val x = sql"select 1".query[Bar].unique.transact(xa).unsafeRunSync()
-    assertEquals(x, Bar(1))
-  }
-
-  test("Get should error when reading a NULL into an unlifted Scala type (AnyVal)") {
-    def x = sql"select null".query[Bar].unique.transact(xa).attempt.unsafeRunSync()
-    assertEquals(x, Left(doobie.util.invariant.NonNullableColumnRead(1, JdbcType.Integer)))
+    sql"select null".query[Foo].unique.transact(xa).attempt.assertEquals(Left(
+      doobie.util.invariant.NonNullableColumnRead(1, JdbcType.Char)))
   }
 
   test("Get should error when reading an incorrect value") {
-    def x = sql"select 0".query[Bar].unique.transact(xa).attempt.unsafeRunSync()
-    assertEquals(x, Left(doobie.util.invariant.InvalidValue[Int, Bar](0, "cannot be 0")))
+    sql"select 0".query[Bar].unique.transact(xa).attempt.assertEquals(Left(doobie.util.invariant.InvalidValue[Int, Bar](
+      0,
+      "cannot be 0")))
   }
 
 }

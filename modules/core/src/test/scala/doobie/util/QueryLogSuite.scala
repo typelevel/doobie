@@ -14,9 +14,7 @@ import doobie.util.query.Query
 import doobie.util.transactor.Transactor
 import doobie.util.update.Update
 
-class QueryLogSuite extends munit.FunSuite with QueryLogSuitePlatform {
-
-  import cats.effect.unsafe.implicits.global
+class QueryLogSuite extends munit.CatsEffectSuite with QueryLogSuitePlatform {
 
   val logEventRef: Ref[IO, LogEvent] =
     Ref.of[IO, LogEvent](null).unsafeRunSync()
@@ -29,45 +27,45 @@ class QueryLogSuite extends munit.FunSuite with QueryLogSuitePlatform {
     logHandler = Some(ev => logEventRef.set(ev))
   )
 
-  def eventForCIO[A](cio: ConnectionIO[A]): LogEvent = {
+  def eventForCIO[A](cio: ConnectionIO[A]): IO[LogEvent] = {
     for {
       _ <- logEventRef.set(null)
       _ <- cio.transact(xa).attempt
       log <- logEventRef.get
     } yield log
-  }.unsafeRunSync()
+  }
 
-  def successEventForCIO[A](cio: ConnectionIO[A]): Success =
-    eventForCIO(cio) match {
+  def successEventForCIO[A](cio: ConnectionIO[A]): IO[Success] =
+    eventForCIO(cio).map {
       case s: Success => s
       case other      => fail(s"Expected Success log event but got $other")
     }
 
-  def execFailureEventForCIO[A](cio: ConnectionIO[A]): ExecFailure =
-    eventForCIO(cio) match {
+  def execFailureEventForCIO[A](cio: ConnectionIO[A]): IO[ExecFailure] =
+    eventForCIO(cio).map {
       case ev: ExecFailure => ev
       case other           => fail(s"Expected ExecFailure log event but got $other")
     }
 
-  def processFailureEventForCIO[A](cio: ConnectionIO[A]): ProcessingFailure =
-    eventForCIO(cio) match {
+  def processFailureEventForCIO[A](cio: ConnectionIO[A]): IO[ProcessingFailure] =
+    eventForCIO(cio).map {
       case ev: ProcessingFailure => ev
       case other                 => fail(s"Expected ProcessingFailure log event but got $other")
     }
 
-  def eventForUniqueQuery[A: Write](sql: String, arg: A): LogEvent = {
+  def eventForUniqueQuery[A: Write](sql: String, arg: A): IO[LogEvent] = {
     eventForCIO(Query[A, Unit](sql, None).unique(arg))
   }
 
-  def eventForUpdate[A: Write](sql: String, arg: A): LogEvent = {
+  def eventForUpdate[A: Write](sql: String, arg: A): IO[LogEvent] = {
     val cio = sql"create table if not exists foo (bar integer)".update.run *>
       Update[A](sql, None).run(arg)
     eventForCIO(cio)
   }
 
   test("simple") {
-    val q = sql"select 1, 2".query[(Int, Int)]
-    val succEvents = List(
+    val q: query.Query0[(Int, Int)] = sql"select 1, 2".query[(Int, Int)]
+    List(
       successEventForCIO(q.to[List]),
       successEventForCIO(q.toMap[Int, Int]),
       successEventForCIO(q.accumulate[List]),
@@ -75,16 +73,20 @@ class QueryLogSuite extends munit.FunSuite with QueryLogSuitePlatform {
       successEventForCIO(q.option),
       successEventForCIO(q.nel)
     )
-    succEvents.foreach { succ =>
-      assertEquals(succ.sql, "select 1, 2")
-      assertEquals(succ.params, NonBatch(Nil))
-      assertEquals(succ.label, "unlabeled")
-    }
+      .sequence
+      .map { succEvents =>
+        succEvents.foreach { succ =>
+          assertEquals(succ.sql, "select 1, 2")
+          assertEquals(succ.params, NonBatch(Nil))
+          assertEquals(succ.label, "unlabeled")
+        }
+      }
+
   }
 
   test("With params and label") {
     val q = sql"select ${1}, ${"2"}".queryWithLabel[(Int, String)]("mylabel")
-    val succEvents = List(
+    List(
       successEventForCIO(q.to[List]),
       successEventForCIO(q.toMap[Int, String]),
       successEventForCIO(q.accumulate[List]),
@@ -92,13 +94,16 @@ class QueryLogSuite extends munit.FunSuite with QueryLogSuitePlatform {
       successEventForCIO(q.option),
       successEventForCIO(q.nel)
     )
-    succEvents.foreach { succ =>
-      assertEquals(succ.sql, "select ?, ?")
-      assertEquals(succ.params, NonBatch(List(1, "2")))
-      assertEquals(succ.label, "mylabel")
-      assert(succ.exec.toNanos > 0L)
-      assert(succ.processing.toNanos > 0L)
-    }
+      .sequence
+      .map { succEvents =>
+        succEvents.foreach { succ =>
+          assertEquals(succ.sql, "select ?, ?")
+          assertEquals(succ.params, NonBatch(List(1, "2")))
+          assertEquals(succ.label, "mylabel")
+          assert(succ.exec.toNanos > 0L)
+          assert(succ.processing.toNanos > 0L)
+        }
+      }
   }
 
   test("execution failure (Error during PreparedStatement construction)") {
@@ -110,13 +115,17 @@ class QueryLogSuite extends munit.FunSuite with QueryLogSuitePlatform {
       execFailureEventForCIO(q.unique),
       execFailureEventForCIO(q.option),
       execFailureEventForCIO(q.nel)
-    ).foreach { ev =>
-      assertEquals(ev.sql, "select bad_column")
-      assertEquals(ev.params, Parameters.nonBatchEmpty)
-      assertEquals(ev.label, "unlabeled")
-      assertEquals(ev.exec.toNanos, 0L)
-      assert(ev.failure.getMessage.contains("not found"))
-    }
+    )
+      .sequence
+      .map { failEvents =>
+        failEvents.foreach { ev =>
+          assertEquals(ev.sql, "select bad_column")
+          assertEquals(ev.params, Parameters.nonBatchEmpty)
+          assertEquals(ev.label, "unlabeled")
+          assertEquals(ev.exec.toNanos, 0L)
+          assert(ev.failure.getMessage.contains("not found"))
+        }
+      }
   }
 
   test("execution failure") {
@@ -128,15 +137,18 @@ class QueryLogSuite extends munit.FunSuite with QueryLogSuitePlatform {
       execFailureEventForCIO(q.unique("not_int")),
       execFailureEventForCIO(q.option("not_int")),
       execFailureEventForCIO(q.nel("not_int"))
-    ).foreach { ev =>
-      assertEquals(ev.sql, "select ? :: Int")
-      assertEquals(ev.params, NonBatch(List("not_int")))
-      assertEquals(ev.label, "unlabeled")
-      assert(ev.exec.toNanos > 0L)
-      assert(ev.failure.getMessage.contains("Data conversion error"))
-    }
+    )
+      .sequence
+      .map { failEvents =>
+        failEvents.foreach { ev =>
+          assertEquals(ev.sql, "select ? :: Int")
+          assertEquals(ev.params, NonBatch(List("not_int")))
+          assertEquals(ev.label, "unlabeled")
+          assert(ev.exec.toNanos > 0L)
+          assert(ev.failure.getMessage.contains("Data conversion error"))
+        }
+      }
   }
-
   test("processing failure") {
     val q = sql"select 'not_int'".query[(Int, String)]
     List(
@@ -146,37 +158,42 @@ class QueryLogSuite extends munit.FunSuite with QueryLogSuitePlatform {
       processFailureEventForCIO(q.unique),
       processFailureEventForCIO(q.option),
       processFailureEventForCIO(q.nel)
-    ).foreach { ev =>
-      assertEquals(ev.sql, "select 'not_int'")
-      assertEquals(ev.params, Parameters.nonBatchEmpty)
-      assertEquals(ev.label, "unlabeled")
-      assert(ev.exec.toNanos > 0L)
-      assert(ev.failure.getMessage.contains("Data conversion error"))
-    }
+    )
+      .sequence
+      .map { failEvents =>
+        failEvents.foreach { ev =>
+          assertEquals(ev.sql, "select 'not_int'")
+          assertEquals(ev.params, Parameters.nonBatchEmpty)
+          assertEquals(ev.label, "unlabeled")
+          assert(ev.exec.toNanos > 0L)
+          assert(ev.failure.getMessage.contains("Data conversion error"))
+        }
+      }
   }
-
   test("stream") {
     val sql = "select * from values (1),(2),(3),(4),(5),(6),(7),(8),(9),(10)"
-    val succ = successEventForCIO(
+    successEventForCIO(
       Query[Unit, Int](sql).stream(()).compile.toList
-    )
-    assertEquals(succ.sql, sql)
-    assertEquals(succ.params, NonBatch(Nil))
-    assertEquals(succ.label, "unlabeled")
-    assert(succ.exec.toNanos > 0L)
-    assertEquals(succ.processing.toNanos, 0L)
+    ).map { ev =>
+      assertEquals(ev.sql, sql)
+      assertEquals(ev.params, NonBatch(Nil))
+      assertEquals(ev.label, "unlabeled")
+      assert(ev.exec.toNanos > 0L)
+      assertEquals(ev.processing.toNanos, 0L)
+    }
   }
 
   test("streamWithChunkSize") {
     val sql = "select * from values (1),(2),(3),(4),(5),(6),(7),(8),(9),(10)"
-    val succ = successEventForCIO(
+    successEventForCIO(
       Query[Unit, Int](sql).streamWithChunkSize((), 5).compile.toList
-    )
-    assertEquals(succ.sql, sql)
-    assertEquals(succ.params, NonBatch(Nil))
-    assertEquals(succ.label, "unlabeled")
-    assert(succ.exec.toNanos > 0L)
-    assertEquals(succ.processing.toNanos, 0L)
+    ).map { ev =>
+      assertEquals(ev.sql, sql)
+      assertEquals(ev.params, NonBatch(Nil))
+      assertEquals(ev.label, "unlabeled")
+      assert(ev.exec.toNanos > 0L)
+      assertEquals(ev.processing.toNanos, 0L)
+    }
   }
 
   test("stream: Log ExecFailure on failed PreparedStatement construction") {
@@ -184,13 +201,16 @@ class QueryLogSuite extends munit.FunSuite with QueryLogSuitePlatform {
     List(
       execFailureEventForCIO(q0.stream.compile.toList),
       execFailureEventForCIO(q0.streamWithChunkSize(1).compile.toList)
-    ).foreach { ev =>
-      assertEquals(ev.sql, "select bad_column")
-      assertEquals(ev.params, Parameters.nonBatchEmpty)
-      assertEquals(ev.label, "unlabeled")
-      assertEquals(ev.exec.toNanos, 0L)
-      assert(ev.failure.getMessage.contains("not found"))
-    }
+    ).sequence
+      .map { failEvents =>
+        failEvents.foreach { ev =>
+          assertEquals(ev.sql, "select bad_column")
+          assertEquals(ev.params, Parameters.nonBatchEmpty)
+          assertEquals(ev.label, "unlabeled")
+          assertEquals(ev.exec.toNanos, 0L)
+          assert(ev.failure.getMessage.contains("not found"))
+        }
+      }
   }
 
   test("stream: Log ExecFailure on failed PreparedStatement execution") {
@@ -198,13 +218,16 @@ class QueryLogSuite extends munit.FunSuite with QueryLogSuitePlatform {
     List(
       execFailureEventForCIO(q0.stream("not_int").compile.toList),
       execFailureEventForCIO(q0.streamWithChunkSize("not_int", 1).compile.toList)
-    ).foreach { ev =>
-      assertEquals(ev.sql, "select ? :: Int")
-      assertEquals(ev.params, NonBatch(List("not_int")))
-      assertEquals(ev.label, "unlabeled")
-      assert(ev.exec.toNanos > 0L)
-      assert(ev.failure.getMessage.contains("Data conversion error"))
-    }
+    ).sequence
+      .map { failEvents =>
+        failEvents.foreach { ev =>
+          assertEquals(ev.sql, "select ? :: Int")
+          assertEquals(ev.params, NonBatch(List("not_int")))
+          assertEquals(ev.label, "unlabeled")
+          assert(ev.exec.toNanos > 0L)
+          assert(ev.failure.getMessage.contains("Data conversion error"))
+        }
+      }
   }
 
 }

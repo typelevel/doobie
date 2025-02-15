@@ -130,13 +130,13 @@ trait MetaConstructors {
       )
 
     def array[A >: Null <: AnyRef](
-        elementType: String,
-        schemaH: String,
-        schemaT: String*
+        elementTypeName: String, // Used in Put to set the array element type
+        arrayTypeName: String,
+        additionalArrayTypeNames: String*
     ): Meta[Array[A]] =
       new Meta[Array[A]](
-        Get.Advanced.array[A](NonEmptyList(schemaH, schemaT.toList)),
-        Put.Advanced.array[A](NonEmptyList(schemaH, schemaT.toList), elementType)
+        Get.Advanced.array[A](NonEmptyList(arrayTypeName, additionalArrayTypeNames.toList)),
+        Put.Advanced.array[A](NonEmptyList(arrayTypeName, additionalArrayTypeNames.toList), elementTypeName)
       )
 
     def other[A >: Null <: AnyRef: TypeName: ClassTag](
@@ -181,7 +181,8 @@ trait MetaInstances {
       List(TinyInt, Integer, BigInt, Real, Float, Double, Decimal, Numeric, Bit, Char, VarChar, LongVarChar),
       _.getShort(_),
       _.setShort(_, _),
-      _.updateShort(_, _))
+      _.updateShort(_, _)
+    )
 
   /** @group Instances */
   implicit val IntMeta: Meta[Int] =
@@ -208,7 +209,8 @@ trait MetaInstances {
       List(TinyInt, Integer, SmallInt, BigInt, Float, Double, Decimal, Numeric, Bit, Char, VarChar, LongVarChar),
       _.getFloat(_),
       _.setFloat(_, _),
-      _.updateFloat(_, _))
+      _.updateFloat(_, _)
+    )
 
   /** @group Instances */
   implicit val DoubleMeta: Meta[Double] =
