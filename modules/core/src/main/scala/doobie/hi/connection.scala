@@ -87,6 +87,17 @@ object connection {
       loggingInfo
     )
 
+  def executeWithResultSet[A](
+      prepared: PreparedExecution[A],
+      loggingInfo: LoggingInfo
+  ): ConnectionIO[A] = executeWithResultSet(
+    prepared.create,
+    prepared.prep,
+    prepared.exec,
+    prepared.process,
+    loggingInfo
+  )
+
   /** Create and execute a PreparedStatement which immediately returns the result without reading from a ResultSet. The
     * most common case is executing an INSERT/UPDATE and it returning the rows inserted/updated. If the query you're
     * executing returns a ResultSet, use `executeWithResultSet` instead for better logging and resource cleanup.
@@ -113,6 +124,17 @@ object connection {
       create,
       prep,
       Left(exec),
+      loggingInfo
+    )
+
+  def executeWithoutResultSet[A](
+      prepared: PreparedExecutionWithoutProcessStep[A],
+      loggingInfo: LoggingInfo
+  ): ConnectionIO[A] =
+    executeWithoutResultSet(
+      prepared.create,
+      prepared.prep,
+      prepared.exec,
       loggingInfo
     )
 
@@ -543,4 +565,17 @@ object connection {
   // val nativeTypeMap: ConnectionIO[Map[String, JdbcType]] = {
   //   getMetaData(IFDMD.getTypeInfo.flatMap(IFDMD.embed(_, HRS.list[(String, JdbcType)].map(_.toMap))))
   // }
+
+  final case class PreparedExecution[A](
+      create: ConnectionIO[PreparedStatement],
+      prep: PreparedStatementIO[Unit],
+      exec: PreparedStatementIO[ResultSet],
+      process: ResultSetIO[A]
+  )
+
+  final case class PreparedExecutionWithoutProcessStep[A](
+      create: ConnectionIO[PreparedStatement],
+      prep: PreparedStatementIO[Unit],
+      exec: PreparedStatementIO[A]
+  )
 }
