@@ -4,7 +4,7 @@
 
 package doobie.util
 
-import doobie.syntax.all.*
+import doobie.implicits.*
 import cats.syntax.all.*
 import cats.effect.IO
 import doobie.{Transactor, Update}
