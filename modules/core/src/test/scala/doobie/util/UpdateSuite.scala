@@ -57,7 +57,7 @@ class UpdateSuite extends CatsEffectSuite {
     (for {
       _ <- sql"create temp table t1 (a int, b int)".update.run
       res <- Update[(Int, Int)]("insert into t1 (a, b) values (?, ?)")
-        .withUniqueGeneratedKeysAlteringExecution[(Int, Int)]("a", "b")(
+        .withUniqueGeneratedKeysAlteringExecution[(Int, Int), (Int, Int)]("a", "b")(
           (5, 6),
           pe => pe.copy(exec = IFPS.delay { didRun = true } *> pe.exec)
         )

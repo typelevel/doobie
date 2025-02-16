@@ -105,12 +105,16 @@ object query {
       toConnectionIO(a, IHRS.build[F, B])
     }
 
-    /** Just like `to` but allowing to alter `PreparedExecution`.
+    /** Like [[to]], but allow altering various parts of the execute steps before it is run
+      * @tparam F
+      *   The collection type e.g. List, Vector
+      * @tparam R
+      *   The result type (Changing PreparedExecution's process step may change the result type)
       */
-    def toAlteringExecution[F[_]](
+    def toAlteringExecution[F[_], R](
         a: A,
-        fn: PreparedExecution[F[B]] => PreparedExecution[F[B]]
-    )(implicit f: FactoryCompat[B, F[B]]): ConnectionIO[F[B]] = {
+        fn: PreparedExecution[F[B]] => PreparedExecution[R]
+    )(implicit f: FactoryCompat[B, F[B]]): ConnectionIO[R] = {
       toConnectionIOAlteringExecution(a, IHRS.build[F, B], fn)
     }
 
@@ -122,15 +126,21 @@ object query {
     def toMap[K, V](a: A)(implicit ev: B =:= (K, V), f: FactoryCompat[(K, V), Map[K, V]]): ConnectionIO[Map[K, V]] =
       toConnectionIO(a, IHRS.buildPair[Map, K, V](f, read.map(ev)))
 
-    /** Just like `toMap` but allowing to alter `PreparedExecution`.
+    /** Like [[toMap]], but allow altering various parts of the execute steps before it is run
+      * @tparam K
+      *   Type of the map's key
+      * @tparam V
+      *   Type of the map's values
+      * @tparam R
+      *   The result type (Changing PreparedExecution's process step may change the result type)
       */
-    def toMapAlteringExecution[K, V](
+    def toMapAlteringExecution[K, V, R](
         a: A,
-        fn: PreparedExecution[Map[K, V]] => PreparedExecution[Map[K, V]]
+        fn: PreparedExecution[Map[K, V]] => PreparedExecution[R]
     )(implicit
         ev: B =:= (K, V),
         f: FactoryCompat[(K, V), Map[K, V]]
-    ): ConnectionIO[Map[K, V]] =
+    ): ConnectionIO[R] =
       toConnectionIOAlteringExecution(a, IHRS.buildPair[Map, K, V](f, read.map(ev)), fn)
 
     /** Apply the argument `a` to construct a program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding
@@ -140,12 +150,17 @@ object query {
     def accumulate[F[_]: Alternative](a: A): ConnectionIO[F[B]] =
       toConnectionIO(a, IHRS.accumulate[F, B])
 
-    /** Just like `accumulate` but allowing to alter `PreparedExecution`.
+    /** Like [[accumulate]], but allow altering various parts of the execute steps before it is run
+      *
+      * @tparam F
+      *   The collection type e.g. List, Vector
+      * @tparam R
+      *   The result type (Changing PreparedExecution's process step may change the result type)
       */
-    def accumulateAlteringExecution[F[_]: Alternative](
+    def accumulateAlteringExecution[F[_]: Alternative, R](
         a: A,
-        fn: PreparedExecution[F[B]] => PreparedExecution[F[B]]
-    ): ConnectionIO[F[B]] =
+        fn: PreparedExecution[F[B]] => PreparedExecution[R]
+    ): ConnectionIO[R] =
       toConnectionIOAlteringExecution(a, IHRS.accumulate[F, B], fn)
 
     /** Apply the argument `a` to construct a program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding
@@ -155,9 +170,12 @@ object query {
     def unique(a: A): ConnectionIO[B] =
       toConnectionIO(a, IHRS.getUnique[B])
 
-    /** Just like `unique` but allowing to alter `PreparedExecution`.
+    /** Like [[unique]], but allow altering various parts of the execute steps before it is run
+      *
+      * @tparam R
+      *   The result type (Changing PreparedExecution's process step may change the result type)
       */
-    def uniqueAlteringExecution(a: A, fn: PreparedExecution[B] => PreparedExecution[B]): ConnectionIO[B] =
+    def uniqueAlteringExecution[R](a: A, fn: PreparedExecution[B] => PreparedExecution[R]): ConnectionIO[R] =
       toConnectionIOAlteringExecution(a, IHRS.getUnique[B], fn)
 
     /** Apply the argument `a` to construct a program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding
@@ -167,12 +185,14 @@ object query {
     def option(a: A): ConnectionIO[Option[B]] =
       toConnectionIO(a, IHRS.getOption[B])
 
-    /** Just like `option` but allowing to alter `PreparedExecution`.
+    /** Like [[option]], but allow altering various parts of the execute steps before it is run
+      * @tparam R
+      *   The result type (Changing PreparedExecution's process step may change the result type)
       */
-    def optionAlteringExecution(
+    def optionAlteringExecution[R](
         a: A,
-        fn: PreparedExecution[Option[B]] => PreparedExecution[Option[B]]
-    ): ConnectionIO[Option[B]] =
+        fn: PreparedExecution[Option[B]] => PreparedExecution[R]
+    ): ConnectionIO[R] =
       toConnectionIOAlteringExecution(a, IHRS.getOption[B], fn)
 
     /** Apply the argument `a` to construct a program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding
@@ -183,22 +203,24 @@ object query {
     def nel(a: A): ConnectionIO[NonEmptyList[B]] =
       toConnectionIO(a, IHRS.nel[B])
 
-    /** Just like `nel` but allowing to alter `PreparedExecution`.
+    /** Like [[nel]], but allow altering various parts of the execute steps before it is run
+      * @tparam R
+      *   The result type (Changing PreparedExecution's process step may change the result type)
       */
-    def nelAlteringExecution(
+    def nelAlteringExecution[R](
         a: A,
-        fn: PreparedExecution[NonEmptyList[B]] => PreparedExecution[NonEmptyList[B]]
-    ): ConnectionIO[NonEmptyList[B]] =
+        fn: PreparedExecution[NonEmptyList[B]] => PreparedExecution[R]
+    ): ConnectionIO[R] =
       toConnectionIOAlteringExecution(a, IHRS.nel[B], fn)
 
     private def toConnectionIO[C](a: A, rsio: ResultSetIO[C]): ConnectionIO[C] =
       IHC.executeWithResultSet(preparedExecution(sql, a, rsio), mkLoggingInfo(a))
 
-    private def toConnectionIOAlteringExecution[C](
+    private def toConnectionIOAlteringExecution[C, R](
         a: A,
         rsio: ResultSetIO[C],
-        fn: PreparedExecution[C] => PreparedExecution[C]
-    ): ConnectionIO[C] =
+        fn: PreparedExecution[C] => PreparedExecution[R]
+    ): ConnectionIO[R] =
       IHC.executeWithResultSet(fn(preparedExecution(sql, a, rsio)), mkLoggingInfo(a))
 
     private def preparedExecution[C](sql: String, a: A, rsio: ResultSetIO[C]): PreparedExecution[C] =
@@ -248,34 +270,35 @@ object query {
         override def outputAnalysis: ConnectionIO[Analysis] = outer.outputAnalysis
         override def streamWithChunkSize(n: Int): Stream[ConnectionIO, B] = outer.streamWithChunkSize(a, n)
         override def accumulate[F[_]: Alternative]: ConnectionIO[F[B]] = outer.accumulate[F](a)
-        override def accumulateAlteringExecution[F[_]: Alternative](
-            fn: PreparedExecution[F[B]] => PreparedExecution[F[B]]
-        ): ConnectionIO[F[B]] = outer.accumulateAlteringExecution(a, fn)
+        override def accumulateAlteringExecution[F[_]: Alternative, R](
+            fn: PreparedExecution[F[B]] => PreparedExecution[R]
+        ): ConnectionIO[R] = outer.accumulateAlteringExecution(a, fn)
         override def to[F[_]](implicit f: FactoryCompat[B, F[B]]): ConnectionIO[F[B]] = outer.to[F](a)
-        override def toAlteringExecution[F[_]](fn: PreparedExecution[F[B]] => PreparedExecution[F[B]])(implicit
+        override def toAlteringExecution[F[_], R](fn: PreparedExecution[F[B]] => PreparedExecution[R])(implicit
             f: FactoryCompat[B, F[B]]
-        ): ConnectionIO[F[B]] =
+        ): ConnectionIO[R] =
           outer.toAlteringExecution(a, fn)
         override def toMap[K, V](implicit
             ev: B =:= (K, V),
             f: FactoryCompat[(K, V), Map[K, V]]
         ): ConnectionIO[Map[K, V]] = outer.toMap(a)
-        override def toMapAlteringExecution[K, V](fn: PreparedExecution[Map[K, V]] => PreparedExecution[Map[K, V]])(
+
+        override def toMapAlteringExecution[K, V, R](fn: PreparedExecution[Map[K, V]] => PreparedExecution[R])(
             implicit
             ev: B =:= (K, V),
             f: FactoryCompat[(K, V), Map[K, V]]
-        ): ConnectionIO[Map[K, V]] = outer.toMapAlteringExecution(a, fn)
+        ): ConnectionIO[R] = outer.toMapAlteringExecution(a, fn)
         override def unique: ConnectionIO[B] = outer.unique(a)
-        override def uniqueAlteringExecution(fn: PreparedExecution[B] => PreparedExecution[B]): ConnectionIO[B] =
+        override def uniqueAlteringExecution[R](fn: PreparedExecution[B] => PreparedExecution[R]): ConnectionIO[R] =
           outer.uniqueAlteringExecution(a, fn)
         override def option: ConnectionIO[Option[B]] = outer.option(a)
-        override def optionAlteringExecution(fn: PreparedExecution[Option[B]] => PreparedExecution[Option[B]])
-            : ConnectionIO[Option[B]] =
+        override def optionAlteringExecution[R](fn: PreparedExecution[Option[B]] => PreparedExecution[R])
+            : ConnectionIO[R] =
           outer.optionAlteringExecution(a, fn)
         override def nel: ConnectionIO[NonEmptyList[B]] = outer.nel(a)
-        override def nelAlteringExecution(
-            fn: PreparedExecution[NonEmptyList[B]] => PreparedExecution[NonEmptyList[B]]
-        ): ConnectionIO[NonEmptyList[B]] =
+        override def nelAlteringExecution[R](
+            fn: PreparedExecution[NonEmptyList[B]] => PreparedExecution[R]
+        ): ConnectionIO[R] =
           outer.nelAlteringExecution(a, fn)
         override def map[C](f: B => C): Query0[C] = outer.map(f).toQuery0(a)
         override def inspect[R](f: (String, PreparedStatementIO[Unit]) => ConnectionIO[R]): ConnectionIO[R] =
@@ -386,9 +409,15 @@ object query {
       */
     def to[F[_]](implicit f: FactoryCompat[B, F[B]]): ConnectionIO[F[B]]
 
-    def toAlteringExecution[F[_]](
-        fn: PreparedExecution[F[B]] => PreparedExecution[F[B]]
-    )(implicit f: FactoryCompat[B, F[B]]): ConnectionIO[F[B]]
+    /** Like [[to]], but allow altering various parts of the execute steps before it is run
+      * @tparam F
+      *   The collection type e.g. List, Vector
+      * @tparam R
+      *   The result type (Changing PreparedExecution's process step may change the result type)
+      */
+    def toAlteringExecution[F[_], R](
+        fn: PreparedExecution[F[B]] => PreparedExecution[R]
+    )(implicit f: FactoryCompat[B, F[B]]): ConnectionIO[R]
 
     /** Apply the argument `a` to construct a program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding
       * an `Map[(K, V)]` accumulated via the provided `CanBuildFrom`. This is the fastest way to accumulate a
@@ -397,12 +426,16 @@ object query {
       */
     def toMap[K, V](implicit ev: B =:= (K, V), f: FactoryCompat[(K, V), Map[K, V]]): ConnectionIO[Map[K, V]]
 
-    def toMapAlteringExecution[K, V](
-        fn: PreparedExecution[Map[K, V]] => PreparedExecution[Map[K, V]]
+    /** Like [[toMap]], but allow altering various parts of the execute steps before it is run
+      * @tparam R
+      *   The result type (Changing PreparedExecution's process step may change the result type)
+      */
+    def toMapAlteringExecution[K, V, R](
+        fn: PreparedExecution[Map[K, V]] => PreparedExecution[R]
     )(implicit
         ev: B =:= (K, V),
         f: FactoryCompat[(K, V), Map[K, V]]
-    ): ConnectionIO[Map[K, V]]
+    ): ConnectionIO[R]
 
     /** Program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding an `F[B]` accumulated via `MonadPlus`
       * append. This method is more general but less efficient than `to`.
@@ -410,9 +443,13 @@ object query {
       */
     def accumulate[F[_]: Alternative]: ConnectionIO[F[B]]
 
-    def accumulateAlteringExecution[F[_]: Alternative](
-        fn: PreparedExecution[F[B]] => PreparedExecution[F[B]]
-    ): ConnectionIO[F[B]]
+    /** Like [[to]], but allow altering various parts of the execute steps before it is run
+      * @tparam R
+      *   The result type (Changing PreparedExecution's process step may change the result type)
+      */
+    def accumulateAlteringExecution[F[_]: Alternative, R](
+        fn: PreparedExecution[F[B]] => PreparedExecution[R]
+    ): ConnectionIO[R]
 
     /** Program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding a unique `B` and raising an exception
       * if the resultset does not have exactly one row. See also `option`.
@@ -420,7 +457,11 @@ object query {
       */
     def unique: ConnectionIO[B]
 
-    def uniqueAlteringExecution(fn: PreparedExecution[B] => PreparedExecution[B]): ConnectionIO[B]
+    /** Like [[unique]], but allow altering various parts of the execute steps before it is run
+      * @tparam R
+      *   The result type (Changing PreparedExecution's process step may change the result type)
+      */
+    def uniqueAlteringExecution[R](fn: PreparedExecution[B] => PreparedExecution[R]): ConnectionIO[R]
 
     /** Program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding an optional `B` and raising an
       * exception if the resultset has more than one row. See also `unique`.
@@ -428,9 +469,13 @@ object query {
       */
     def option: ConnectionIO[Option[B]]
 
-    def optionAlteringExecution(
-        fn: PreparedExecution[Option[B]] => PreparedExecution[Option[B]]
-    ): ConnectionIO[Option[B]]
+    /** Like [[option]], but allow altering various parts of the execute steps before it is run
+      * @tparam R
+      *   The result type (Changing PreparedExecution's process step may change the result type)
+      */
+    def optionAlteringExecution[R](
+        fn: PreparedExecution[Option[B]] => PreparedExecution[R]
+    ): ConnectionIO[R]
 
     /** Program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding a `NonEmptyList[B]` and raising an
       * exception if the resultset does not have at least one row. See also `unique`.
@@ -438,9 +483,13 @@ object query {
       */
     def nel: ConnectionIO[NonEmptyList[B]]
 
-    def nelAlteringExecution(
-        fn: PreparedExecution[NonEmptyList[B]] => PreparedExecution[NonEmptyList[B]]
-    ): ConnectionIO[NonEmptyList[B]]
+    /** Like [[nel]], but allow altering various parts of the execute steps before it is run
+      * @tparam R
+      *   The result type (Changing PreparedExecution's process step may change the result type)
+      */
+    def nelAlteringExecution[R](
+        fn: PreparedExecution[NonEmptyList[B]] => PreparedExecution[R]
+    ): ConnectionIO[R]
 
     /** @group Transformations */
     def map[C](f: B => C): Query0[C]

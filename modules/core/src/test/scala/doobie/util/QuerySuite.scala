@@ -64,7 +64,7 @@ class QuerySuite extends munit.CatsEffectSuite {
 
   test("Query toAlteringExecution (result set operations)") {
     var didRun = false
-    pairQuery.toAlteringExecution[List](
+    pairQuery.toAlteringExecution[List, List[(String, Int)]](
       "x",
       { preparedExec =>
         val process = IHRS.delay { didRun = true } *> preparedExec.process
@@ -78,7 +78,7 @@ class QuerySuite extends munit.CatsEffectSuite {
   }
   test("Query toMapAlteringExecution (result set operations)") {
     var didRun = false
-    pairQuery.toMapAlteringExecution[String, Int](
+    pairQuery.toMapAlteringExecution[String, Int, Map[String, Int]](
       "x",
       { preparedExec =>
         val process = IHRS.delay { didRun = true } *> preparedExec.process
@@ -92,7 +92,7 @@ class QuerySuite extends munit.CatsEffectSuite {
   }
   test("Query accumulateAlteringExecution (result set operations)") {
     var didRun = false
-    pairQuery.accumulateAlteringExecution[List](
+    pairQuery.accumulateAlteringExecution[List, List[(String, Int)]](
       "x",
       { preparedExec =>
         val process = IHRS.delay { didRun = true } *> preparedExec.process
@@ -223,7 +223,7 @@ class QuerySuite extends munit.CatsEffectSuite {
 
   test("Query0 toAlteringExecution (result set operations)") {
     var didRun = false
-    val result = pairQuery.toQuery0("x").toAlteringExecution[List]({ preparedExec =>
+    val result = pairQuery.toQuery0("x").toAlteringExecution[List, List[(String, Int)]]({ preparedExec =>
       val process = IHRS.delay { didRun = true } *> preparedExec.process
       preparedExec.copy(process = process)
     })
@@ -234,7 +234,7 @@ class QuerySuite extends munit.CatsEffectSuite {
   }
   test("Query0 toMapAlteringExecution (result set operations)") {
     var didRun = false
-    pairQuery.toQuery0("x").toMapAlteringExecution[String, Int]({ preparedExec =>
+    pairQuery.toQuery0("x").toMapAlteringExecution[String, Int, Map[String, Int]]({ preparedExec =>
       val process = IHRS.delay { didRun = true } *> preparedExec.process
       preparedExec.copy(process = process)
     })
@@ -246,7 +246,7 @@ class QuerySuite extends munit.CatsEffectSuite {
   }
   test("Query0 accumulateAlteringExecution (result set operations)") {
     var didRun = false
-    pairQuery.toQuery0("x").accumulateAlteringExecution[List]({ preparedExec =>
+    pairQuery.toQuery0("x").accumulateAlteringExecution[List, List[(String, Int)]]({ preparedExec =>
       val process = IHRS.delay { didRun = true } *> preparedExec.process
       preparedExec.copy(process = process)
     })

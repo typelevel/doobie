@@ -193,12 +193,14 @@ object update {
         loggingInfoForUpdateWithGeneratedKeys(a)
       )
 
-    /** Just like `withUniqueGeneratedKeys` but allowing to alter `PreparedExecution`.
+    /** Just like `withUniqueGeneratedKeys` but allowing to alter individual steps of the update execution.
+      * @tparam R
+      *   Result type (Changing PreparedExecution's process step may change the result type)
       */
-    def withUniqueGeneratedKeysAlteringExecution[K: Read](columns: String*)(
+    def withUniqueGeneratedKeysAlteringExecution[K: Read, R](columns: String*)(
         a: A,
-        fn: PreparedExecution[K] => PreparedExecution[K]
-    ): ConnectionIO[K] =
+        fn: PreparedExecution[K] => PreparedExecution[R]
+    ): ConnectionIO[R] =
       IHC.executeWithResultSet(
         fn(prepareExecutionForWithUniqueGeneratedKeys(columns*)(a)),
         loggingInfoForUpdateWithGeneratedKeys(a)
@@ -353,6 +355,10 @@ object update {
       */
     def withUniqueGeneratedKeys[K: Read](columns: String*): ConnectionIO[K]
 
+    /** Just like `withUniqueGeneratedKeys` but allowing to alter individual steps of the update execution.
+      * @tparam R
+      *   Result type (Changing PreparedExecution's process step may change the result type)
+      */
     def withUniqueGeneratedKeysAlteringExecution[K: Read](columns: String*)(
         fn: PreparedExecution[K] => PreparedExecution[K]
     ): ConnectionIO[K]
