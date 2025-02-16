@@ -12,6 +12,7 @@ import doobie.implicits.*
 import doobie.util.analysis.Analysis
 import doobie.util.pos.Pos
 import doobie.free.{connection as IFC, preparedstatement as IFPS}
+import doobie.hi.connection.{PreparedExecution, PreparedExecutionWithoutProcessStep}
 import doobie.hi.{connection as IHC, preparedstatement as IHPS, resultset as IHRS}
 import doobie.util.fragment.Fragment
 import doobie.util.log.{LoggingInfo, Parameters}
@@ -22,7 +23,7 @@ import scala.Predef.genericArrayOps
 /** Module defining updates parameterized by input type. */
 object update {
 
-  val DefaultChunkSize = query.DefaultChunkSize
+  val DefaultChunkSize: Int = query.DefaultChunkSize
 
   /** Partial application hack to allow calling updateManyWithGeneratedKeys without passing the F[_] type argument
     * explicitly.
@@ -81,18 +82,30 @@ object update {
     /** Construct a program to execute the update and yield a count of affected rows, given the writable argument `a`.
       * @group Execution
       */
-    def run(a: A): ConnectionIO[Int] = {
-      IHC.executeWithoutResultSet(
-        IFC.prepareStatement(sql),
-        IHPS.set(a),
-        IFPS.executeUpdate,
-        LoggingInfo(
-          sql,
-          Parameters.NonBatch(write.toList(a)),
-          label
-        )
+    def run(a: A): ConnectionIO[Int] =
+      IHC.executeWithoutResultSet(prepareExecutionForRun(a), loggingForRun(a))
+
+    /** Just like `run` but allowing to alter `PreparedExecutionWithoutProcessStep`.
+      */
+    def runAlteringExecution(
+        a: A,
+        fn: PreparedExecutionWithoutProcessStep[Int] => PreparedExecutionWithoutProcessStep[Int]
+    ): ConnectionIO[Int] =
+      IHC.executeWithoutResultSet(fn(prepareExecutionForRun(a)), loggingForRun(a))
+
+    private def prepareExecutionForRun(a: A): PreparedExecutionWithoutProcessStep[Int] =
+      PreparedExecutionWithoutProcessStep(
+        create = IFC.prepareStatement(sql),
+        prep = IHPS.set(a),
+        exec = IFPS.executeUpdate
       )
-    }
+
+    private def loggingForRun(a: A): LoggingInfo =
+      LoggingInfo(
+        sql,
+        Parameters.NonBatch(write.toList(a)),
+        label
+      )
 
     /** Add many sets of parameters and execute as a batch update, returning total rows updated. Note that when an error
       * occurred while executing the batch, your JDBC driver may decide to continue executing the rest of the batch
@@ -103,15 +116,28 @@ object update {
       * @group Execution
       */
     def updateMany[F[_]: Foldable](fa: F[A]): ConnectionIO[Int] =
-      IHC.executeWithoutResultSet(
+      IHC.executeWithoutResultSet(prepareExecutionForUpdateMany(fa), loggingInfoForUpdateMany(fa))
+
+    /** Just like `updateMany` but allowing to alter `PreparedExecutionWithoutProcessStep`.
+      */
+    def updateManyAlteringExecution[F[_]: Foldable](
+        fa: F[A],
+        fn: PreparedExecutionWithoutProcessStep[Int] => PreparedExecutionWithoutProcessStep[Int]
+    ): ConnectionIO[Int] =
+      IHC.executeWithoutResultSet(fn(prepareExecutionForUpdateMany(fa)), loggingInfoForUpdateMany(fa))
+
+    private def prepareExecutionForUpdateMany[F[_]: Foldable](fa: F[A]): PreparedExecutionWithoutProcessStep[Int] =
+      PreparedExecutionWithoutProcessStep(
         create = IFC.prepareStatement(sql),
         prep = fa.foldMap(a => IHPS.set(a) *> IFPS.addBatch),
-        exec = IFPS.executeBatch.map(updateCounts => updateCounts.foldLeft(0)((acc, n) => acc + (n.max(0)))),
-        loggingInfo = LoggingInfo(
-          sql,
-          Parameters.Batch(() => fa.toList.map(write.toList)),
-          label
-        )
+        exec = IFPS.executeBatch.map(updateCounts => updateCounts.foldLeft(0)((acc, n) => acc + n.max(0)))
+      )
+
+    private def loggingInfoForUpdateMany[F[_]: Foldable](fa: F[A]) =
+      LoggingInfo(
+        sql,
+        Parameters.Batch(() => fa.toList.map(write.toList)),
+        label
       )
 
     /** Construct a stream that performs a batch update as with `updateMany`, yielding generated keys of readable type
@@ -130,11 +156,7 @@ object update {
             prep = IHPS.addBatches(as),
             exec = IFPS.executeBatch *> IFPS.getGeneratedKeys,
             chunkSize = chunkSize,
-            loggingInfo = LoggingInfo(
-              sql,
-              Parameters.Batch(() => as.toList.map(Write[A].toList)),
-              label
-            )
+            loggingInfo = loggingInfoForUpdateMany(as)
           )
       }
 
@@ -157,11 +179,7 @@ object update {
         prep = IHPS.set(a),
         exec = IFPS.executeUpdate *> IFPS.getGeneratedKeys,
         chunkSize = chunkSize,
-        loggingInfo = LoggingInfo(
-          sql = sql,
-          params = Parameters.NonBatch(Write[A].toList(a)),
-          label = label
-        )
+        loggingInfo = loggingInfoForUpdateWithGeneratedKeys(a)
       )
 
     /** Construct a program that performs the update, yielding a single set of generated keys of readable type `K`,
@@ -171,15 +189,34 @@ object update {
       */
     def withUniqueGeneratedKeys[K: Read](columns: String*)(a: A): ConnectionIO[K] =
       IHC.executeWithResultSet(
+        prepareExecutionForWithUniqueGeneratedKeys(columns*)(a),
+        loggingInfoForUpdateWithGeneratedKeys(a)
+      )
+
+    /** Just like `withUniqueGeneratedKeys` but allowing to alter `PreparedExecution`.
+      */
+    def withUniqueGeneratedKeysAlteringExecution[K: Read](columns: String*)(
+        a: A,
+        fn: PreparedExecution[K] => PreparedExecution[K]
+    ): ConnectionIO[K] =
+      IHC.executeWithResultSet(
+        fn(prepareExecutionForWithUniqueGeneratedKeys(columns*)(a)),
+        loggingInfoForUpdateWithGeneratedKeys(a)
+      )
+
+    private def prepareExecutionForWithUniqueGeneratedKeys[K: Read](columns: String*)(a: A): PreparedExecution[K] =
+      PreparedExecution(
         create = IFC.prepareStatement(sql, columns.toArray),
         prep = IHPS.set(a),
         exec = IFPS.executeUpdate *> IFPS.getGeneratedKeys,
-        process = IHRS.getUnique,
-        loggingInfo = LoggingInfo(
-          sql,
-          Parameters.NonBatch(write.toList(a)),
-          label
-        )
+        process = IHRS.getUnique
+      )
+
+    private def loggingInfoForUpdateWithGeneratedKeys(a: A) =
+      LoggingInfo(
+        sql,
+        Parameters.NonBatch(write.toList(a)),
+        label
       )
 
     /** Update is a contravariant functor.
@@ -187,10 +224,10 @@ object update {
       */
     def contramap[C](f: C => A): Update[C] =
       new Update[C] {
-        val write = u.write.contramap(f)
-        val sql = u.sql
-        val pos = u.pos
-        val label = u.label
+        val write: Write[C] = u.write.contramap(f)
+        val sql: String = u.sql
+        val pos: Option[Pos] = u.pos
+        val label: String = u.label
       }
 
     /** Apply an argument, yielding a residual `[[Update0]]`.
@@ -198,17 +235,27 @@ object update {
       */
     def toUpdate0(a: A): Update0 =
       new Update0 {
-        val sql = u.sql
-        val pos = u.pos
-        def toFragment: Fragment = u.toFragment(a)
-        def analysis = u.analysis
-        def outputAnalysis = u.outputAnalysis
-        def run = u.run(a)
-        def withGeneratedKeysWithChunkSize[K: Read](columns: String*)(chunkSize: Int) =
+        override val sql: String = u.sql
+        override val pos: Option[Pos] = u.pos
+        override def toFragment: Fragment = u.toFragment(a)
+        override def analysis: ConnectionIO[Analysis] = u.analysis
+        override def outputAnalysis: ConnectionIO[Analysis] = u.outputAnalysis
+        override def run: ConnectionIO[Int] = u.run(a)
+        override def runAlteringExecution(
+            fn: PreparedExecutionWithoutProcessStep[Int] => PreparedExecutionWithoutProcessStep[Int]
+        ): ConnectionIO[Int] =
+          u.runAlteringExecution(a, fn)
+        override def withGeneratedKeysWithChunkSize[K: Read](columns: String*)(chunkSize: Int)
+            : Stream[ConnectionIO, K] =
           u.withGeneratedKeysWithChunkSize[K](columns*)(a, chunkSize)
-        def withUniqueGeneratedKeys[K: Read](columns: String*) =
+        override def withUniqueGeneratedKeys[K: Read](columns: String*): ConnectionIO[K] =
           u.withUniqueGeneratedKeys(columns*)(a)
-        def inspect[R](f: (String, PreparedStatementIO[Unit]) => ConnectionIO[R]) = u.inspect(a)(f)
+        override def withUniqueGeneratedKeysAlteringExecution[K: Read](columns: String*)(
+            fn: PreparedExecution[K] => PreparedExecution[K]
+        ): ConnectionIO[K] =
+          u.withUniqueGeneratedKeysAlteringExecution(columns*)(a, fn)
+        override def inspect[R](f: (String, PreparedStatementIO[Unit]) => ConnectionIO[R]): ConnectionIO[R] =
+          u.inspect(a)(f)
       }
 
   }
@@ -226,10 +273,10 @@ object update {
       val label0 = label
       val pos0 = pos
       new Update[A] {
-        val write = W
-        val sql = sql0
-        val label = label0
-        val pos = pos0
+        val write: Write[A] = W
+        val sql: String = sql0
+        val label: String = label0
+        val pos: Option[Pos] = pos0
       }
     }
 
@@ -238,7 +285,7 @@ object update {
       */
     implicit val updateContravariant: Contravariant[Update] =
       new Contravariant[Update] {
-        def contramap[A, B](fa: Update[A])(f: B => A) = fa `contramap` f
+        def contramap[A, B](fa: Update[A])(f: B => A): Update[B] = fa `contramap` f
       }
 
   }
@@ -281,6 +328,10 @@ object update {
       */
     def run: ConnectionIO[Int]
 
+    def runAlteringExecution(
+        fn: PreparedExecutionWithoutProcessStep[Int] => PreparedExecutionWithoutProcessStep[Int]
+    ): ConnectionIO[Int]
+
     /** Construct a stream that performs the update, yielding generated keys of readable type `K`, identified by the
       * specified columns. Note that not all drivers support generated keys, and some support only a single key column.
       * @group Execution
@@ -301,6 +352,10 @@ object update {
       * @group Execution
       */
     def withUniqueGeneratedKeys[K: Read](columns: String*): ConnectionIO[K]
+
+    def withUniqueGeneratedKeysAlteringExecution[K: Read](columns: String*)(
+        fn: PreparedExecution[K] => PreparedExecution[K]
+    ): ConnectionIO[K]
 
   }
 
