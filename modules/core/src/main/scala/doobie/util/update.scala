@@ -235,25 +235,27 @@ object update {
       */
     def toUpdate0(a: A): Update0 =
       new Update0 {
-        val sql: String = u.sql
-        val pos: Option[Pos] = u.pos
-        def toFragment: Fragment = u.toFragment(a)
-        def analysis: ConnectionIO[Analysis] = u.analysis
-        def outputAnalysis: ConnectionIO[Analysis] = u.outputAnalysis
-        def run: ConnectionIO[Int] = u.run(a)
+        override val sql: String = u.sql
+        override val pos: Option[Pos] = u.pos
+        override def toFragment: Fragment = u.toFragment(a)
+        override def analysis: ConnectionIO[Analysis] = u.analysis
+        override def outputAnalysis: ConnectionIO[Analysis] = u.outputAnalysis
+        override def run: ConnectionIO[Int] = u.run(a)
         override def runAlteringExecution(
             fn: PreparedExecutionWithoutProcessStep[Int] => PreparedExecutionWithoutProcessStep[Int]
         ): ConnectionIO[Int] =
           u.runAlteringExecution(a, fn)
-        def withGeneratedKeysWithChunkSize[K: Read](columns: String*)(chunkSize: Int): Stream[ConnectionIO, K] =
+        override def withGeneratedKeysWithChunkSize[K: Read](columns: String*)(chunkSize: Int)
+            : Stream[ConnectionIO, K] =
           u.withGeneratedKeysWithChunkSize[K](columns*)(a, chunkSize)
-        def withUniqueGeneratedKeys[K: Read](columns: String*): ConnectionIO[K] =
+        override def withUniqueGeneratedKeys[K: Read](columns: String*): ConnectionIO[K] =
           u.withUniqueGeneratedKeys(columns*)(a)
         override def withUniqueGeneratedKeysAlteringExecution[K: Read](columns: String*)(
             fn: PreparedExecution[K] => PreparedExecution[K]
         ): ConnectionIO[K] =
           u.withUniqueGeneratedKeysAlteringExecution(columns*)(a, fn)
-        def inspect[R](f: (String, PreparedStatementIO[Unit]) => ConnectionIO[R]): ConnectionIO[R] = u.inspect(a)(f)
+        override def inspect[R](f: (String, PreparedStatementIO[Unit]) => ConnectionIO[R]): ConnectionIO[R] =
+          u.inspect(a)(f)
       }
 
   }
