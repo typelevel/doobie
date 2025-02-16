@@ -23,7 +23,7 @@ import scala.Predef.genericArrayOps
 /** Module defining updates parameterized by input type. */
 object update {
 
-  val DefaultChunkSize = query.DefaultChunkSize
+  val DefaultChunkSize: Int = query.DefaultChunkSize
 
   /** Partial application hack to allow calling updateManyWithGeneratedKeys without passing the F[_] type argument
     * explicitly.
@@ -224,10 +224,10 @@ object update {
       */
     def contramap[C](f: C => A): Update[C] =
       new Update[C] {
-        val write = u.write.contramap(f)
-        val sql = u.sql
-        val pos = u.pos
-        val label = u.label
+        val write: Write[C] = u.write.contramap(f)
+        val sql: String = u.sql
+        val pos: Option[Pos] = u.pos
+        val label: String = u.label
       }
 
     /** Apply an argument, yielding a residual `[[Update0]]`.
@@ -235,17 +235,25 @@ object update {
       */
     def toUpdate0(a: A): Update0 =
       new Update0 {
-        val sql = u.sql
-        val pos = u.pos
+        val sql: String = u.sql
+        val pos: Option[Pos] = u.pos
         def toFragment: Fragment = u.toFragment(a)
-        def analysis = u.analysis
-        def outputAnalysis = u.outputAnalysis
-        def run = u.run(a)
-        def withGeneratedKeysWithChunkSize[K: Read](columns: String*)(chunkSize: Int) =
+        def analysis: ConnectionIO[Analysis] = u.analysis
+        def outputAnalysis: ConnectionIO[Analysis] = u.outputAnalysis
+        def run: ConnectionIO[Int] = u.run(a)
+        override def runAlteringExecution(
+            fn: PreparedExecutionWithoutProcessStep[Int] => PreparedExecutionWithoutProcessStep[Int]
+        ): ConnectionIO[Int] =
+          u.runAlteringExecution(a, fn)
+        def withGeneratedKeysWithChunkSize[K: Read](columns: String*)(chunkSize: Int): Stream[ConnectionIO, K] =
           u.withGeneratedKeysWithChunkSize[K](columns*)(a, chunkSize)
-        def withUniqueGeneratedKeys[K: Read](columns: String*) =
+        def withUniqueGeneratedKeys[K: Read](columns: String*): ConnectionIO[K] =
           u.withUniqueGeneratedKeys(columns*)(a)
-        def inspect[R](f: (String, PreparedStatementIO[Unit]) => ConnectionIO[R]) = u.inspect(a)(f)
+        override def withUniqueGeneratedKeysAlteringExecution[K: Read](columns: String*)(
+            fn: PreparedExecution[K] => PreparedExecution[K]
+        ): ConnectionIO[K] =
+          u.withUniqueGeneratedKeysAlteringExecution(columns*)(a, fn)
+        def inspect[R](f: (String, PreparedStatementIO[Unit]) => ConnectionIO[R]): ConnectionIO[R] = u.inspect(a)(f)
       }
 
   }
@@ -263,10 +271,10 @@ object update {
       val label0 = label
       val pos0 = pos
       new Update[A] {
-        val write = W
-        val sql = sql0
-        val label = label0
-        val pos = pos0
+        val write: Write[A] = W
+        val sql: String = sql0
+        val label: String = label0
+        val pos: Option[Pos] = pos0
       }
     }
 
@@ -275,7 +283,7 @@ object update {
       */
     implicit val updateContravariant: Contravariant[Update] =
       new Contravariant[Update] {
-        def contramap[A, B](fa: Update[A])(f: B => A) = fa `contramap` f
+        def contramap[A, B](fa: Update[A])(f: B => A): Update[B] = fa `contramap` f
       }
 
   }
@@ -318,6 +326,10 @@ object update {
       */
     def run: ConnectionIO[Int]
 
+    def runAlteringExecution(
+        fn: PreparedExecutionWithoutProcessStep[Int] => PreparedExecutionWithoutProcessStep[Int]
+    ): ConnectionIO[Int]
+
     /** Construct a stream that performs the update, yielding generated keys of readable type `K`, identified by the
       * specified columns. Note that not all drivers support generated keys, and some support only a single key column.
       * @group Execution
@@ -338,6 +350,10 @@ object update {
       * @group Execution
       */
     def withUniqueGeneratedKeys[K: Read](columns: String*): ConnectionIO[K]
+
+    def withUniqueGeneratedKeysAlteringExecution[K: Read](columns: String*)(
+        fn: PreparedExecution[K] => PreparedExecution[K]
+    ): ConnectionIO[K]
 
   }
 

@@ -4,13 +4,14 @@
 
 package doobie.util
 
+import doobie.syntax.all.*
 import cats.syntax.all.*
 import cats.effect.IO
-import cats.effect.unsafe.implicits.global
 import doobie.{Transactor, Update}
 import doobie.free.preparedstatement as IFPS
+import munit.CatsEffectSuite
 
-class UpdateSuite extends munit.FunSuite {
+class UpdateSuite extends CatsEffectSuite {
   val xa: Transactor[IO] = Transactor.fromDriverManager[IO](
     driver = "org.h2.Driver",
     url = "jdbc:h2:mem:;DB_CLOSE_DELAY=-1",
@@ -20,7 +21,6 @@ class UpdateSuite extends munit.FunSuite {
   )
 
   test("Update runAlteringExecution") {
-    import doobie.implicits.*
     var didRun = false
     (for {
       _ <- sql"create temp table t1 (a int)".update.run
@@ -31,13 +31,12 @@ class UpdateSuite extends munit.FunSuite {
       assertEquals(res, 1)
     })
       .transact(xa)
-      .unsafeRunSync()
-
-    assert(didRun)
+      .flatMap { _ =>
+        IO(assert(didRun))
+      }
   }
 
   test("Update updateManyAlteringExecution") {
-    import doobie.implicits.*
     var didRun = false
     (for {
       _ <- sql"create temp table t1 (a int)".update.run
@@ -48,13 +47,12 @@ class UpdateSuite extends munit.FunSuite {
       assertEquals(res, 4)
     })
       .transact(xa)
-      .unsafeRunSync()
-
-    assert(didRun)
+      .flatMap { _ =>
+        IO(assert(didRun))
+      }
   }
 
   test("Update withUniqueGeneratedKeysAlteringExecution") {
-    import doobie.implicits.*
     var didRun = false
     (for {
       _ <- sql"create temp table t1 (a int, b int)".update.run
@@ -67,9 +65,41 @@ class UpdateSuite extends munit.FunSuite {
       assertEquals(res, (5, 6))
     })
       .transact(xa)
-      .unsafeRunSync()
+      .flatMap { _ =>
+        IO(assert(didRun))
+      }
+  }
 
-    assert(didRun)
+  test("Update0 runAlteringExecution") {
+    var didRun = false
+    (for {
+      _ <- sql"create temp table t1 (a int)".update.run
+      res <- Update[Int]("insert into t1 (a) values (?)").toUpdate0(1).runAlteringExecution(pe =>
+        pe.copy(exec = IFPS.delay { didRun = true } *> pe.exec))
+    } yield {
+      assertEquals(res, 1)
+    })
+      .transact(xa)
+      .flatMap { _ =>
+        IO(assert(didRun))
+      }
+  }
+
+  test("Update0 withUniqueGeneratedKeysAlteringExecution") {
+    var didRun = false
+    (for {
+      _ <- sql"create temp table t1 (a int, b int)".update.run
+      res <- Update[(Int, Int)]("insert into t1 (a, b) values (?, ?)")
+        .toUpdate0((5, 6))
+        .withUniqueGeneratedKeysAlteringExecution[(Int, Int)]("a", "b")(pe =>
+          pe.copy(exec = IFPS.delay { didRun = true } *> pe.exec))
+    } yield {
+      assertEquals(res, (5, 6))
+    })
+      .transact(xa)
+      .flatMap { _ =>
+        IO(assert(didRun))
+      }
   }
 
 }

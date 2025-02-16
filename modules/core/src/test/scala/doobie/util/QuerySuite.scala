@@ -64,81 +64,85 @@ class QuerySuite extends munit.CatsEffectSuite {
 
   test("Query toAlteringExecution (result set operations)") {
     var didRun = false
-    val result = pairQuery.toAlteringExecution[List](
+    pairQuery.toAlteringExecution[List](
       "x",
       { preparedExec =>
         val process = IHRS.delay { didRun = true } *> preparedExec.process
         preparedExec.copy(process = process)
       })
-      .transact(xa).unsafeRunSync()
-
-    assert(didRun)
-    assertEquals(result, Nil)
+      .transact(xa)
+      .assertEquals(Nil)
+      .flatMap { _ =>
+        IO(assert(didRun))
+      }
   }
   test("Query toMapAlteringExecution (result set operations)") {
     var didRun = false
-    val result = pairQuery.toMapAlteringExecution[String, Int](
+    pairQuery.toMapAlteringExecution[String, Int](
       "x",
       { preparedExec =>
         val process = IHRS.delay { didRun = true } *> preparedExec.process
         preparedExec.copy(process = process)
       })
-      .transact(xa).unsafeRunSync()
-
-    assert(didRun)
-    assertEquals(result, Map.empty[String, Int])
+      .transact(xa)
+      .assertEquals(Map.empty[String, Int])
+      .flatMap { _ =>
+        IO(assert(didRun))
+      }
   }
   test("Query accumulateAlteringExecution (result set operations)") {
     var didRun = false
-    val result = pairQuery.accumulateAlteringExecution[List](
+    pairQuery.accumulateAlteringExecution[List](
       "x",
       { preparedExec =>
         val process = IHRS.delay { didRun = true } *> preparedExec.process
         preparedExec.copy(process = process)
       })
-      .transact(xa).unsafeRunSync()
-
-    assert(didRun)
-    assertEquals(result, Nil)
+      .transact(xa)
+      .assertEquals(Nil)
+      .flatMap { _ =>
+        IO(assert(didRun))
+      }
   }
   test("Query uniqueAlteringExecution (result set operations)") {
     var didRun = false
-    val result = pairQuery.uniqueAlteringExecution(
+    pairQuery.uniqueAlteringExecution(
       "foo",
       { preparedExec =>
         val process = IHRS.delay { didRun = true } *> preparedExec.process
         preparedExec.copy(process = process)
       })
-      .transact(xa).unsafeRunSync()
-
-    assert(didRun)
-    assertEquals(result, ("xxx", 123))
+      .transact(xa).assertEquals(("xxx", 123))
+      .flatMap { _ =>
+        IO(assert(didRun))
+      }
   }
   test("Query optionAlteringExecution (result set operations)") {
     var didRun = false
-    val result = pairQuery.optionAlteringExecution(
+    pairQuery.optionAlteringExecution(
       "x",
       { preparedExec =>
         val process = IHRS.delay { didRun = true } *> preparedExec.process
         preparedExec.copy(process = process)
       })
-      .transact(xa).unsafeRunSync()
-
-    assert(didRun)
-    assertEquals(result, None)
+      .transact(xa).assertEquals(None)
+      .flatMap { _ =>
+        IO(assert(didRun))
+      }
   }
   test("Query nelAlteringExecution (result set operations)") {
     var didRun = false
-    val result = pairQuery.nelAlteringExecution(
+    pairQuery.nelAlteringExecution(
       "foo",
       { preparedExec =>
         val process = IHRS.delay { didRun = true } *> preparedExec.process
         preparedExec.copy(process = process)
       })
-      .transact(xa).unsafeRunSync()
-
-    assert(didRun)
-    assertEquals(result, NonEmptyList.one(("xxx", 123)))
+      .transact(xa)
+      .assertEquals(NonEmptyList.one(("xxx", 123)))
+      .flatMap { _ =>
+        IO(assert(didRun))
+      }
   }
 
   test("Query0 from Query (non-empty) to") {
@@ -215,6 +219,78 @@ class QuerySuite extends munit.CatsEffectSuite {
   test("Query to Fragment and back") {
     val qfʹ = qf.toFragment.query[(String, Int, Option[Int], Option[Int])]
     qfʹ.unique.transact(xa).assertEquals(("foo", 1, None, Some(42)))
+  }
+
+  test("Query0 toAlteringExecution (result set operations)") {
+    var didRun = false
+    val result = pairQuery.toQuery0("x").toAlteringExecution[List]({ preparedExec =>
+      val process = IHRS.delay { didRun = true } *> preparedExec.process
+      preparedExec.copy(process = process)
+    })
+      .transact(xa).unsafeRunSync()
+
+    assert(didRun)
+    assertEquals(result, Nil)
+  }
+  test("Query0 toMapAlteringExecution (result set operations)") {
+    var didRun = false
+    pairQuery.toQuery0("x").toMapAlteringExecution[String, Int]({ preparedExec =>
+      val process = IHRS.delay { didRun = true } *> preparedExec.process
+      preparedExec.copy(process = process)
+    })
+      .transact(xa)
+      .assertEquals(Map.empty[String, Int])
+      .flatMap { _ =>
+        IO(assert(didRun))
+      }
+  }
+  test("Query0 accumulateAlteringExecution (result set operations)") {
+    var didRun = false
+    pairQuery.toQuery0("x").accumulateAlteringExecution[List]({ preparedExec =>
+      val process = IHRS.delay { didRun = true } *> preparedExec.process
+      preparedExec.copy(process = process)
+    })
+      .transact(xa)
+      .assertEquals(Nil)
+      .flatMap { _ =>
+        IO(assert(didRun))
+      }
+  }
+  test("Query0 uniqueAlteringExecution (result set operations)") {
+    var didRun = false
+    pairQuery.toQuery0("foo").uniqueAlteringExecution({ preparedExec =>
+      val process = IHRS.delay { didRun = true } *> preparedExec.process
+      preparedExec.copy(process = process)
+    })
+      .transact(xa)
+      .assertEquals(("xxx", 123))
+      .flatMap { _ =>
+        IO(assert(didRun))
+      }
+  }
+  test("Query0 optionAlteringExecution (result set operations)") {
+    var didRun = false
+    pairQuery.toQuery0("x").optionAlteringExecution({ preparedExec =>
+      val process = IHRS.delay { didRun = true } *> preparedExec.process
+      preparedExec.copy(process = process)
+    })
+      .transact(xa)
+      .assertEquals(None)
+      .flatMap { _ =>
+        IO(assert(didRun))
+      }
+  }
+  test("Query0 nelAlteringExecution (result set operations)") {
+    var didRun = false
+    pairQuery.toQuery0("foo").nelAlteringExecution({ preparedExec =>
+      val process = IHRS.delay { didRun = true } *> preparedExec.process
+      preparedExec.copy(process = process)
+    })
+      .transact(xa)
+      .assertEquals(NonEmptyList.one(("xxx", 123)))
+      .flatMap { _ =>
+        IO(assert(didRun))
+      }
   }
 
 }

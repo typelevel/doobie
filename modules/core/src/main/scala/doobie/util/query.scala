@@ -219,21 +219,21 @@ object query {
     /** @group Transformations */
     def map[C](f: B => C): Query[A, C] =
       new Query[A, C] {
-        val write = outer.write
-        val read = outer.read.map(f)
-        def sql = outer.sql
-        def pos = outer.pos
-        val label = outer.label
+        val write: Write[A] = outer.write
+        val read: Read[C] = outer.read.map(f)
+        def sql: String = outer.sql
+        def pos: Option[Pos] = outer.pos
+        val label: String = outer.label
       }
 
     /** @group Transformations */
     def contramap[C](f: C => A): Query[C, B] =
       new Query[C, B] {
-        val write = outer.write.contramap(f)
-        val read = outer.read
-        def sql = outer.sql
-        def pos = outer.pos
-        val label = outer.label
+        val write: Write[C] = outer.write.contramap(f)
+        val read: Read[B] = outer.read
+        def sql: String = outer.sql
+        def pos: Option[Pos] = outer.pos
+        val label: String = outer.label
       }
 
     /** Apply an argument, yielding a residual `[[Query0]]`.
@@ -241,20 +241,45 @@ object query {
       */
     def toQuery0(a: A): Query0[B] =
       new Query0[B] {
-        def sql = outer.sql
-        def pos = outer.pos
-        def toFragment = outer.toFragment(a)
-        def analysis = outer.analysis
-        def outputAnalysis = outer.outputAnalysis
-        def streamWithChunkSize(n: Int) = outer.streamWithChunkSize(a, n)
-        def accumulate[F[_]: Alternative] = outer.accumulate[F](a)
-        def to[F[_]](implicit f: FactoryCompat[B, F[B]]) = outer.to[F](a)
-        def toMap[K, V](implicit ev: B =:= (K, V), f: FactoryCompat[(K, V), Map[K, V]]) = outer.toMap(a)
-        def unique = outer.unique(a)
-        def option = outer.option(a)
-        def nel = outer.nel(a)
-        def map[C](f: B => C): Query0[C] = outer.map(f).toQuery0(a)
-        def inspect[R](f: (String, PreparedStatementIO[Unit]) => ConnectionIO[R]) = outer.inspect(a)(f)
+        override def sql: String = outer.sql
+        override def pos: Option[Pos] = outer.pos
+        override def toFragment: Fragment = outer.toFragment(a)
+        override def analysis: ConnectionIO[Analysis] = outer.analysis
+        override def outputAnalysis: ConnectionIO[Analysis] = outer.outputAnalysis
+        override def streamWithChunkSize(n: Int): Stream[ConnectionIO, B] = outer.streamWithChunkSize(a, n)
+        override def accumulate[F[_]: Alternative]: ConnectionIO[F[B]] = outer.accumulate[F](a)
+        override def accumulateAlteringExecution[F[_]: Alternative](
+            fn: PreparedExecution[F[B]] => PreparedExecution[F[B]]
+        ): ConnectionIO[F[B]] = outer.accumulateAlteringExecution(a, fn)
+        override def to[F[_]](implicit f: FactoryCompat[B, F[B]]): ConnectionIO[F[B]] = outer.to[F](a)
+        override def toAlteringExecution[F[_]](fn: PreparedExecution[F[B]] => PreparedExecution[F[B]])(implicit
+            f: FactoryCompat[B, F[B]]
+        ): ConnectionIO[F[B]] =
+          outer.toAlteringExecution(a, fn)
+        override def toMap[K, V](implicit
+            ev: B =:= (K, V),
+            f: FactoryCompat[(K, V), Map[K, V]]
+        ): ConnectionIO[Map[K, V]] = outer.toMap(a)
+        override def toMapAlteringExecution[K, V](fn: PreparedExecution[Map[K, V]] => PreparedExecution[Map[K, V]])(
+            implicit
+            ev: B =:= (K, V),
+            f: FactoryCompat[(K, V), Map[K, V]]
+        ): ConnectionIO[Map[K, V]] = outer.toMapAlteringExecution(a, fn)
+        override def unique: ConnectionIO[B] = outer.unique(a)
+        override def uniqueAlteringExecution(fn: PreparedExecution[B] => PreparedExecution[B]): ConnectionIO[B] =
+          outer.uniqueAlteringExecution(a, fn)
+        override def option: ConnectionIO[Option[B]] = outer.option(a)
+        override def optionAlteringExecution(fn: PreparedExecution[Option[B]] => PreparedExecution[Option[B]])
+            : ConnectionIO[Option[B]] =
+          outer.optionAlteringExecution(a, fn)
+        override def nel: ConnectionIO[NonEmptyList[B]] = outer.nel(a)
+        override def nelAlteringExecution(
+            fn: PreparedExecution[NonEmptyList[B]] => PreparedExecution[NonEmptyList[B]]
+        ): ConnectionIO[NonEmptyList[B]] =
+          outer.nelAlteringExecution(a, fn)
+        override def map[C](f: B => C): Query0[C] = outer.map(f).toQuery0(a)
+        override def inspect[R](f: (String, PreparedStatementIO[Unit]) => ConnectionIO[R]): ConnectionIO[R] =
+          outer.inspect(a)(f)
       }
 
   }
@@ -274,11 +299,11 @@ object query {
       val label0 = label
       val pos0 = pos
       new Query[A, B] {
-        val write = A
-        val read = B
-        val sql = sql0
-        val pos = pos0
-        val label = label0
+        val write: Write[A] = A
+        val read: Read[B] = B
+        val sql: String = sql0
+        val pos: Option[Pos] = pos0
+        val label: String = label0
       }
     }
 
@@ -361,6 +386,10 @@ object query {
       */
     def to[F[_]](implicit f: FactoryCompat[B, F[B]]): ConnectionIO[F[B]]
 
+    def toAlteringExecution[F[_]](
+        fn: PreparedExecution[F[B]] => PreparedExecution[F[B]]
+    )(implicit f: FactoryCompat[B, F[B]]): ConnectionIO[F[B]]
+
     /** Apply the argument `a` to construct a program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding
       * an `Map[(K, V)]` accumulated via the provided `CanBuildFrom`. This is the fastest way to accumulate a
       * collection. this function can call only when B is (K, V).
@@ -368,11 +397,22 @@ object query {
       */
     def toMap[K, V](implicit ev: B =:= (K, V), f: FactoryCompat[(K, V), Map[K, V]]): ConnectionIO[Map[K, V]]
 
+    def toMapAlteringExecution[K, V](
+        fn: PreparedExecution[Map[K, V]] => PreparedExecution[Map[K, V]]
+    )(implicit
+        ev: B =:= (K, V),
+        f: FactoryCompat[(K, V), Map[K, V]]
+    ): ConnectionIO[Map[K, V]]
+
     /** Program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding an `F[B]` accumulated via `MonadPlus`
       * append. This method is more general but less efficient than `to`.
       * @group Results
       */
     def accumulate[F[_]: Alternative]: ConnectionIO[F[B]]
+
+    def accumulateAlteringExecution[F[_]: Alternative](
+        fn: PreparedExecution[F[B]] => PreparedExecution[F[B]]
+    ): ConnectionIO[F[B]]
 
     /** Program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding a unique `B` and raising an exception
       * if the resultset does not have exactly one row. See also `option`.
@@ -380,17 +420,27 @@ object query {
       */
     def unique: ConnectionIO[B]
 
+    def uniqueAlteringExecution(fn: PreparedExecution[B] => PreparedExecution[B]): ConnectionIO[B]
+
     /** Program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding an optional `B` and raising an
       * exception if the resultset has more than one row. See also `unique`.
       * @group Results
       */
     def option: ConnectionIO[Option[B]]
 
+    def optionAlteringExecution(
+        fn: PreparedExecution[Option[B]] => PreparedExecution[Option[B]]
+    ): ConnectionIO[Option[B]]
+
     /** Program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding a `NonEmptyList[B]` and raising an
       * exception if the resultset does not have at least one row. See also `unique`.
       * @group Results
       */
     def nel: ConnectionIO[NonEmptyList[B]]
+
+    def nelAlteringExecution(
+        fn: PreparedExecution[NonEmptyList[B]] => PreparedExecution[NonEmptyList[B]]
+    ): ConnectionIO[NonEmptyList[B]]
 
     /** @group Transformations */
     def map[C](f: B => C): Query0[C]
@@ -409,7 +459,7 @@ object query {
     /** @group Typeclass Instances */
     implicit val queryFunctor: Functor[Query0] =
       new Functor[Query0] {
-        def map[A, B](fa: Query0[A])(f: A => B) = fa `map` f
+        def map[A, B](fa: Query0[A])(f: A => B): Query0[B] = fa `map` f
       }
 
   }
