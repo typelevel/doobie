@@ -11,6 +11,7 @@
 * [Logging](10-Logging.md)
 * [Arrays](11-Arrays.md)
 * [Custom-Mappings](12-Custom-Mappings.md)
+* [Custom-JDBC-Operations](19-Custom-JDBC-Operations.md)
 * [Unit-Testing](13-Unit-Testing.md)
 * [Managing-Connections](14-Managing-Connections.md)
 * [Extensions-PostgreSQL](15-Extensions-PostgreSQL.md)

@@ -33,7 +33,7 @@ case class LogEntry(msg: String, ex: Exception)
 
 When we attempt to define a `Query0[LogEntry]` we get a type error similar to the one above.
 
-```scala mdoc:fail
+```scala
 sql"SELECT message, detail FROM log".query[LogEntry]
 ```
 
