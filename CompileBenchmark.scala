@@ -73,12 +73,15 @@ object CompileBenchmark extends BleepScript("CompileBenchmark") {
           ).foreach(_.overwriteFolder())
 
           crossIds.map { crossId =>
-            started.projectPaths(CrossProjectName(ProjectName(projectName), Some(crossId))).sourcesDirs.fromSourceLayout.foreach { p =>
+            started.projectPaths(CrossProjectName(
+              ProjectName(projectName),
+              Some(crossId))).sourcesDirs.fromSourceLayout.foreach { p =>
               started.logger.warn(s"Deleting $p because tests will not compile")
               bleep.internal.FileUtils.deleteDirectory(p)
             }
 
-            val desc = s"${crossId.value}, lib=$lib, inlineImplicits=$inlineImplicits, fixVerySlowImplicit=$fixVerySlowImplicit"
+            val desc =
+              s"${crossId.value}, lib=$lib, inlineImplicits=$inlineImplicits, fixVerySlowImplicit=$fixVerySlowImplicit"
             println(s"START $desc")
             val times = 0.to(2).map { _ =>
               val crossProjectName = model.CrossProjectName(model.ProjectName(projectName), Some(crossId))

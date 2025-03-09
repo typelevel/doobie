@@ -5,15 +5,15 @@
 package doobie.util
 
 import cats._
-import doobie.free.{ FRS, ResultSetIO }
+import doobie.free.{FRS, ResultSetIO}
 import doobie.enumerated.Nullability._
 import java.sql.ResultSet
 import scala.annotation.implicitNotFound
 
 @implicitNotFound("...")
 sealed abstract class Read[A](
-  val gets: List[(Get[_], NullabilityKnown)],
-  val unsafeGet: (ResultSet, Int) => A
+    val gets: List[(Get[_], NullabilityKnown)],
+    val unsafeGet: (ResultSet, Int) => A
 ) {
   final lazy val length: Int = gets.length
 
@@ -31,14 +31,14 @@ object Read {
 
   // Named case class replacing anonymous subclasses
   final case class BasicRead[A](
-    override val gets: List[(Get[_], NullabilityKnown)],
-    override val unsafeGet: (ResultSet, Int) => A
+      override val gets: List[(Get[_], NullabilityKnown)],
+      override val unsafeGet: (ResultSet, Int) => A
   ) extends Read[A](gets, unsafeGet)
 
   // Factory method
   def of[A](
-    gets: List[(Get[_], NullabilityKnown)],
-    unsafeGet: (ResultSet, Int) => A
+      gets: List[(Get[_], NullabilityKnown)],
+      unsafeGet: (ResultSet, Int) => A
   ): Read[A] = BasicRead(gets, unsafeGet)
 
   def apply[A](implicit ev: Read[A]): ev.type = ev
@@ -81,19 +81,20 @@ object Read {
   implicit def readTuple3[A, B, C](implicit A: Read[A], B: Read[B], C: Read[C]): Read[(A, B, C)] =
     of(
       A.gets ++ B.gets ++ C.gets,
-      (rs, n) => (
-        A.unsafeGet(rs, n),
-        B.unsafeGet(rs, n + A.length),
-        C.unsafeGet(rs, n + A.length + B.length)
-      )
+      (rs, n) =>
+        (
+          A.unsafeGet(rs, n),
+          B.unsafeGet(rs, n + A.length),
+          C.unsafeGet(rs, n + A.length + B.length)
+        )
     )
 
   // Add more tuple instances (up to Tuple22) and other types like Either as needed
 }
 
 final class MkRead[A](
-  override val gets: List[(Get[_], NullabilityKnown)],
-  override val unsafeGet: (ResultSet, Int) => A
+    override val gets: List[(Get[_], NullabilityKnown)],
+    override val unsafeGet: (ResultSet, Int) => A
 ) extends Read[A](gets, unsafeGet)
 
 object MkRead extends ReadPlatform {
