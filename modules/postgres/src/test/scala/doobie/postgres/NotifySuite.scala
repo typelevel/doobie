@@ -4,14 +4,15 @@
 
 package doobie.postgres
 
-import cats.effect.{IO}
+import cats.effect.IO
 import cats.syntax.all.*
 import doobie.*
 import doobie.implicits.*
 import org.postgresql.PGNotification
+import scala.concurrent.duration._
 
 class NotifySuite extends munit.CatsEffectSuite {
-  import FC.{commit, delay}
+  import FC.{commit}
   import PostgresTestTransactor.xa
 
   // Listen on the given channel, notify on another connection
@@ -20,10 +21,10 @@ class NotifySuite extends munit.CatsEffectSuite {
       (for {
         _ <- PHC.pgListen(channel)
         _ <- commit
-        _ <- delay { Thread.sleep(50) }
+        _ <- liftIO.liftIO(IO.sleep(50.millis))
         _ <- liftIO.liftIO(notify.transact(xa))
         _ <- commit
-        _ <- delay { Thread.sleep(50) }
+        _ <- liftIO.liftIO(IO.sleep(50.millis))
         notifications <- PHC.pgGetNotifications
       } yield notifications).transact(xa)
     }
