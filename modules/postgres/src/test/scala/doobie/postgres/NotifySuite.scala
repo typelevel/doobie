@@ -29,20 +29,23 @@ class NotifySuite extends munit.CatsEffectSuite {
   test("LISTEN/NOTIFY should allow cross-connection notification") {
     val channel = "cha" + System.nanoTime.toString
     val notify = PHC.pgNotify(channel)
-    listen(channel, notify).map(_.length).assertEquals(1)  
+    val test = listen(channel, notify).map(_.length)
+    test.assertEquals(1)  
   }
 
   test("LISTEN/NOTIFY should allow cross-connection notification with parameter") {
     val channel = "chb" + System.nanoTime.toString
     val messages = List("foo", "bar", "baz", "qux")
     val notify = messages.traverse(PHC.pgNotify(channel, _))
-    listen(channel, notify).map(_.map(_.getParameter)).assertEquals(messages) 
+    val test = listen(channel, notify).map(_.map(_.getParameter))
+    test.assertEquals(messages) 
   }
 
   test("LISTEN/NOTIFY should collapse identical notifications") {
     val channel = "chc" + System.nanoTime.toString
     val messages = List("foo", "bar", "bar", "baz", "qux", "foo")
     val notify = messages.traverse(PHC.pgNotify(channel, _))
-    listen(channel, notify).map(_.map(_.getParameter)).assertEquals(messages.distinct) 
+    val test = listen(channel, notify).map(_.map(_.getParameter))
+    test.assertEquals(messages.distinct)
   }
 }
