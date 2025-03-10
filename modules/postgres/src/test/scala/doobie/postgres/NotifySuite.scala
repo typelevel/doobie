@@ -15,16 +15,18 @@ class NotifySuite extends munit.CatsEffectSuite {
   import PostgresTestTransactor.xa
 
   // Listen on the given channel, notify on another connection
-  def listen[A](channel: String, notify: ConnectionIO[A]): IO[List[PGNotification]] =
-  (for {
-    _ <- PHC.pgListen(channel)
-    _ <- commit
-    _ <- delay { Thread.sleep(50) }
-    _ <- notify
-    _ <- commit
-    _ <- delay { Thread.sleep(50) }
-    notifications <- PHC.pgGetNotifications
-  } yield notifications).transact(xa)
+def listen[A](channel: String, notify: ConnectionIO[A]): IO[List[PGNotification]] = 
+  WeakAsync.liftIO[ConnectionIO].use { liftIO =>
+    (for {
+      _ <- PHC.pgListen(channel)
+      _ <- commit
+      _ <- delay { Thread.sleep(50) }
+      _ <- liftIO.liftIO(notify.transact(xa))
+      _ <- commit
+      _ <- delay { Thread.sleep(50) }
+      notifications <- PHC.pgGetNotifications
+    } yield notifications).transact(xa)
+  }
 
   test("LISTEN/NOTIFY should allow cross-connection notification") {
     val channel = "cha" + System.nanoTime.toString
