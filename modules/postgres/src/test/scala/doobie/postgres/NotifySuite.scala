@@ -9,7 +9,7 @@ import cats.syntax.all.*
 import doobie.*
 import doobie.implicits.*
 import org.postgresql.PGNotification
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 class NotifySuite extends munit.CatsEffectSuite {
   import FC.{commit}
