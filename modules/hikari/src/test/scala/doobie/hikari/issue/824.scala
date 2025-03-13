@@ -10,16 +10,16 @@ import com.zaxxer.hikari.HikariDataSource
 import doobie.*
 import doobie.hikari.*
 import doobie.implicits.*
+import doobie.util.ExecutionContexts
 import scala.concurrent.duration.*
 import scala.util.Random
+import munit.CatsEffectSuite
 
-class `824` extends munit.FunSuite {
-
-  import cats.effect.unsafe.implicits.global
+class `824` extends CatsEffectSuite {
 
   val transactor: Resource[IO, HikariTransactor[IO]] =
     for {
-      ce <- ExecutionContexts.fixedThreadPool[IO](16) // our connect EC
+      ce <- ExecutionContexts.fixedThreadPool[IO](16)  // Fiper implicit resolution
       xa <- HikariTransactor.newHikariTransactor[IO](
         "org.h2.Driver", // driver classname
         "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", // connect URL
@@ -59,12 +59,11 @@ class `824` extends munit.FunSuite {
 
     } flatMap { case (n, ds) =>
       // One final report to show that all connections are disposed
-      report(ds) *> IO((n, ds.getHikariPoolMXBean.getTotalConnections))
-
+      report(ds) *> IO.pure(n -> ds.getHikariPoolMXBean.getTotalConnections)
     }
 
   test("HikariTransactor should close connections logically within `use` block and physically afterward.") {
-    assertEquals(prog.unsafeRunSync(), (0, 0))
+    prog.map(result => assertEquals(result, (0, 0))) // Fixed: Replaced assertIOEquals with assertEquals inside map
   }
 
 }
