@@ -63,7 +63,7 @@ class `824` extends CatsEffectSuite {
     }
 
   test("HikariTransactor should close connections logically within `use` block and physically afterward.") {
-    prog.assertEquals(result, (0, 0))
+    prog.assertEquals((0, 0))
 
   }
 
