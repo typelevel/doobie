@@ -19,7 +19,7 @@ class `824` extends CatsEffectSuite {
 
   val transactor: Resource[IO, HikariTransactor[IO]] =
     for {
-      ce <- ExecutionContexts.fixedThreadPool[IO](16)  // Fiper implicit resolution
+      ce <- ExecutionContexts.fixedThreadPool[IO](16) // Fiber implicit resolution
       xa <- HikariTransactor.newHikariTransactor[IO](
         "org.h2.Driver", // driver classname
         "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", // connect URL
@@ -59,11 +59,12 @@ class `824` extends CatsEffectSuite {
 
     } flatMap { case (n, ds) =>
       // One final report to show that all connections are disposed
-      report(ds) *> IO.pure(n -> ds.getHikariPoolMXBean.getTotalConnections)
+      report(ds) *> IO((n, ds.getHikariPoolMXBean.getTotalConnections))
     }
 
   test("HikariTransactor should close connections logically within `use` block and physically afterward.") {
     prog.assertEquals(result, (0, 0))
+
   }
 
 }
