@@ -46,4 +46,4 @@ metals.sbt
 .vscode/
 
 # sbt
-.bsp/
+.bsp/sbt-launch.jar 
