@@ -19,7 +19,7 @@ class `824` extends CatsEffectSuite {
 
   val transactor: Resource[IO, HikariTransactor[IO]] =
     for {
-      ce <- ExecutionContexts.fixedThreadPool[IO](16) // Fiber implicit resolution
+      ce <- ExecutionContexts.fixedThreadPool[IO](16) // connect our EC
       xa <- HikariTransactor.newHikariTransactor[IO](
         "org.h2.Driver", // driver classname
         "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", // connect URL
