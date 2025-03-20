@@ -9,8 +9,7 @@ import doobie.*
 import doobie.implicits.*
 import java.io.ByteArrayOutputStream
 
-class PGCopySuite extends munit.FunSuite {
-  import cats.effect.unsafe.implicits.global
+class PGCopySuite extends munit.CatsEffectSuite {
   import PostgresTestTransactor.xa
 
   test("copy out should read csv in utf-8 and match expectations") {
@@ -40,7 +39,7 @@ class PGCopySuite extends munit.FunSuite {
         _ <- PHC.pgGetCopyAPI(PFCM.copyOut(query, out))
       } yield new String(out.toByteArray, "UTF-8")
 
-    assertEquals(prog.transact(xa).unsafeRunSync(), fixture)
+    prog.transact(xa).assertEquals(fixture)
 
   }
 

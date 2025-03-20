@@ -7,19 +7,11 @@ package doobie.postgres.circe
 import cats.effect.IO
 import doobie.*
 import doobie.implicits.*
+import doobie.postgres.PostgresTestTransactor
 import io.circe.{Decoder, Encoder, Json}
 
-class PGJsonSuite extends munit.FunSuite {
-
-  import cats.effect.unsafe.implicits.global
-
-  val xa = Transactor.fromDriverManager[IO](
-    driver = "org.postgresql.Driver",
-    url = "jdbc:postgresql:world",
-    user = "postgres",
-    password = "password",
-    logHandler = None
-  )
+class PGJsonSuite extends munit.CatsEffectSuite {
+  import PostgresTestTransactor.xa
 
   def inOut[A: Write: Read](col: String, a: A) =
     for {
@@ -27,15 +19,15 @@ class PGJsonSuite extends munit.FunSuite {
       a0 <- Update[A](s"INSERT INTO TEST VALUES (?)", None).withUniqueGeneratedKeys[A]("value")(a)
     } yield a0
 
-  def testInOut[A](col: String, a: A, t: Transactor[IO])(implicit m: Get[A], p: Put[A]) = {
+  def testInOut[A](col: String, a: A, t: Transactor[IO])(implicit m: Get[A], p: Put[A]): Unit = {
     test(s"Mapping for $col as ${m.typeStack} - write+read $col as ${m.typeStack}") {
-      assertEquals(inOut(col, a).transact(t).attempt.unsafeRunSync(), Right(a))
+      inOut(col, a).transact(t).attempt.assertEquals(Right(a))
     }
     test(s"Mapping for $col as ${m.typeStack} - write+read $col as Option[${m.typeStack}] (Some)") {
-      assertEquals(inOut[Option[A]](col, Some(a)).transact(t).attempt.unsafeRunSync(), Right(Some(a)))
+      inOut[Option[A]](col, Some(a)).transact(t).attempt.assertEquals(Right(Some(a)))
     }
     test(s"Mapping for $col as ${m.typeStack} - write+read $col as Option[${m.typeStack}] (None)") {
-      assertEquals(inOut[Option[A]](col, None).transact(t).attempt.unsafeRunSync(), Right(None))
+      inOut[Option[A]](col, None).transact(t).attempt.assertEquals(Right(None))
     }
   }
 
@@ -53,26 +45,21 @@ class PGJsonSuite extends munit.FunSuite {
 
   test("json should check ok for read") {
     import doobie.postgres.circe.json.implicits.*
-
-    val a = sql"select '{}' :: json".query[Json].analysis.transact(xa).unsafeRunSync()
-    assertEquals(a.columnTypeErrors, Nil)
+    sql"select '{}' :: json".query[Json].analysis.transact(xa).map(_.columnTypeErrors).assertEquals(Nil)
   }
   test("json should check ok for write") {
     import doobie.postgres.circe.json.implicits.*
-    val a = sql"select ${Json.obj()} :: json".query[Json].analysis.transact(xa).unsafeRunSync()
-    assertEquals(a.parameterTypeErrors, Nil)
+    sql"select '{}' :: jsonb".query[Json].analysis.transact(xa).map(_.parameterTypeErrors).assertEquals(Nil)
   }
 
   test("jsonb should check ok for read") {
     import doobie.postgres.circe.jsonb.implicits.*
-    val a = sql"select '{}' :: jsonb".query[Json].analysis.transact(xa).unsafeRunSync()
-    assertEquals(a.columnTypeErrors, Nil)
+    sql"select '{}' :: jsonb".query[Json].analysis.transact(xa).map(_.columnTypeErrors).assertEquals(Nil)
   }
 
   test("jsonb should check ok for write") {
     import doobie.postgres.circe.jsonb.implicits.*
-    val a = sql"select ${Json.obj()} :: jsonb".query[Json].analysis.transact(xa).unsafeRunSync()
-    assertEquals(a.parameterTypeErrors, Nil)
+    sql"select ${Json.obj()} :: jsonb".query[Json].analysis.transact(xa).map(_.parameterTypeErrors).assertEquals(Nil)
   }
 
   // Encoder / Decoders
@@ -86,12 +73,10 @@ class PGJsonSuite extends munit.FunSuite {
   }
 
   test("fooGet should check ok for read") {
-    val a = sql"select '{}' :: json".query[Foo].analysis.transact(xa).unsafeRunSync()
-    assertEquals(a.columnTypeErrors, Nil)
+    sql"select '{}' :: json".query[Foo].analysis.transact(xa).map(_.columnTypeErrors).assertEquals(Nil)
   }
   test("fooPut check ok for write") {
-    val a = sql"select ${Foo(Json.obj())} :: json".query[Foo].analysis.transact(xa).unsafeRunSync()
-    assertEquals(a.parameterTypeErrors, Nil)
+    sql"select ${Foo(Json.obj())} :: json".query[Foo].analysis.transact(xa).map(_.parameterTypeErrors).assertEquals(Nil)
   }
 
 }

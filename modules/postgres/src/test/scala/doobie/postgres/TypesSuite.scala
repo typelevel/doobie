@@ -23,13 +23,12 @@ import net.postgis.jdbc.geometry.*
 import org.postgresql.geometric.*
 import org.postgresql.util.*
 import org.scalacheck.{Arbitrary, Gen, Test}
-import org.scalacheck.Prop.forAll
+import org.scalacheck.effect.PropF.forAllF
 
 import scala.collection.compat.immutable.LazyList
 
 // Establish that we can write and read various types.
-class TypesSuite extends munit.ScalaCheckSuite {
-  import cats.effect.unsafe.implicits.global
+class TypesSuite extends munit.CatsEffectSuite with munit.ScalaCheckSuite {
   import PostgresTestTransactor.xa
 
   override def scalaCheckTestParameters: Test.Parameters = super.scalaCheckTestParameters.withMinSuccessfulTests(10)
@@ -55,13 +54,13 @@ class TypesSuite extends munit.ScalaCheckSuite {
 
   def testInOut[A](col: String, a: A)(implicit m: Get[A], p: Put[A]) = {
     test(s"Mapping for $col as ${m.typeStack} - write+read $col as ${m.typeStack}") {
-      assertEquals(inOut(col, a).transact(xa).attempt.unsafeRunSync(), Right(a))
+      inOut(col, a).transact(xa).attempt.assertEquals(Right(a))
     }
     test(s"Mapping for $col as ${m.typeStack} - write+read $col as Option[${m.typeStack}] (Some)") {
-      assertEquals(inOutOpt[A](col, Some(a)).transact(xa).attempt.unsafeRunSync(), Right(Some(a)))
+      inOutOpt[A](col, Some(a)).transact(xa).attempt.assertEquals(Right(Some(a)))
     }
     test(s"Mapping for $col as ${m.typeStack} - write+read $col as Option[${m.typeStack}] (None)") {
-      assertEquals(inOutOpt[A](col, None).transact(xa).attempt.unsafeRunSync(), Right(None))
+      inOutOpt[A](col, None).transact(xa).attempt.assertEquals(Right(None))
     }
   }
 
@@ -70,15 +69,15 @@ class TypesSuite extends munit.ScalaCheckSuite {
       p: Put[A]
   ) = {
     test(s"Mapping for $col as ${m.typeStack} - write+read $col as ${m.typeStack}") {
-      forAll(gen) { (t: A) => assertEquals(inOut(col, t).transact(xa).attempt.unsafeRunSync(), Right(expected(t))) }
+      forAllF(gen) { (t: A) => inOut(col, t).transact(xa).attempt.assertEquals(Right(expected(t))) }
     }
     test(s"Mapping for $col as ${m.typeStack} - write+read $col as Option[${m.typeStack}] (Some)") {
-      forAll(gen) { (t: A) =>
-        assertEquals(inOutOpt[A](col, Some(t)).transact(xa).attempt.unsafeRunSync(), Right(Some(expected(t))))
+      forAllF(gen) { (t: A) =>
+        inOutOpt[A](col, Some(t)).transact(xa).attempt.assertEquals(Right(Some(expected(t))))
       }
     }
     test(s"Mapping for $col as ${m.typeStack} - write+read $col as Option[${m.typeStack}] (None)") {
-      assertEquals(inOutOpt[A](col, None).transact(xa).attempt.unsafeRunSync(), Right(None))
+      inOutOpt[A](col, None).transact(xa).attempt.assertEquals(Right(None))
     }
   }
 
