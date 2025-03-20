@@ -7,11 +7,17 @@ package doobie.postgres.circe
 import cats.effect.IO
 import doobie.*
 import doobie.implicits.*
-import doobie.postgres.PostgresTestTransactor
 import io.circe.{Decoder, Encoder, Json}
 
 class PGJsonSuite extends munit.CatsEffectSuite {
-  import PostgresTestTransactor.xa
+
+  val xa = Transactor.fromDriverManager[IO](
+    driver = "org.postgresql.Driver",
+    url = "jdbc:postgresql:world",
+    user = "postgres",
+    password = "password",
+    logHandler = None
+  )
 
   def inOut[A: Write: Read](col: String, a: A) =
     for {
