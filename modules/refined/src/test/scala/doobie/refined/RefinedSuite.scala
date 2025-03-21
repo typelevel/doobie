@@ -14,9 +14,7 @@ import eu.timepit.refined.numeric.Positive
 import eu.timepit.refined.*
 import doobie.util.invariant.*
 
-class RefinedSuite extends munit.FunSuite {
-
-  import cats.effect.unsafe.implicits.global
+class RefinedSuite extends munit.CatsEffectSuite {
 
   val xa = Transactor.fromDriverManager[IO](
     driver = "org.h2.Driver",
@@ -54,15 +52,15 @@ class RefinedSuite extends munit.FunSuite {
   }
 
   test("Query should return a refined type when conversion is possible") {
-    sql"select 123".query[PositiveInt].unique.transact(xa).void.unsafeRunSync()
+    sql"select 123".query[PositiveInt].unique.transact(xa).void.assert
   }
 
   test("Query should return an Option of a refined type when query returns null-value") {
-    sql"select NULL".query[Option[PositiveInt]].unique.transact(xa).void.unsafeRunSync()
+    sql"select NULL".query[Option[PositiveInt]].unique.transact(xa).void.assert
   }
 
   test("Query should return an Option of a refined type when query returns a value and converion is possible") {
-    sql"select NULL".query[Option[PositiveInt]].unique.transact(xa).void.unsafeRunSync()
+    sql"select NULL".query[Option[PositiveInt]].unique.transact(xa).void.assert
   }
 
   test("Query should save a None of a refined type") {
@@ -80,26 +78,26 @@ class RefinedSuite extends munit.FunSuite {
       _ <- Update0(s"CREATE LOCAL TEMPORARY TABLE TEST (value INT)", None).run
       _ <- sql"INSERT INTO TEST VALUES ($v)".update.run
     } yield ()
-    queryRes.transact(xa).unsafeRunSync()
+    queryRes.transact(xa).assert
   }
 
   test("Query should throw an SecondaryValidationFailed if value does not fit the refinement-type ") {
     secondaryValidationFailedCaught_?(
-      sql"select -1".query[PositiveInt].unique.transact(xa).void.unsafeRunSync()
+      sql"select -1".query[PositiveInt].unique.transact(xa).void.assert
     )
   }
 
   test("Query should return a refined product-type when conversion is possible") {
-    sql"select 1, 1".query[PointInQuadrant1].unique.transact(xa).void.unsafeRunSync()
+    sql"select 1, 1".query[PointInQuadrant1].unique.transact(xa).void.assert
   }
 
   test("Query should throw an SecondaryValidationFailed if object does not fit the refinement-type ") {
     secondaryValidationFailedCaught_?(
-      sql"select -1, 1".query[PointInQuadrant1].unique.transact(xa).void.unsafeRunSync()
+      sql"select -1, 1".query[PointInQuadrant1].unique.transact(xa).void.assert
     )
   }
 
-  private def secondaryValidationFailedCaught_?(query: => Unit) =
-    intercept[SecondaryValidationFailed[?]](query)
+  private def secondaryValidationFailedCaught_?(query: => IO[Unit]) =
+    query.intercept[SecondaryValidationFailed[?]]
 
 }
