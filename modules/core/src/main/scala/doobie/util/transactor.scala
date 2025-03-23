@@ -211,14 +211,14 @@ object transactor {
       * and translate it to back `M` effect.
       */
     def liftF[I](mkEffect: M ~> ConnectionIO => ConnectionIO[I])(implicit ev: Async[M]): M[I] =
-      WeakAsync.liftK[M, ConnectionIO].use(toConnectionIO => trans(ev).apply(mkEffect(toConnectionIO)))(ev)
+      WeakAsync.liftK[M, ConnectionIO].use(toConnectionIO => trans(using ev).apply(mkEffect(toConnectionIO)))(using ev)
 
     /** Crate a program expressed as `Stream` with `ConnectionIO` effects using a provided natural transformation `M ~>
       * ConnectionIO` and translate it back to a `Stream` with `M` effects.
       */
     def liftS[I](mkStream: M ~> ConnectionIO => Stream[ConnectionIO, I])(implicit ev: Async[M]): Stream[M, I] =
-      Stream.resource(WeakAsync.liftK[M, ConnectionIO])(ev).flatMap(toConnectionIO =>
-        transP(ev).apply(mkStream(toConnectionIO)))
+      Stream.resource(WeakAsync.liftK[M, ConnectionIO])(using ev).flatMap(toConnectionIO =>
+        transP(using ev).apply(mkStream(toConnectionIO)))
 
     /** Embed a `Pipe` with `ConnectionIO` effects inside a `Pipe` with `M` effects by lifting incoming stream to
       * `ConnectionIO` effects and lowering outgoing stream to `M` effects.
