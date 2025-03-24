@@ -155,4 +155,5 @@ Don't see yours? [You can add it in a PR!](https://github.com/tpolecat/doobie/ed
  - [CurrencyCloud](https://www.currencycloud.com)
  - [Lawfully](https://www.lawfully.com)
  - [The Guardian](https://www.theguardian.com)
+ - [APRA AMCOS](https://www.apraamcos.com.au/)
 
