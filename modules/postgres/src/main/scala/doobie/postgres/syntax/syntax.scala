@@ -11,8 +11,6 @@ import doobie.postgres.sqlstate.*
 import doobie.*
 import doobie.util.catchsql.exceptSomeSqlState
 import doobie.util.query.{Query, Query0}
-import doobie.hi.{HPS, HRS, HC}
-import doobie.free.ConnectionIO
 
 class PostgresMonadErrorOps[M[_], A](ma: M[A])(
     implicit ev: MonadError[M, Throwable]
