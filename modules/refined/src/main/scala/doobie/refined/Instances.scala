@@ -46,7 +46,7 @@ trait Instances {
       validate: Validate[T, P],
       manifest: TypeName[F[T, P]]
   ): F[T, P] =
-    rightOrException[F[T, P]](refType.refine[P](t)(validate))
+    rightOrException[F[T, P]](refType.refine[P](t)(using validate))
 
   private def unwrapRefinedType[T, P, F[_, _]](ftp: F[T, P])(
       implicit refType: RefType[F]
@@ -57,7 +57,7 @@ trait Instances {
       implicit manifest: TypeName[T]
   ): T =
     either match {
-      case Left(err) => throw new SecondaryValidationFailed[T](err)(manifest)
+      case Left(err) => throw new SecondaryValidationFailed[T](err)(using manifest)
       case Right(t)  => t
     }
 

@@ -120,7 +120,7 @@ object query {
       * @group Results
       */
     def toMap[K, V](a: A)(implicit ev: B =:= (K, V), f: FactoryCompat[(K, V), Map[K, V]]): ConnectionIO[Map[K, V]] =
-      toConnectionIO(a, IHRS.buildPair[Map, K, V](f, read.map(ev)))
+      toConnectionIO(a, IHRS.buildPair[Map, K, V](using f, read.map(ev)))
 
     /** Just like `toMap` but allowing to alter `PreparedExecution`.
       */
@@ -131,7 +131,7 @@ object query {
         ev: B =:= (K, V),
         f: FactoryCompat[(K, V), Map[K, V]]
     ): ConnectionIO[Map[K, V]] =
-      toConnectionIOAlteringExecution(a, IHRS.buildPair[Map, K, V](f, read.map(ev)), fn)
+      toConnectionIOAlteringExecution(a, IHRS.buildPair[Map, K, V](using f, read.map(ev)), fn)
 
     /** Apply the argument `a` to construct a program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding
       * an `F[B]` accumulated via `MonadPlus` append. This method is more general but less efficient than `to`.
