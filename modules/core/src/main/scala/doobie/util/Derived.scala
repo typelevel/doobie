@@ -4,4 +4,4 @@
 
 package doobie.util
 
-class Derived[+I](val instance: I) extends AnyVal
+final class Derived[+I](val instance: I) extends AnyVal
