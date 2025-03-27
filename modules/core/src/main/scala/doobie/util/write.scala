@@ -93,7 +93,7 @@ object Write extends LowerPriority1Write {
     }
 
   implicit val unitWrite: Write[Unit] =
-    new Composite[Unit](Nil, _ => List.empty)
+    Composite.instance[Unit](Nil, _ => List.empty)
 
   /** Simple instance wrapping a Put. i.e. single column non-null value */
   class Single[A](put: Put[A]) extends Write[A] {
@@ -126,7 +126,8 @@ object Write extends LowerPriority1Write {
 
     override def toList(a: Option[A]): List[Any] = List(a)
 
-    override def toOpt: Write[Option[Option[A]]] = new Composite[Option[Option[A]]](List(this), x => List(x.flatten))
+    override def toOpt: Write[Option[Option[A]]] =
+      Composite.instance[Option[Option[A]]](List(this), x => List(x.flatten))
   }
 
   /** A Write instance consists of multiple underlying Write instances */
@@ -162,13 +163,19 @@ object Write extends LowerPriority1Write {
     override def toList(a: A): List[Any] =
       anyWrites.zip(deconstruct(a)).flatMap { case (w, p) => w.toList(p) }
 
-    override def toOpt: Write[Option[A]] = new Composite[Option[A]](
+    override def toOpt: Write[Option[A]] = Composite.instance[Option[A]](
       writeInstances.map(_.toOpt),
       {
         case Some(a) => deconstruct(a).map(Some(_))
         case None    => List.fill(writeInstances.length)(None) // All Nones
       }
     )
+  }
+
+  object Composite {
+    def instance[A](writeInstances: List[Write[?]], deconstruct: A => List[Any]): Composite[A] = {
+      new Composite[A](writeInstances, deconstruct)
+    }
   }
 }
 
