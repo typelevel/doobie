@@ -24,7 +24,7 @@ import doobie.util.meta.Meta
   *   If non-empty, the column/parameter type reported by the database will be checked to match this list during
   *   typechecking against the database.
   */
-sealed abstract class Get[A](
+final class Get[A] private (
     val typeStack: NonEmptyList[Option[String]],
     val jdbcSources: NonEmptyList[JdbcType],
     val jdbcSourceSecondary: List[JdbcType],
@@ -66,7 +66,7 @@ sealed abstract class Get[A](
       jdbcSourceSecondary = jdbcSourceSecondary,
       vendorTypeNames = vendorTypeNames,
       get = get.map(f)
-    ) {}
+    )
 
   /** Equivalent to `tmap`, but allows the conversion to fail with an error message.
     */
@@ -99,7 +99,7 @@ object Get extends GetInstances with GetPlatform {
       jdbcSourceSecondary = jdbcSourceSecondary,
       vendorTypeNames = checkedVendorType.toList,
       get = get
-    ) {}
+    )
 
     def many[A](
         jdbcSources: NonEmptyList[JdbcType],
@@ -116,7 +116,6 @@ object Get extends GetInstances with GetPlatform {
         checkedVendorType: Option[String]
     ): Get[A] =
       many(NonEmptyList.of(jdbcSources), jdbcSourceSecondary, get, checkedVendorType)
-
   }
 
   /** Get instance for an advanced JDBC type. */
@@ -133,7 +132,7 @@ object Get extends GetInstances with GetPlatform {
       jdbcSourceSecondary = Nil,
       vendorTypeNames = vendorTypeNames.toList,
       get = get
-    ) {}
+    )
 
     def many[A](
         jdbcSources: NonEmptyList[JdbcType],

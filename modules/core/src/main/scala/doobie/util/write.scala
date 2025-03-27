@@ -66,8 +66,10 @@ sealed trait Write[A] {
 
   def toFragment(a: A, sql: String = List.fill(length)("?").mkString(",")): Fragment = {
     val elems: List[Elem] = (puts zip toList(a)).map {
-      case ((p: Put[a], NoNulls), a)  => Elem.Arg(a.asInstanceOf[a], p)
-      case ((p: Put[a], Nullable), a) => Elem.Opt(a.asInstanceOf[Option[a]], p)
+      case ((p, nullab), x) => nullab match {
+          case NoNulls  => p match { case px: Put[x] => Elem.Arg(x.asInstanceOf[x], px) }
+          case Nullable => p match { case px: Put[x] => Elem.Opt(x.asInstanceOf[Option[x]], px) }
+        }
     }
     Fragment(sql, elems, None)
   }

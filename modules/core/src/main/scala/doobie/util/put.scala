@@ -23,7 +23,7 @@ import scala.reflect.ClassTag
   *   If non-empty, the column/parameter type reported by the database will be checked to match this list during
   *   typechecking against the database.
   */
-sealed abstract class Put[A](
+final class Put[A] private (
     val typeStack: NonEmptyList[Option[String]],
     val jdbcTargets: NonEmptyList[JdbcType],
     val vendorTypeNames: List[String],
@@ -53,7 +53,7 @@ sealed abstract class Put[A](
       vendorTypeNames = vendorTypeNames,
       put = put.contramap(f),
       update = update.contramap(f)
-    ) {}
+    )
 
   def unsafeSetNonNullable(ps: PreparedStatement, n: Int, a: A): Unit =
     if (a == null) sys.error(s"Expected non-nullable param at $n. Use Option to describe nullable values.")
@@ -100,7 +100,7 @@ object Put extends PutInstances {
       vendorTypeNames = checkedVendorType.toList,
       put = put,
       update = update
-    ) {}
+    )
 
     def many[A](
         jdbcTargets: NonEmptyList[JdbcType],
@@ -140,7 +140,7 @@ object Put extends PutInstances {
       vendorTypeNames = vendorTypeNames.toList,
       put = put,
       update = update
-    ) {}
+    )
 
     def many[A](
         jdbcTargets: NonEmptyList[JdbcType],
