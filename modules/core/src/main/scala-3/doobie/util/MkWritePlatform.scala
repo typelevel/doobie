@@ -20,8 +20,8 @@ trait MkWritePlatform:
   ): Derived[MkWrite[P]] =
     val _ = isNotCaseObj
     val write: Write[P] = w.fold(identity, _.instance).contramap(p => i(Tuple.fromProductTyped(p)))
-    new Derived(
-      new MkWrite(write)
+    Derived(
+      MkWrite(write)
     )
 
   // Derivation base case for tuple (1-element)
@@ -29,8 +29,8 @@ trait MkWritePlatform:
       implicit H: Write[H] `OrElse` Derived[MkWrite[H]]
   ): Derived[MkWrite[H *: EmptyTuple]] = {
     val headInstance = H.fold(identity, _.instance)
-    new Derived(
-      new MkWrite(Write.Composite(
+    Derived(
+      MkWrite(Write.Composite(
         List(headInstance),
         { case h *: EmptyTuple =>
           List(h)
@@ -48,8 +48,8 @@ trait MkWritePlatform:
     val headWrite = H.fold(identity, _.instance)
     val tailWrite = T.fold(identity, _.instance)
 
-    new Derived(
-      new MkWrite(Write.Composite(
+    Derived(
+      MkWrite(Write.Composite(
         List(headWrite, tailWrite),
         { case h *: t =>
           List(h, t)
