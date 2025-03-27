@@ -10,8 +10,7 @@ import doobie.postgres.implicits.*
 import doobie.postgres.enums.*
 import doobie.util.invariant.*
 
-class ReadErrorSuite extends munit.FunSuite {
-  import cats.effect.unsafe.implicits.global
+class ReadErrorSuite extends munit.CatsEffectSuite {
   import PostgresTestTransactor.xa
 
   implicit val MyEnumMetaOpt: Meta[MyEnum] = pgEnumStringOpt(
@@ -29,18 +28,17 @@ class ReadErrorSuite extends munit.FunSuite {
   implicit val MyJavaEnumMeta: Meta[MyJavaEnum] = pgJavaEnum[MyJavaEnum]("myenum")
 
   test("pgEnumStringOpt") {
-    val r = sql"select 'invalid'".query[MyEnum].unique.transact(xa).attempt.unsafeRunSync()
-    assertEquals(r, Left(InvalidEnum[MyEnum]("invalid")))
+    sql"select 'invalid'".query[MyEnum].unique.transact(xa).attempt.assertEquals(Left(InvalidEnum[MyEnum]("invalid")))
   }
 
   test("pgEnum") {
-    val r = sql"select 'invalid' :: myenum".query[MyScalaEnum.Value].unique.transact(xa).attempt.unsafeRunSync()
-    assertEquals(r, Left(InvalidEnum[MyScalaEnum.Value]("invalid")))
+    sql"select 'invalid' :: myenum".query[MyScalaEnum.Value].unique.transact(xa).attempt.assertEquals(Left(
+      InvalidEnum[MyScalaEnum.Value]("invalid")))
   }
 
   test("pgJavaEnum") {
-    val r = sql"select 'invalid' :: myenum".query[MyJavaEnum].unique.transact(xa).attempt.unsafeRunSync()
-    assertEquals(r, Left(InvalidEnum[MyJavaEnum]("invalid")))
+    sql"select 'invalid' :: myenum".query[MyJavaEnum].unique.transact(xa).attempt.assertEquals(Left(
+      InvalidEnum[MyJavaEnum]("invalid")))
   }
 
 }

@@ -12,10 +12,9 @@ import doobie.postgres.implicits.*
 import fs2.*
 import org.scalacheck.{Gen, Test}
 import org.scalacheck.Arbitrary.arbitrary
-import org.scalacheck.Prop.forAll
+import org.scalacheck.effect.PropF.forAllF
 
-class TextSuite extends munit.ScalaCheckSuite {
-  import cats.effect.unsafe.implicits.global
+class TextSuite extends munit.CatsEffectSuite with munit.ScalaCheckSuite {
   import PostgresTestTransactor.xa
   import TextSuite.*
 
@@ -76,25 +75,21 @@ class TextSuite extends munit.ScalaCheckSuite {
     Gen.choose(0, 50).flatMap(Gen.listOfN(_, genRow))
 
   test("copyIn should correctly insert batches of rows") {
-    forAll(genRows) { rs =>
-      val rsʹ = (create *> insert.copyIn(rs) *> selectAll).transact(xa).unsafeRunSync()
-      assertEquals(rs, rsʹ)
+    forAllF(genRows) { rs =>
+      (create *> insert.copyIn(rs) *> selectAll).transact(xa).assertEquals(rs)
     }
   }
 
   test("correctly insert batches of rows via Stream") {
-    forAll(genRows) { rs =>
-      val rsʹ =
-        (create *> insert.copyIn(Stream.emits[ConnectionIO, Row](rs), 100) *> selectAll).transact(xa).unsafeRunSync()
-      assertEquals(rs, rsʹ)
+    forAllF(genRows) { rs =>
+      (create *> insert.copyIn(Stream.emits[ConnectionIO, Row](rs), 100) *> selectAll).transact(xa).assertEquals(rs)
     }
   }
 
   test("correctly insert batches of rows via Stream in IO") {
-    forAll(genRows) { rs =>
+    forAllF(genRows) { rs =>
       val inner = (rows: Stream[ConnectionIO, Row]) => Stream.eval(create *> insert.copyIn(rows, 100) *> selectAll)
-      val rsʹ = Stream.emits[IO, Row](rs).through(inner.transact(xa)).compile.foldMonoid.unsafeRunSync()
-      assertEquals(rs, rsʹ)
+      Stream.emits[IO, Row](rs).through(inner.transact(xa)).compile.foldMonoid.assertEquals(rs)
     }
   }
 
