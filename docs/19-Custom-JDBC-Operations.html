@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html class="no-js" lang="en">
+
+<head>
+<title>Custom JDBC Operations · doobie</title>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="description" content='docs'/>
+<link rel="canonical" href="https://github.com/typelevel/doobiedocs/19-Custom-JDBC-Operations.html"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto:100normal,100italic,300normal,300italic,400normal,400italic,500normal,500italic,700normal,700italic,900normal,900italicc" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="../lib/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../js/page.js"></script>
+<script type="text/javascript" src="../js/warnOldVersion.js"></script>
+<script type="text/javascript" src="../js/groups.js"></script>
+<script type="text/javascript" src="../js/snippets.js"></script>
+<link rel="stylesheet" type="text/css" href="../lib/foundation/dist/foundation.min.css"/>
+<link rel="stylesheet" type="text/css" href="../css/page.css"/>
+
+<!--
+<link rel="shortcut icon" href="../images/favicon.ico" />
+-->
+</head>
+
+<body>
+<div class="off-canvas-wrapper">
+<div class="off-canvas-wrapper-inner" data-off-canvas-wrapper>
+
+<div class="off-canvas position-left" id="off-canvas-menu" data-off-canvas>
+<nav class="off-canvas-nav">
+<div class="nav-home">
+<a href="../index.html" >
+<span class="home-icon">⌂</span>doobie
+</a>
+<div class="version-number">
+1.0.0-RC8
+</div>
+</div>
+<div class="nav-toc">
+<ul>
+  <li><a href="../infographic.html" class="page">Infographic</a></li>
+  <li><a href="../migration.html" class="page">Migration Notes</a></li>
+  <li><a href="../docs/index.html" class="page">Book of Doobie</a>
+  <ul>
+    <li><a href="../docs/01-Introduction.html" class="page">Introduction</a></li>
+    <li><a href="../docs/02-Toolkit.html" class="page">Toolkit</a></li>
+    <li><a href="../docs/03-Connecting.html" class="page">Connecting to a Database</a></li>
+    <li><a href="../docs/04-Selecting.html" class="page">Selecting Data</a></li>
+    <li><a href="../docs/05-Parameterized.html" class="page">Parameterized Queries</a></li>
+    <li><a href="../docs/06-Checking.html" class="page">Typechecking Queries</a></li>
+    <li><a href="../docs/07-Updating.html" class="page">DDL, Inserting, and Updating</a></li>
+    <li><a href="../docs/08-Fragments.html" class="page">Statement Fragments</a></li>
+    <li><a href="../docs/09-Error-Handling.html" class="page">Error Handling</a></li>
+    <li><a href="../docs/10-Logging.html" class="page">Logging</a></li>
+    <li><a href="../docs/11-Arrays.html" class="page">SQL Arrays</a></li>
+    <li><a href="../docs/12-Custom-Mappings.html" class="page">Custom Mappings</a></li>
+    <li><a href="../docs/19-Custom-JDBC-Operations.html" class="active page">Custom JDBC Operations</a></li>
+    <li><a href="../docs/13-Unit-Testing.html" class="page">Unit Testing</a></li>
+    <li><a href="../docs/14-Managing-Connections.html" class="page">Managing Connections</a></li>
+    <li><a href="../docs/15-Extensions-PostgreSQL.html" class="page">Extensions for PostgreSQL</a></li>
+    <li><a href="../docs/16-Extensions-H2.html" class="page">Extensions for H2</a></li>
+    <li><a href="../docs/17-FAQ.html" class="page">Frequently-Asked Questions</a></li>
+    <li><a href="../docs/18-Related-Projects.html" class="page">Related Projects</a></li>
+  </ul></li>
+</ul>
+</div>
+
+</nav>
+</div>
+
+<div class="off-canvas-content" data-off-canvas-content>
+
+<header class="site-header expanded row">
+<div class="small-12 column">
+<a href="#" class="off-canvas-toggle hide-for-medium" data-toggle="off-canvas-menu"><svg class="svg-icon svg-icon-menu" version="1.1" id="Menu" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 20 20" enable-background="new 0 0 20 20" xml:space="preserve"> <path class="svg-icon-menu-path" fill="#53CDEC" d="M16.4,9H3.6C3.048,9,3,9.447,3,10c0,0.553,0.048,1,0.6,1H16.4c0.552,0,0.6-0.447,0.6-1C17,9.447,16.952,9,16.4,9z M16.4,13
+H3.6C3.048,13,3,13.447,3,14c0,0.553,0.048,1,0.6,1H16.4c0.552,0,0.6-0.447,0.6-1C17,13.447,16.952,13,16.4,13z M3.6,7H16.4
+C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.048,7,3.6,7z"/></svg>
+</a>
+<div class="title"><a href="../index.html">doobie</a></div>
+
+<!--
+<a href="https://www.example.com" class="logo show-for-medium">logo</a>
+-->
+</div>
+</header>
+
+<div class="expanded row">
+
+<div class="medium-3 large-2 show-for-medium column">
+<nav class="site-nav">
+<div class="nav-home">
+<a href="../index.html" >
+<span class="home-icon">⌂</span>doobie
+</a>
+<div class="version-number">
+1.0.0-RC8
+</div>
+</div>
+<div class="nav-toc">
+<ul>
+  <li><a href="../infographic.html" class="page">Infographic</a></li>
+  <li><a href="../migration.html" class="page">Migration Notes</a></li>
+  <li><a href="../docs/index.html" class="page">Book of Doobie</a>
+  <ul>
+    <li><a href="../docs/01-Introduction.html" class="page">Introduction</a></li>
+    <li><a href="../docs/02-Toolkit.html" class="page">Toolkit</a></li>
+    <li><a href="../docs/03-Connecting.html" class="page">Connecting to a Database</a></li>
+    <li><a href="../docs/04-Selecting.html" class="page">Selecting Data</a></li>
+    <li><a href="../docs/05-Parameterized.html" class="page">Parameterized Queries</a></li>
+    <li><a href="../docs/06-Checking.html" class="page">Typechecking Queries</a></li>
+    <li><a href="../docs/07-Updating.html" class="page">DDL, Inserting, and Updating</a></li>
+    <li><a href="../docs/08-Fragments.html" class="page">Statement Fragments</a></li>
+    <li><a href="../docs/09-Error-Handling.html" class="page">Error Handling</a></li>
+    <li><a href="../docs/10-Logging.html" class="page">Logging</a></li>
+    <li><a href="../docs/11-Arrays.html" class="page">SQL Arrays</a></li>
+    <li><a href="../docs/12-Custom-Mappings.html" class="page">Custom Mappings</a></li>
+    <li><a href="../docs/19-Custom-JDBC-Operations.html" class="active page">Custom JDBC Operations</a></li>
+    <li><a href="../docs/13-Unit-Testing.html" class="page">Unit Testing</a></li>
+    <li><a href="../docs/14-Managing-Connections.html" class="page">Managing Connections</a></li>
+    <li><a href="../docs/15-Extensions-PostgreSQL.html" class="page">Extensions for PostgreSQL</a></li>
+    <li><a href="../docs/16-Extensions-H2.html" class="page">Extensions for H2</a></li>
+    <li><a href="../docs/17-FAQ.html" class="page">Frequently-Asked Questions</a></li>
+    <li><a href="../docs/18-Related-Projects.html" class="page">Related Projects</a></li>
+  </ul></li>
+</ul>
+</div>
+
+</nav>
+</div>
+
+<div class="small-12 medium-9 large-10 column">
+<section class="site-content">
+
+<span id="version-warning"></span>
+
+<div class="page-header row">
+<div class="medium-12 show-for-medium column">
+<div class="nav-breadcrumbs">
+<ul>
+  <li><a href="../index.html">doobie</a></li>
+  <li><a href="../docs/index.html">Book of Doobie</a></li>
+  <li>Custom JDBC Operations</li>
+</ul>
+</div>
+</div>
+</div>
+
+<div class="page-content row">
+<div class="small-12 large-9 column" id="docs">
+<h1><a href="#custom-jdbc-operations" name="custom-jdbc-operations" class="anchor"><span class="anchor-link"></span></a>Custom JDBC Operations</h1>
+<p>Doobie aims to provide a nice API for typical database operations, but sometimes you need more - such as calling specific JDBC methods. In this page we list ways you can customize your JDBC query, from high level to lower level.</p>
+<h2><a href="#low-level-jdbc-api-doobie-free-doobie-f-" name="low-level-jdbc-api-doobie-free-doobie-f-" class="anchor"><span class="anchor-link"></span></a>Low-level JDBC API (<code>doobie.free.*</code> / <code>doobie.F*</code>)</h2>
+<p>In the low-level API, Doobie encodes the JDBC API as a <a href="https://typelevel.org/cats/datatypes/freemonad.html">free monad</a> (hence <code>free</code> in the package name). Each standard JDBC type has its own free monad counterpart covering its operations</p>
+<ul>
+  <li><code>doobie.free.ConnectionIO</code>/<code>doobie.FC</code> represents operations over <code>java.sql.Connection</code></li>
+  <li><code>doobie.free.PreparedStatement</code>/<code>doobie.FPS</code> represents operations over <code>java.sql.PreparedStatement</code></li>
+  <li><code>doobie.free.ResultSetIO</code>/<code>doobie.FRS</code> represents operations over <code>java.sql.ResultSet</code></li>
+  <li>&hellip;and similarly for other JDBC types</li>
+</ul>
+<p>For example, in <code>doobie.FC</code>/<code>doobie.free.connection</code> module you will find equivalents to the methods on <code>java.sql.Connection</code> class. (FC is an acronym where F == Free and C == Connection). Similarly, <code>doobie.FPS</code>/<code>doobie.free.preparedstatement</code> module contains equivalents to the methods on <code>java.sql.PreparedStatement</code> class.</p>
+<p>Just like we need to be careful to close Connections and PreparedStatements with JDBC, <strong>care must be taken when using doobie&rsquo;s low-level API to ensure resources like Connections and PreparedStatements are closed.</strong></p>
+<h3><a href="#useful-low-level-operations" name="useful-low-level-operations" class="anchor"><span class="anchor-link"></span></a>Useful low-level operations</h3>
+<h4><a href="#raw-access-to-the-underlying-jdbc-object" name="raw-access-to-the-underlying-jdbc-object" class="anchor"><span class="anchor-link"></span></a><code>raw</code>: Access to the underlying JDBC object</h4>
+<p>Provides access to the underlying JDBC object.</p>
+<pre class="prettyprint"><code class="language-scala">import doobie.FRS // alias for doobie.free.resultset
+
+FRS.raw { resultSet: java.sql.ResultSet =&gt;
+  // ... do something with the ResultSet
+  resultSet.getInt(1)
+}
+// res0: FRS.ResultSetIO[Int] = Suspend(a = Raw(f = &lt;function1&gt;))
+</code></pre>
+<h4><a href="#embed-convert-between-various-ios" name="embed-convert-between-various-ios" class="anchor"><span class="anchor-link"></span></a><code>embed</code>: Convert between various <code>*IO</code>s</h4>
+<p>The <code>embed</code> method allows you to compose a &ldquo;lower-level&rdquo; JDBC operation chain into a &ldquo;higher-level&rdquo; one.</p>
+<p>In the example below, we embed a <code>ResultSetIO</code> into a <code>PreparedStatementIO</code>, which is itself then embedded into a <code>ConnectionIO</code></p>
+<pre class="prettyprint"><code class="language-scala">import doobie.{FPS, FC}
+import doobie.{ResultSetIO, ConnectionIO}
+import cats.effect.syntax.all._
+import doobie.syntax.all._
+
+val readFirstRowCol1: ResultSetIO[String] = FRS.next.flatMap(_ =&gt; FRS.getString(1))
+
+// Use bracket to ensure resources are closed
+val embedExample: ConnectionIO[String] = FC.prepareStatement(&quot;SELECT 1&quot;).bracket { preparedStatement =&gt;
+  FC.embed(
+    preparedStatement,
+    FPS.executeQuery.bracket { resultSet =&gt;
+      FPS.embed(resultSet, readFirstRowCol1)
+    }(resultSet =&gt; FPS.embed(resultSet, FRS.close)))
+}(ps =&gt; FC.embed(ps, FPS.close))
+</code></pre>
+<h4><a href="#other-operations" name="other-operations" class="anchor"><span class="anchor-link"></span></a>Other operations</h4>
+<p>You will find many familiar methods from <code>cats.effect.IO</code> with the same semantics, such as:</p>
+<ul>
+  <li><code>pure</code>: Lift a pure value</li>
+  <li><code>raiseError</code>: Raise an error</li>
+  <li><code>delay</code>: Suspend a computation</li>
+</ul>
+<p>These are eventually interpreted into equivalent <code>cats.effect.IO</code> operations.</p>
+<h2><a href="#high-level-api-doobie-hi-doobie-h-" name="high-level-api-doobie-hi-doobie-h-" class="anchor"><span class="anchor-link"></span></a>High-level API (<code>doobie.hi.*</code> / <code>doobie.H*</code>)</h2>
+<p>The <code>doobie.hi.*</code> modules provide high-level APIs which handle concerns like closing Connections and logging for you. The high-level module builds upont the low-level API (<code>doobie.free.*</code>).</p>
+<p>In the example below, we use <code>doobie.HC.executeWithResultSet</code> to execute a query and obtain the results. There is no need explicitly close the Connection, PreparedStatement or ResultSet because it&rsquo;s handled by <code>HC.executeWithResultSet</code> already.</p>
+<pre class="prettyprint"><code class="language-scala">import cats.effect.IO
+import cats.effect.unsafe.implicits.global // To allow .unsafeRunSync
+import doobie.Transactor
+
+// Create the transactor
+val xa: Transactor[IO] = Transactor.fromDriverManager[IO](
+  driver = &quot;org.postgresql.Driver&quot;, 
+  url = &quot;jdbc:postgresql:world&quot;,   
+  user = &quot;postgres&quot;,
+  password = &quot;password&quot;,
+  logHandler = None                  
+)
+</code></pre>
+<pre class="prettyprint"><code class="language-scala">import doobie.HC  // High-level API over java.sql.Connection
+import doobie.HRS  // High-level API over java.sql.ResultSet
+import doobie.ConnectionIO
+import doobie.util.log.{LoggingInfo, Parameters}
+import cats.effect.unsafe.implicits.global
+
+val sql = &quot;SELECT * FROM (VALUES (1, &#39;1&#39;), (2, &#39;2&#39;))&quot;
+val program: ConnectionIO[List[(Int, String)]] = HC.executeWithResultSet(
+  create = FC.prepareStatement(sql),
+  prep = FPS.unit,
+  exec = FPS.executeQuery,
+  process = HRS.list[(Int, String)],
+  loggingInfo = LoggingInfo(sql, Parameters.NonBatch(List.empty), label = doobie.util.unlabeled)
+)
+</code></pre>
+<pre class="prettyprint"><code class="language-scala">program.transact(xa).unsafeRunSync()
+// res1: List[(Int, String)] = List((1, &quot;1&quot;), (2, &quot;2&quot;))
+</code></pre>
+<h3><a href="#useful-high-level-apis-in-doobie-hi-connection-doobie-hc" name="useful-high-level-apis-in-doobie-hi-connection-doobie-hc" class="anchor"><span class="anchor-link"></span></a>Useful high-level APIs in <code>doobie.hi.connection</code>/<code>doobie.HC</code></h3>
+<ul>
+  <li><code>executeWithResultSet</code>: Create and execute a <code>PreparedStatement</code> and then process the ResultSet</li>
+  <li><code>executeWithoutResultSet</code>: Create and execute a <code>PreparedStatement</code> which immediately returns the result without reading from a <code>ResultSet</code>  (e.g. for updates since the updated row count does not require reading from a <code>ResultSet</code>)</li>
+  <li><code>stream</code>: Execute a <code>PreparedStatement</code> query and provide rows in chunks, streamed via <code>fs2.Stream</code></li>
+</ul>
+<h2><a href="#tweaking-query-update-execution-with-alteringexecution-methods" name="tweaking-query-update-execution-with-alteringexecution-methods" class="anchor"><span class="anchor-link"></span></a>Tweaking <code>Query</code>/<code>Update</code> execution with <code>*AlteringExecution</code> methods</h2>
+<p>If you just need to do a small &ldquo;tweak&rdquo; to your typical <code>Query</code>/<code>Update</code> execution steps, you can use methods like <code>toAlteringExecution</code>/<code>toMapAlteringExecution</code> to customize the steps.</p>
+<pre class="prettyprint"><code class="language-scala">import cats.syntax.all._
+import doobie.hi.connection.PreparedExecution
+
+fr&quot;select name from country order by code limit 10&quot;
+    .query[String]
+    .toAlteringExecution[List] { (steps: PreparedExecution[List[String]]) =&gt;
+      steps.copy(
+        process = FRS.setFetchSize(5) *&gt; steps.process
+      )
+    }
+    .transact(xa)
+    .unsafeRunSync()
+// res2: List[String] = List(
+//   &quot;Aruba&quot;,
+//   &quot;Afghanistan&quot;,
+//   &quot;Angola&quot;,
+//   &quot;Anguilla&quot;,
+//   &quot;Albania&quot;,
+//   &quot;Andorra&quot;,
+//   &quot;Netherlands Antilles&quot;,
+//   &quot;United Arab Emirates&quot;,
+//   &quot;Argentina&quot;,
+//   &quot;Armenia&quot;
+// )
+</code></pre>
+<div class="source-github">
+The source code for this page can be found <a href="https://github.com/typelevel/doobie/tree/master/modules/docs/target/mdoc/docs/19-Custom-JDBC-Operations.md">here</a>.
+</div>
+
+<div class="nav-next">
+<p><strong>Next:</strong> <a href="../docs/13-Unit-Testing.html">Unit Testing</a></p>
+</div>
+</div>
+<div class="large-3 show-for-large column" data-sticky-container>
+<nav class="sidebar sticky" data-sticky data-anchor="docs" data-sticky-on="large">
+<div class="page-nav">
+<div class="nav-title">On this page:</div>
+<div class="nav-toc">
+<ul>
+  <li><a href="../docs/19-Custom-JDBC-Operations.html#custom-jdbc-operations" class="header">Custom JDBC Operations</a>
+  <ul>
+    <li><a href="../docs/19-Custom-JDBC-Operations.html#low-level-jdbc-api-doobie-free-doobie-f-" class="header">Low-level JDBC API (<code>doobie.free.*</code> / <code>doobie.F*</code>)</a></li>
+    <li><a href="../docs/19-Custom-JDBC-Operations.html#high-level-api-doobie-hi-doobie-h-" class="header">High-level API (<code>doobie.hi.*</code> / <code>doobie.H*</code>)</a></li>
+    <li><a href="../docs/19-Custom-JDBC-Operations.html#tweaking-query-update-execution-with-alteringexecution-methods" class="header">Tweaking <code>Query</code>/<code>Update</code> execution with <code>*AlteringExecution</code> methods</a></li>
+  </ul></li>
+</ul>
+</div>
+</div>
+</nav>
+</div>
+</div>
+
+</section>
+</div>
+
+</div>
+
+<footer class="site-footer">
+
+<section class="site-footer-nav">
+<div class="expanded row">
+<div class="small-12 large-offset-2 large-10 column">
+<div class="row site-footer-content">
+
+<div class="small-12 medium-4 large-3 text-center column">
+<div class="nav-links">
+<ul>
+<!-- <li><a href="https://www.example.com/products/">Products</a> -->
+</ul>
+</div>
+</div>
+
+</div>
+</div>
+</div>
+</section>
+
+<section class="site-footer-base">
+<div class="expanded row">
+<div class="small-12 large-offset-2 large-10 column">
+<div class="row site-footer-content">
+
+<div class="small-12 text-center large-9 column">
+
+<!--
+<div class="copyright">
+<span class="text">&copy; 2025</span>
+<a href="https://www.example.com" class="logo">logo</a>
+</div>
+-->
+</div>
+
+</div>
+</div>
+</div>
+</section>
+</footer>
+
+</div>
+</div>
+</div>
+</body>
+
+<script type="text/javascript" src="../lib/foundation/dist/foundation.min.js"></script>
+<script type="text/javascript">jQuery(document).foundation();</script>
+<script type="text/javascript" src="../js/magellan.js"></script>
+
+<style type="text/css">@import "../lib/prettify/prettify.css";</style>
+<script type="text/javascript" src="../lib/prettify/prettify.js"></script>
+<script type="text/javascript" src="../lib/prettify/lang-scala.js"></script>
+<script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.0.0-RC8', 'https://github.com/typelevel/doobie')});</script>
+
+
+</html>

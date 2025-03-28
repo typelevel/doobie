@@ -32,7 +32,7 @@
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-1.0.0-RC7
+1.0.0-RC8
 </div>
 </div>
 <div class="nav-toc">
@@ -53,6 +53,7 @@
     <li><a href="../docs/10-Logging.html" class="page">Logging</a></li>
     <li><a href="../docs/11-Arrays.html" class="page">SQL Arrays</a></li>
     <li><a href="../docs/12-Custom-Mappings.html" class="page">Custom Mappings</a></li>
+    <li><a href="../docs/19-Custom-JDBC-Operations.html" class="page">Custom JDBC Operations</a></li>
     <li><a href="../docs/13-Unit-Testing.html" class="page">Unit Testing</a></li>
     <li><a href="../docs/14-Managing-Connections.html" class="page">Managing Connections</a></li>
     <li><a href="../docs/15-Extensions-PostgreSQL.html" class="page">Extensions for PostgreSQL</a></li>
@@ -91,7 +92,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-1.0.0-RC7
+1.0.0-RC8
 </div>
 </div>
 <div class="nav-toc">
@@ -112,6 +113,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
     <li><a href="../docs/10-Logging.html" class="page">Logging</a></li>
     <li><a href="../docs/11-Arrays.html" class="page">SQL Arrays</a></li>
     <li><a href="../docs/12-Custom-Mappings.html" class="page">Custom Mappings</a></li>
+    <li><a href="../docs/19-Custom-JDBC-Operations.html" class="page">Custom JDBC Operations</a></li>
     <li><a href="../docs/13-Unit-Testing.html" class="page">Unit Testing</a></li>
     <li><a href="../docs/14-Managing-Connections.html" class="page">Managing Connections</a></li>
     <li><a href="../docs/15-Extensions-PostgreSQL.html" class="page">Extensions for PostgreSQL</a></li>
@@ -185,7 +187,7 @@ val xa = Transactor.fromDriverManager[IO](
 <p>And here we go.</p>
 <pre class="prettyprint"><code class="language-scala">val io = program1.transact(xa)
 // io: IO[Int] = Uncancelable(
-//   body = cats.effect.IO$$$Lambda$65357/0x000000080e3fd040@78285e8e,
+//   body = cats.effect.IO$$$Lambda$20284/0x000000080517a040@6f52a0ee,
 //   event = cats.effect.tracing.TracingEvent$StackTrace
 // )
 io.unsafeRunSync()
@@ -201,12 +203,12 @@ io.unsafeRunSync()
 <pre class="prettyprint"><code class="language-scala">val program2 = sql&quot;select 42&quot;.query[Int].unique
 // program2: ConnectionIO[Int] = Suspend(
 //   a = Uncancelable(
-//     body = cats.effect.kernel.MonadCancel$$Lambda$65444/0x000000080e44b840@7da4d7b0
+//     body = cats.effect.kernel.MonadCancel$$Lambda$20371/0x00000008051cb840@1cdec1aa
 //   )
 // )
 val io2 = program2.transact(xa)
 // io2: IO[Int] = Uncancelable(
-//   body = cats.effect.IO$$$Lambda$65357/0x000000080e3fd040@4fa3e635,
+//   body = cats.effect.IO$$$Lambda$20284/0x000000080517a040@cf71f60,
 //   event = cats.effect.tracing.TracingEvent$StackTrace
 // )
 io2.unsafeRunSync()
@@ -223,7 +225,7 @@ io2.unsafeRunSync()
 </code></pre>
 <p>And behold!</p>
 <pre class="prettyprint"><code class="language-scala">program3.transact(xa).unsafeRunSync()
-// res2: (Int, Double) = (42, 3.5764402544691265E-4)
+// res2: (Int, Double) = (42, 0.47444647706062915)
 </code></pre>
 <p>The astute among you will note that we don&rsquo;t actually need a monad to do this; an applicative functor is all we need here. So we could also write <code>program3</code> as:</p>
 <pre class="prettyprint"><code class="language-scala">val program3a = {
@@ -234,7 +236,7 @@ io2.unsafeRunSync()
 </code></pre>
 <p>And lo, it was good:</p>
 <pre class="prettyprint"><code class="language-scala">program3a.transact(xa).unsafeRunSync()
-// res3: (Int, Double) = (42, 0.9451599333718155)
+// res3: (Int, Double) = (42, 0.35371639278462785)
 </code></pre>
 <p>And of course this composition can continue indefinitely.</p>
 <pre class="prettyprint"><code class="language-scala">val valuesList = program3a.replicateA(5)
@@ -247,34 +249,34 @@ io2.unsafeRunSync()
 //             c = FlatMapped(
 //               c = Suspend(
 //                 a = Uncancelable(
-//                   body = cats.effect.kernel.MonadCancel$$Lambda$65444/0x000000080e44b840@56fa6d6e
+//                   body = cats.effect.kernel.MonadCancel$$Lambda$20371/0x00000008051cb840@20b1e331
 //                 )
 //               ),
-//               f = cats.FlatMap$$Lambda$65490/0x000000080e48f840@6f304837
+//               f = cats.FlatMap$$Lambda$20417/0x0000000805205840@5284b318
 //             ),
-//             f = cats.Monad$$Lambda$65341/0x000000080e3ee840@10287c8c
+//             f = cats.Monad$$Lambda$20268/0x0000000805168040@54676c10
 //           ),
-//           f = cats.Monad$$Lambda$65341/0x000000080e3ee840@77a43433
+//           f = cats.Monad$$Lambda$20268/0x0000000805168040@7a94734f
 //         ),
-//         f = cats.FlatMap$$Lambda$65550/0x000000080e4c8040@1cfd44b4
+//         f = cats.FlatMap$$Lambda$20477/0x0000000805245040@71576da2
 //       ),
-//       f = cats.FlatMap$$Lambda$65550/0x000000080e4c8040@34be6be5
+//       f = cats.FlatMap$$Lambda$20477/0x0000000805245040@306711ef
 //     ),
-//     f = cats.FlatMap$$Lambda$65550/0x000000080e4c8040@40b5d6e6
+//     f = cats.FlatMap$$Lambda$20477/0x0000000805245040@747f306f
 //   ),
-//   f = cats.Monad$$Lambda$65341/0x000000080e3ee840@1666676f
+//   f = cats.Monad$$Lambda$20268/0x0000000805168040@2da83ba4
 // )
 val result = valuesList.transact(xa)
 // result: IO[List[(Int, Double)]] = Uncancelable(
-//   body = cats.effect.IO$$$Lambda$65357/0x000000080e3fd040@60c859f3,
+//   body = cats.effect.IO$$$Lambda$20284/0x000000080517a040@67d869ce,
 //   event = cats.effect.tracing.TracingEvent$StackTrace
 // )
 result.unsafeRunSync().foreach(println)
-// (42,0.24379474139749613)
-// (42,0.6486124952200536)
-// (42,0.6896024388635351)
-// (42,0.7341717805430479)
-// (42,0.9400751324318006)
+// (42,0.2595186163429817)
+// (42,0.18114260749534083)
+// (42,0.21856952230544446)
+// (42,0.8494927491790059)
+// (42,0.23556811086929152)
 </code></pre>
 <h3><a href="#diving-deeper" name="diving-deeper" class="anchor"><span class="anchor-link"></span></a>Diving Deeper</h3>
 <p>All of the <strong>doobie</strong> monads are implemented via <code>Free</code> and have no operational semantics; we can only &ldquo;run&rdquo; a <strong>doobie</strong> program by transforming <code>FooIO</code> (for some carrier type <code>java.sql.Foo</code>) to a monad that actually has some meaning.</p>
@@ -285,10 +287,10 @@ import doobie.free.connection.ConnectionOp
 import java.sql.Connection
 
 val interpreter = KleisliInterpreter[IO](LogHandler.noop).ConnectionInterpreter
-// interpreter: ConnectionOp ~&gt; [γ$9$]Kleisli[IO, Connection, γ$9$] = doobie.free.KleisliInterpreter$$anon$10@6c7a5cf1
+// interpreter: ConnectionOp ~&gt; [γ$9$]Kleisli[IO, Connection, γ$9$] = doobie.free.KleisliInterpreter$$anon$10@e503f85
 val kleisli = program1.foldMap(interpreter)
 // kleisli: Kleisli[IO, Connection, Int] = Kleisli(
-//   run = cats.data.KleisliFlatMap$$Lambda$65446/0x000000080e468040@4e5f974c
+//   run = cats.data.KleisliFlatMap$$Lambda$20373/0x00000008051ce840@2ae2b198
 // )
 val io3 = IO(null: java.sql.Connection) &gt;&gt;= kleisli.run
 // io3: IO[Int] = FlatMap(
@@ -296,7 +298,7 @@ val io3 = IO(null: java.sql.Connection) &gt;&gt;= kleisli.run
 //     thunk = &lt;function0&gt;,
 //     event = cats.effect.tracing.TracingEvent$StackTrace
 //   ),
-//   f = cats.data.KleisliFlatMap$$Lambda$65446/0x000000080e468040@4e5f974c,
+//   f = cats.data.KleisliFlatMap$$Lambda$20373/0x00000008051ce840@2ae2b198,
 //   event = cats.effect.tracing.TracingEvent$StackTrace
 // )
 io3.unsafeRunSync() // sneaky; program1 never looks at the connection
@@ -394,7 +396,7 @@ The source code for this page can be found <a href="https://github.com/typelevel
 <script type="text/javascript" src="../lib/prettify/prettify.js"></script>
 <script type="text/javascript" src="../lib/prettify/lang-scala.js"></script>
 <script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
-<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.0.0-RC7', 'https://github.com/typelevel/doobie')});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.0.0-RC8', 'https://github.com/typelevel/doobie')});</script>
 
 
 </html>
