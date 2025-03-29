@@ -4,7 +4,20 @@
 
 package doobie.util
 
+import scala.deriving.Mirror
+
 trait ReadPlatform extends LowestPriorityRead:
+  trait Auto {
+    implicit final inline def autoDerivedRead[A <: Product](using
+        inline mirror: Mirror.ProductOf[A]
+    ): Derived[Read[A]] =
+      Derived(ReadDerivation.derived[A])
+  }
+
+  inline def derived[A <: Product](using
+      inline mirror: Mirror.ProductOf[A]
+  ): Read[A] =
+    ReadDerivation.derived[A]
 
   given tupleBase[H](
       using H: Read[H]
@@ -17,3 +30,11 @@ trait ReadPlatform extends LowestPriorityRead:
       T: Read[T]
   ): Read[H *: T] =
     Read.Composite(H, T, (h, t) => h *: t)
+
+  given optionalFromRead[A](using read: Read[A]): Read[Option[A]] = read.toOpt
+
+  given fromGet[A](using get: Get[A]): Read[A] = new Read.Single(get)
+
+trait LowestPriorityRead {
+  implicit def fromDerived[A](implicit ev: Derived[Read[A]]): Read[A] = ev.instance
+}
