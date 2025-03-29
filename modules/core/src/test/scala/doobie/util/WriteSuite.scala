@@ -234,6 +234,11 @@ class WriteSuite extends munit.CatsEffectSuite with WriteSuitePlatform {
       )
   }
 
+//  test("Derivation for big case class works") {
+//    import doobie.implicits.*
+//    Write.derived[Big23CaseClass].void
+//  }
+
   private def assertSuccessTypecheckWrite(connio: ConnectionIO[Analysis])(implicit loc: Location): IO[Unit] = {
     connio.transact(xa).map(_.parameterAlignmentErrors).assertEquals(Nil)
   }
