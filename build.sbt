@@ -6,7 +6,7 @@ import org.typelevel.sbt.tpolecat.{DevMode, CiMode}
 lazy val catsVersion = "2.13.0"
 lazy val catsEffectVersion = "3.5.7"
 lazy val circeVersion = "0.14.12"
-lazy val fs2Version = "3.11.0"
+lazy val fs2Version = "3.12.0"
 lazy val h2Version = "1.4.200"
 lazy val hikariVersion = "6.2.1" // N.B. Hikari v4 introduces a breaking change via slf4j v2
 lazy val kindProjectorVersion = "0.11.2"
