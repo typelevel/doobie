@@ -6,7 +6,6 @@ package doobie.postgres.enums
 
 import doobie.Meta
 import doobie.postgres.implicits.*
-import doobie.postgres.implicits.arrayOfEnum
 
 // create type myenum as enum ('foo', 'bar') <-- part of setup
 sealed trait MyEnum

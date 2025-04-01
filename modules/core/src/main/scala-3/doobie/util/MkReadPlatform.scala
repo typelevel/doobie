@@ -20,7 +20,7 @@ trait MkReadPlatform:
   ): Derived[MkRead[P]] = {
     val _ = isNotCaseObj
     val read = r.fold(identity, _.instance).map(a => m.fromProduct(i(a)))
-    new Derived(new MkRead(read))
+    Derived(new MkRead(read))
   }
 
   // Derivation base case for tuple (1-element)
@@ -28,8 +28,8 @@ trait MkReadPlatform:
       implicit H: Read[H] `OrElse` Derived[MkRead[H]]
   ): Derived[MkRead[H *: EmptyTuple]] = {
     val headInstance = H.fold(identity, _.instance)
-    new Derived(
-      new MkRead(
+    Derived(
+      MkRead(
         Read.Transform(
           headInstance,
           h => h *: EmptyTuple
@@ -46,8 +46,8 @@ trait MkReadPlatform:
     val headInstance = H.fold(identity, _.instance)
     val tailInstance = T.fold(identity, _.instance)
 
-    new Derived(
-      new MkRead(
+    Derived(
+      MkRead(
         Read.Composite(
           headInstance,
           tailInstance,

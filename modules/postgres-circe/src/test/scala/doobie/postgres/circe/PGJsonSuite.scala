@@ -25,7 +25,7 @@ class PGJsonSuite extends munit.CatsEffectSuite {
       a0 <- Update[A](s"INSERT INTO TEST VALUES (?)", None).withUniqueGeneratedKeys[A]("value")(a)
     } yield a0
 
-  def testInOut[A](col: String, a: A, t: Transactor[IO])(implicit m: Get[A], p: Put[A]): Unit = {
+  def testInOut[A](col: String, a: A, t: Transactor[IO])(implicit m: Get[A], p: Put[A]) = {
     test(s"Mapping for $col as ${m.typeStack} - write+read $col as ${m.typeStack}") {
       inOut(col, a).transact(t).attempt.assertEquals(Right(a))
     }
@@ -33,7 +33,8 @@ class PGJsonSuite extends munit.CatsEffectSuite {
       inOut[Option[A]](col, Some(a)).transact(t).attempt.assertEquals(Right(Some(a)))
     }
     test(s"Mapping for $col as ${m.typeStack} - write+read $col as Option[${m.typeStack}] (None)") {
-      inOut[Option[A]](col, None).transact(t).attempt.assertEquals(Right(None))
+      inOut[Option[A]](col, None).transact(t).attempt.assertEquals(
+        Right(None))
     }
   }
 
@@ -51,21 +52,27 @@ class PGJsonSuite extends munit.CatsEffectSuite {
 
   test("json should check ok for read") {
     import doobie.postgres.circe.json.implicits.*
-    sql"select '{}' :: json".query[Json].analysis.transact(xa).map(_.columnTypeErrors).assertEquals(Nil)
+
+    val a = sql"select '{}' :: json".query[Json].analysis.transact(xa)
+    a.map(_.columnTypeErrors).assertEquals(Nil)
   }
   test("json should check ok for write") {
     import doobie.postgres.circe.json.implicits.*
-    sql"select '{}' :: jsonb".query[Json].analysis.transact(xa).map(_.parameterTypeErrors).assertEquals(Nil)
+    val a = sql"select ${Json.obj()} :: json".query[Json].analysis.transact(xa)
+    a.map(_.parameterTypeErrors).assertEquals(Nil)
+
   }
 
   test("jsonb should check ok for read") {
     import doobie.postgres.circe.jsonb.implicits.*
-    sql"select '{}' :: jsonb".query[Json].analysis.transact(xa).map(_.columnTypeErrors).assertEquals(Nil)
+    val a = sql"select '{}' :: jsonb".query[Json].analysis.transact(xa)
+    a.map(_.columnTypeErrors).assertEquals(Nil)
   }
 
   test("jsonb should check ok for write") {
     import doobie.postgres.circe.jsonb.implicits.*
-    sql"select ${Json.obj()} :: jsonb".query[Json].analysis.transact(xa).map(_.parameterTypeErrors).assertEquals(Nil)
+    val a = sql"select ${Json.obj()} :: jsonb".query[Json].analysis.transact(xa)
+    a.map(_.parameterTypeErrors).assertEquals(Nil)
   }
 
   // Encoder / Decoders
@@ -79,10 +86,12 @@ class PGJsonSuite extends munit.CatsEffectSuite {
   }
 
   test("fooGet should check ok for read") {
-    sql"select '{}' :: json".query[Foo].analysis.transact(xa).map(_.columnTypeErrors).assertEquals(Nil)
+    val a = sql"select '{}' :: json".query[Foo].analysis.transact(xa)
+    a.map(_.columnTypeErrors).assertEquals(Nil)
   }
   test("fooPut check ok for write") {
-    sql"select ${Foo(Json.obj())} :: json".query[Foo].analysis.transact(xa).map(_.parameterTypeErrors).assertEquals(Nil)
+    val a = sql"select ${Foo(Json.obj())} :: json".query[Foo].analysis.transact(xa)
+    a.map(_.parameterTypeErrors).assertEquals(Nil)
   }
 
 }
