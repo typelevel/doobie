@@ -28,7 +28,7 @@ import org.scalacheck.effect.PropF.forAllF
 import scala.collection.compat.immutable.LazyList
 
 // Establish that we can write and read various types.
-class TypesSuite extends munit.CatsEffectSuite with munit.ScalaCheckSuite {
+class TypesSuite extends munit.CatsEffectSuite with munit.ScalaCheckEffectSuite {
   import PostgresTestTransactor.xa
 
   override def scalaCheckTestParameters: Test.Parameters = super.scalaCheckTestParameters.withMinSuccessfulTests(10)

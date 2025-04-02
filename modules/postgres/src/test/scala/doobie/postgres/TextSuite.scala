@@ -14,7 +14,7 @@ import org.scalacheck.{Gen, Test}
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.effect.PropF.forAllF
 
-class TextSuite extends munit.CatsEffectSuite with munit.ScalaCheckSuite {
+class TextSuite extends munit.CatsEffectSuite with munit.ScalaCheckEffectSuite {
   import PostgresTestTransactor.xa
   import TextSuite.*
 
