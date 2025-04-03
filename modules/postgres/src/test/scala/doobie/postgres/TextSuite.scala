@@ -76,20 +76,23 @@ class TextSuite extends munit.CatsEffectSuite with munit.ScalaCheckEffectSuite {
 
   test("copyIn should correctly insert batches of rows") {
     forAllF(genRows) { rs =>
-      (create *> insert.copyIn(rs) *> selectAll).transact(xa).assertEquals(rs)
+      (create *> insert.copyIn(rs) *> selectAll).transact(xa)
+        .assertEquals(rs)
     }
   }
 
   test("correctly insert batches of rows via Stream") {
     forAllF(genRows) { rs =>
-      (create *> insert.copyIn(Stream.emits[ConnectionIO, Row](rs), 100) *> selectAll).transact(xa).assertEquals(rs)
+      (create *> insert.copyIn(Stream.emits[ConnectionIO, Row](rs), 100) *> selectAll).transact(xa)
+        .assertEquals(rs)
     }
   }
 
   test("correctly insert batches of rows via Stream in IO") {
     forAllF(genRows) { rs =>
       val inner = (rows: Stream[ConnectionIO, Row]) => Stream.eval(create *> insert.copyIn(rows, 100) *> selectAll)
-      Stream.emits[IO, Row](rs).through(inner.transact(xa)).compile.foldMonoid.assertEquals(rs)
+      Stream.emits[IO, Row](rs).through(inner.transact(xa)).compile.foldMonoid
+        .assertEquals(rs)
     }
   }
 

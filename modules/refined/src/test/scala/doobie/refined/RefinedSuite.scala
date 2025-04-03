@@ -52,15 +52,18 @@ class RefinedSuite extends munit.CatsEffectSuite {
   }
 
   test("Query should return a refined type when conversion is possible") {
-    sql"select 123".query[PositiveInt].unique.transact(xa).void.assert
+    sql"select 123".query[PositiveInt].unique.transact(xa)
+      .assertEquals(Refined.unsafeApply[Int, Positive](123))
   }
 
   test("Query should return an Option of a refined type when query returns null-value") {
-    sql"select NULL".query[Option[PositiveInt]].unique.transact(xa).void.assert
+    sql"select NULL".query[Option[PositiveInt]].unique.transact(xa)
+      .assertEquals(None)
   }
 
-  test("Query should return an Option of a refined type when query returns a value and converion is possible") {
-    sql"select NULL".query[Option[PositiveInt]].unique.transact(xa).void.assert
+  test("Query should return an Option of a refined type when query returns a value and conversion is possible") {
+    sql"select 123".query[Option[PositiveInt]].unique.transact(xa)
+      .assertEquals(Some(Refined.unsafeApply[Int, Positive](123)))
   }
 
   test("Query should save a None of a refined type") {
@@ -82,22 +85,18 @@ class RefinedSuite extends munit.CatsEffectSuite {
   }
 
   test("Query should throw an SecondaryValidationFailed if value does not fit the refinement-type ") {
-    secondaryValidationFailedCaught_?(
-      sql"select -1".query[PositiveInt].unique.transact(xa).void.assert
-    )
+    sql"select -1".query[PositiveInt].unique.transact(xa).void
+      .intercept[SecondaryValidationFailed[?]]
   }
 
   test("Query should return a refined product-type when conversion is possible") {
-    sql"select 1, 1".query[PointInQuadrant1].unique.transact(xa).void.assert
+    sql"select 1, 1".query[PointInQuadrant1].unique.transact(xa).void
+      .assert
   }
 
   test("Query should throw an SecondaryValidationFailed if object does not fit the refinement-type ") {
-    secondaryValidationFailedCaught_?(
-      sql"select -1, 1".query[PointInQuadrant1].unique.transact(xa).void.assert
-    )
+    sql"select -1, 1".query[PointInQuadrant1].unique.transact(xa).void
+      .intercept[SecondaryValidationFailed[?]]
   }
-
-  private def secondaryValidationFailedCaught_?(query: => IO[Unit]) =
-    query.intercept[SecondaryValidationFailed[?]]
 
 }

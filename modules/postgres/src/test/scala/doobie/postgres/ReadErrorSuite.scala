@@ -28,17 +28,18 @@ class ReadErrorSuite extends munit.CatsEffectSuite {
   implicit val MyJavaEnumMeta: Meta[MyJavaEnum] = pgJavaEnum[MyJavaEnum]("myenum")
 
   test("pgEnumStringOpt") {
-    sql"select 'invalid'".query[MyEnum].unique.transact(xa).attempt.assertEquals(Left(InvalidEnum[MyEnum]("invalid")))
+    sql"select 'invalid'".query[MyEnum].unique.transact(xa).attempt
+      .assertEquals(Left(InvalidEnum[MyEnum]("invalid")))
   }
 
   test("pgEnum") {
-    sql"select 'invalid' :: myenum".query[MyScalaEnum.Value].unique.transact(xa).attempt.assertEquals(Left(
-      InvalidEnum[MyScalaEnum.Value]("invalid")))
+    sql"select 'invalid' :: myenum".query[MyScalaEnum.Value].unique.transact(xa).attempt
+      .assertEquals(Left(InvalidEnum[MyScalaEnum.Value]("invalid")))
   }
 
   test("pgJavaEnum") {
-    sql"select 'invalid' :: myenum".query[MyJavaEnum].unique.transact(xa).attempt.assertEquals(Left(
-      InvalidEnum[MyJavaEnum]("invalid")))
+    sql"select 'invalid' :: myenum".query[MyJavaEnum].unique.transact(xa).attempt
+      .assertEquals(Left(InvalidEnum[MyJavaEnum]("invalid")))
   }
 
 }
