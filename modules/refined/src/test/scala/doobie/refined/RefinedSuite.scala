@@ -53,7 +53,7 @@ class RefinedSuite extends munit.CatsEffectSuite {
 
   test("Query should return a refined type when conversion is possible") {
     sql"select 123".query[PositiveInt].unique.transact(xa)
-      .assertEquals(Refined.unsafeApply[Int, Positive](123))
+      .assertEquals(refineV[Positive].unsafeFrom(123))
   }
 
   test("Query should return an Option of a refined type when query returns null-value") {

@@ -54,8 +54,8 @@ class TypesSuite extends munit.CatsEffectSuite with munit.ScalaCheckEffectSuite 
 
   def testInOut[A](col: String, a: A)(implicit m: Get[A], p: Put[A]) = {
     test(s"Mapping for $col as ${m.typeStack} - write+read $col as ${m.typeStack}") {
-      inOut(col, a).transact(xa).attempt
-        .assertEquals(Right(a))
+      inOut(col, a).transact(xa)
+        .assertEquals(a)
     }
     test(s"Mapping for $col as ${m.typeStack} - write+read $col as Option[${m.typeStack}] (Some)") {
       inOutOpt[A](col, Some(a)).transact(xa).attempt
