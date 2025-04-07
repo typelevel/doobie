@@ -41,7 +41,6 @@ ThisBuild / crossScalaVersions := Seq(scala212Version, scala213Version, scala3Ve
 ThisBuild / developers += tlGitHubDev("tpolecat", "Rob Norris")
 ThisBuild / tpolecatDefaultOptionsMode :=
   (if (sys.env.contains("CI")) CiMode else DevMode)
-ThisBuild / tlSonatypeUseLegacyHost := false
 ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("11"))
 ThisBuild / githubWorkflowBuildPreamble ++= Seq(
   WorkflowStep.Run(

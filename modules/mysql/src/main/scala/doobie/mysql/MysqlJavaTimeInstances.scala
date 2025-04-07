@@ -18,7 +18,7 @@ import java.time.ZoneOffset
 /** Instances for JSR-310 date time types.
   *
   * Note that to ensure instants are preserved you may need to use one of the solutions described in
-  * [[https://docs.oracle.com/cd/E17952_01/connector-j-8.0-en/connector-j-time-instants.html]].
+  * [[https://docs.oracle.com/cd/E17952_01/connector-j-en/connector-j-time-instants.html]].
   *
   * OffsetTime instance is not supported as there is no semantically equivalent type on the MySQL side.
   */
