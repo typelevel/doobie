@@ -104,18 +104,28 @@ class ReadSuite extends munit.CatsEffectSuite with ReadSuitePlatform {
       insertTuple2AndCheckRead(("x", "y"), HasOptCustomGetPut1("x", Some(CustomGetPut("y_G"))))
   }
 
-  test("Read should not be derivable for case objects") {
+  test("Read should not be derivable for case objects or empty case classes") {
     val expectedDeriveError =
-      if (util.Properties.versionString.startsWith("version 2.12"))
-        "could not find implicit"
-      else
-        "Cannot derive"
+      ScalaBinaryVersion.currentVersion match {
+        case ScalaBinaryVersion.S2_12 => "could not find implicit"
+        case ScalaBinaryVersion.S2_13 => "Cannot derive"
+        case ScalaBinaryVersion.S3    => "Cannot derive"
+      }
     assert(compileErrors("Read.derived[CaseObj.type]").contains(expectedDeriveError))
-    assert(compileErrors("Read.derived[Option[CaseObj.type]]").contains(expectedDeriveError))
+    assert(compileErrors("Read.derived[ZeroFieldCaseClass]").contains(expectedDeriveError))
+
+    val expectedErrorWithAutoDerivationEnabled = ScalaBinaryVersion.currentVersion match {
+      case ScalaBinaryVersion.S2_12 => "Cannot find or construct"
+      case ScalaBinaryVersion.S2_13 => "Cannot find or construct"
+      case ScalaBinaryVersion.S3    => "Cannot derive"
+    }
 
     import doobie.implicits.*
-    assert(compileErrors("Read[CaseObj.type]").contains("not find or construct"))
-    assert(compileErrors("Read[Option[CaseObj.type]]").contains("not find or construct"))
+    assert(compileErrors("Read[CaseObj.type]").contains(expectedErrorWithAutoDerivationEnabled))
+    assert(compileErrors("Read[Option[CaseObj.type]]").contains(expectedErrorWithAutoDerivationEnabled))
+    assert(compileErrors("Read[Option[ZeroFieldCaseClass]]").contains(expectedErrorWithAutoDerivationEnabled))
+    assert(compileErrors("Read.derived[CaseObj.type]").contains(expectedDeriveError))
+    assert(compileErrors("Read.derived[ZeroFieldCaseClass]").contains(expectedDeriveError))
   }: @nowarn("msg=.*(u|U)nused import.*")
 
   test("Read should exist for Unit/Option[Unit]") {
@@ -329,6 +339,20 @@ class ReadSuite extends munit.CatsEffectSuite with ReadSuitePlatform {
           .update.run.flatMap(_ =>
             sql"SELECT c1,c2,c3,c4,c5,c6,c7,c8 from tab".query[ComplexCaseClass].analysis)
       )
+  }
+
+  test("Derivation for big case class works") {
+    Read.derived[Big30CaseClass].void
+
+    import doobie.implicits.*
+    Read.derived[Big30CaseClass].void
+  }
+
+  test("Derivation for big case class works") {
+    Read.derived[Big30CaseClass].void
+
+    import doobie.implicits.*
+    Read[Big30CaseClass].void
   }
 
   private def insertTuple3AndCheckRead[Tup <: (?, ?, ?): Write, A: Read](in: Tup, expectedOut: A)(implicit

@@ -110,19 +110,30 @@ class WriteSuite extends munit.CatsEffectSuite with WriteSuitePlatform {
       writeAndCheckTuple2(HasOptCustomGetPut1("x", Some(CustomGetPut("y"))), ("x", "y_P"))
   }
 
-  test("Write should not be derivable for case objects") {
+  test("Write should not be derivable for case objects or empty case classes") {
     val expectedDeriveError =
-      if (util.Properties.versionString.startsWith("version 2.12"))
-        "could not find implicit"
-      else
-        "Cannot derive"
+      ScalaBinaryVersion.currentVersion match {
+        case ScalaBinaryVersion.S2_12 => "could not find implicit"
+        case ScalaBinaryVersion.S2_13 => "Cannot derive"
+        case ScalaBinaryVersion.S3    => "Cannot derive"
+      }
     assert(compileErrors("Write.derived[CaseObj.type]").contains(expectedDeriveError))
-    assert(compileErrors("Write.derived[Option[CaseObj.type]]").contains(expectedDeriveError))
+    assert(compileErrors("Write.derived[ZeroFieldCaseClass]").contains(expectedDeriveError))
 
+    val expectedErrorWithAutoDerivationEnabled = ScalaBinaryVersion.currentVersion match {
+      case ScalaBinaryVersion.S2_12 => "Cannot find or construct"
+      case ScalaBinaryVersion.S2_13 => "Cannot find or construct"
+      case ScalaBinaryVersion.S3    => "Cannot derive"
+    }
     import doobie.implicits.*
-    assert(compileErrors("Write[Option[CaseObj.type]]").contains("not find or construct"))
-    assert(compileErrors("Write[CaseObj.type]").contains("not find or construct"))
+    assert(compileErrors("Write[CaseObj.type]").contains(expectedErrorWithAutoDerivationEnabled))
+    assert(compileErrors("Write[Option[CaseObj.type]]").contains(expectedErrorWithAutoDerivationEnabled))
+    assert(compileErrors("Write[Option[ZeroFieldCaseClass]]").contains(expectedErrorWithAutoDerivationEnabled))
+    assert(compileErrors("Write.derived[CaseObj.type]").contains(expectedDeriveError))
+    assert(compileErrors("Write.derived[ZeroFieldCaseClass]").contains(expectedDeriveError))
   }: @nowarn("msg=.*(u|U)nused import.*")
+
+  case class Boo(i: Int, s: CaseObj.type)
 
   test("Write should exist for Unit/Option[Unit]") {
     assertEquals(Write[Unit].length, 0)
@@ -234,6 +245,13 @@ class WriteSuite extends munit.CatsEffectSuite with WriteSuitePlatform {
       )
   }
 
+  test("Derivation for big case class works") {
+    Write.derived[Big30CaseClass].void
+
+    import doobie.implicits.*
+    Write[Big30CaseClass].void
+  }
+
   private def assertSuccessTypecheckWrite(connio: ConnectionIO[Analysis])(implicit loc: Location): IO[Unit] = {
     connio.transact(xa).map(_.parameterAlignmentErrors).assertEquals(Nil)
   }
@@ -268,5 +286,3 @@ class WriteSuite extends munit.CatsEffectSuite with WriteSuitePlatform {
   }
 
 }
-
-object WriteSuite {}

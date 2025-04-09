@@ -216,3 +216,13 @@ you can use `import doobie.implicits.javatimedrivernative._`.
 References:
 
 - [Postgres JDBC - Using Java 8 Date and Time classes](https://jdbc.postgresql.org/documentation/query/#using-java-8-date-and-time-classes)
+
+## I'm getting "Maximal number of successive inlines exceeds" error when deriving Read/Write instances!
+
+You will hit the the default Scala 3 compiler inline limit if you're deriving instances for large case classes (~30+).
+
+You can increase this limit with the `-Xmax-inlines` setting. For example in build.sbt:
+
+```
+scalacOptions ++= Seq("-Xmax-inlines", "64")
+```

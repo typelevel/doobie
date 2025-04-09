@@ -44,7 +44,7 @@ and similarly with Put:
 And find the missing instance and construct it as needed. Refer to Chapter 12
 of the book of doobie for more information.
 """)
-sealed trait Write[A] {
+trait Write[A] {
   def puts: List[(Put[?], NullabilityKnown)]
   def toList(a: A): List[Any]
   def unsafeSet(ps: PreparedStatement, startIdx: Int, a: A): Unit
@@ -75,16 +75,8 @@ sealed trait Write[A] {
   }
 }
 
-object Write extends LowerPriority1Write {
+object Write extends WritePlatform {
   def apply[A](implicit A: Write[A]): Write[A] = A
-
-  def derived[A](implicit
-      @implicitNotFound(
-        "Cannot derive Write instance. Please check that each field in the case class has a Write instance or can derive one")
-      ev: Derived[MkWrite[A]]
-  ): Write[A] = ev.instance
-
-  trait Auto extends MkWriteInstances
 
   implicit val WriteContravariantSemigroupal: ContravariantSemigroupal[Write] =
     new ContravariantSemigroupal[Write] {
@@ -171,34 +163,3 @@ object Write extends LowerPriority1Write {
     )
   }
 }
-
-trait LowerPriority1Write extends LowerPriority2Write {
-
-  implicit def optionalFromWrite[A](implicit write: Write[A]): Write[Option[A]] =
-    write.toOpt
-}
-
-trait LowerPriority2Write extends WritePlatform {
-  implicit def fromPut[A](implicit put: Put[A]): Write[A] =
-    new Write.Single(put)
-
-  implicit def fromPutOption[A](implicit put: Put[A]): Write[Option[A]] =
-    new Write.SingleOpt(put)
-}
-
-trait LowestPriorityWrite {
-  implicit def fromDerived[A](implicit ev: Derived[Write[A]]): Write[A] = ev.instance
-}
-
-final class MkWrite[A](val instance: Write[A]) extends Write[A] {
-  override def puts: List[(Put[?], NullabilityKnown)] = instance.puts
-  override def toList(a: A): List[Any] = instance.toList(a)
-  override def unsafeSet(ps: PreparedStatement, startIdx: Int, a: A): Unit = instance.unsafeSet(ps, startIdx, a)
-  override def unsafeUpdate(rs: ResultSet, startIdx: Int, a: A): Unit = instance.unsafeUpdate(rs, startIdx, a)
-  override def toOpt: Write[Option[A]] = instance.toOpt
-  override def length: Int = instance.length
-}
-
-object MkWrite extends MkWriteInstances
-
-trait MkWriteInstances extends MkWritePlatform
