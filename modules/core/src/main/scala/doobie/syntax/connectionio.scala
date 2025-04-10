@@ -14,6 +14,8 @@ import doobie.hi.{connection as IHC}
 
 class ConnectionIOOps[A](ma: ConnectionIO[A]) {
   def transact[M[_]: MonadCancelThrow](xa: Transactor[M]): M[A] = xa.trans.apply(ma)
+
+  def transactRaw[M[_]: MonadCancelThrow](xa: Transactor[M]): M[A] = xa.rawTrans.apply(ma)
 }
 
 class OptionTConnectionIOOps[A](ma: OptionT[ConnectionIO, A]) {
