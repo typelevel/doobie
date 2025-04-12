@@ -44,7 +44,7 @@ and similarly with Get:
 And find the missing instance and construct it as needed. Refer to Chapter 12
 of the book of doobie for more information.
 """)
-sealed trait Read[A] {
+trait Read[A] {
   def unsafeGet(rs: ResultSet, startIdx: Int): A
   def gets: List[(Get[?], NullabilityKnown)]
   def toOpt: Read[Option[A]]
@@ -60,17 +60,9 @@ sealed trait Read[A] {
   }
 }
 
-object Read extends LowerPriority1Read {
+object Read extends ReadPlatform {
 
   def apply[A](implicit ev: Read[A]): Read[A] = ev
-
-  def derived[A](implicit
-      @implicitNotFound(
-        "Cannot derive Read instance. Please check that each field in the case class has a Read instance or can derive one")
-      ev: Derived[MkRead[A]]
-  ): Read[A] = ev.instance.underlying
-
-  trait Auto extends MkReadInstances
 
   implicit val ReadApply: Applicative[Read] =
     new Applicative[Read] {
@@ -171,32 +163,3 @@ object Read extends LowerPriority1Read {
   }
 
 }
-
-trait LowerPriority1Read extends LowerPriority2Read {
-
-  implicit def fromReadOption[A](implicit read: Read[A]): Read[Option[A]] = read.toOpt
-
-}
-
-trait LowerPriority2Read extends ReadPlatform {
-
-  implicit def fromGet[A](implicit get: Get[A]): Read[A] = new Read.Single(get)
-
-  implicit def fromGetOption[A](implicit get: Get[A]): Read[Option[A]] = new Read.SingleOpt(get)
-
-}
-
-trait LowestPriorityRead {
-  implicit def fromDerived[A](implicit ev: Derived[Read[A]]): Read[A] = ev.instance
-}
-
-final class MkRead[A](val underlying: Read[A]) extends Read[A] {
-  override def unsafeGet(rs: ResultSet, startIdx: Int): A = underlying.unsafeGet(rs, startIdx)
-  override def gets: List[(Get[?], NullabilityKnown)] = underlying.gets
-  override def toOpt: Read[Option[A]] = underlying.toOpt
-  override def length: Int = underlying.length
-}
-
-object MkRead extends MkReadInstances
-
-trait MkReadInstances extends MkReadPlatform

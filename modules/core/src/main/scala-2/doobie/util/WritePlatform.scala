@@ -4,10 +4,34 @@
 
 package doobie.util
 
+import scala.annotation.implicitNotFound
 import shapeless.*
 import shapeless.labelled.FieldType
 
-trait WritePlatform extends LowerPriority1WritePlatform {
+trait WritePlatform extends LowerPriority1Write {
+
+  trait Auto extends MkWriteInstances
+
+  def derived[A](implicit
+      @implicitNotFound(
+        "Cannot derive Write instance. Please check that each field in the case class has a Write instance or can derive one")
+      ev: Derived[MkWrite[A]]
+  ): Write[A] = ev.instance
+}
+
+trait LowerPriority1Write extends LowerPriority2Write {
+
+  implicit def optionalFromWrite[A](implicit write: Write[A]): Write[Option[A]] =
+    write.toOpt
+}
+
+trait LowerPriority2Write extends LowerPriority3Write {
+  implicit def fromPut[A](implicit put: Put[A]): Write[A] =
+    new Write.Single(put)
+
+}
+
+trait LowerPriority3Write extends LowerPriority4Write {
 
   implicit def genericTuple[A, Repr <: HList](
       implicit
@@ -39,8 +63,7 @@ trait WritePlatform extends LowerPriority1WritePlatform {
 
 }
 
-trait LowerPriority1WritePlatform extends LowestPriorityWrite {
-
+trait LowerPriority4Write extends LowestPriorityWrite {
   implicit def product[H, T <: HList](
       implicit
       H: Write[H],
@@ -52,5 +75,8 @@ trait LowerPriority1WritePlatform extends LowestPriorityWrite {
       H: Write[H],
       T: Write[T]
   ): Write[FieldType[K, H] :: T] = MkWrite.record[K, H, T].instance
+}
 
+trait LowestPriorityWrite {
+  implicit def fromDerived[A](implicit ev: Derived[Write[A]]): Write[A] = ev.instance
 }

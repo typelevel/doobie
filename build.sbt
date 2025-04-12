@@ -36,7 +36,7 @@ ThisBuild / tlCiReleaseBranches := Seq("main") // publish snapshots on `main`
 ThisBuild / tlCiScalafmtCheck := true
 //ThisBuild / scalaVersion := scala212Version
 ThisBuild / scalaVersion := scala213Version
-//ThisBuild / scalaVersion := scala3Version
+// ThisBuild / scalaVersion := scala3Version
 ThisBuild / crossScalaVersions := Seq(scala212Version, scala213Version, scala3Version)
 ThisBuild / developers += tlGitHubDev("tpolecat", "Rob Norris")
 ThisBuild / tpolecatDefaultOptionsMode :=
@@ -107,7 +107,7 @@ lazy val compilerFlags = Seq(
   ),
   scalacOptions ++= (if (tlIsScala3.value)
                        // Handle irrefutable patterns in for comprehensions
-                       Seq("-source:future", "-language:adhocExtensions")
+                       Seq("-source:future", "-language:adhocExtensions", "-Xmax-inlines", "64")
                      else
                        Seq(
                          "-Xsource:3"
