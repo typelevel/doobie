@@ -13,6 +13,7 @@ import doobie.{ConnectionIO, Query}
 import doobie.util.analysis.{Analysis, ColumnMisalignment, ColumnTypeError, ColumnTypeWarning, NullabilityMisalignment}
 import doobie.util.fragment.Fragment
 import munit.Location
+import ReadSuite.*
 
 import scala.annotation.nowarn
 
@@ -170,34 +171,72 @@ class ReadSuite extends munit.CatsEffectSuite with ReadSuitePlatform {
   }
 
   test("Read should read correct columns for instances with Option (None) with left join between two tables") {
+
     import doobie.implicits.*
 
-    case class Foo(foo_key: Int, b: String)
-    case class Bar(bar_key: Int, d: Option[String])
+    (for {
+      _ <- sql"drop table if exists animal".update.run
+      _ <- sql"drop table if exists person".update.run
+      _ <- sql"create table animal(id int not null, name varchar not null, owner_id int)".update.run
+      _ <- sql"create table person(id int not null, name varchar)".update.run
 
-    val result: List[(Foo, Option[Bar])] = (for {
-      _ <- sql"drop table if exists foo".update.run
-      _ <- sql"drop table if exists bar".update.run
-      _ <- sql"create table foo(foo_key int, foo_value varchar not null)".update.run
-      _ <- sql"create table bar(bar_key int, foo_key int, bar_value varchar)".update.run
+      _ <- sql"insert into person values (101, 'Alice'), (102, 'Bob'), (999, NULL)".update.run
+      _ <- sql"""insert into animal values 
+             (1, 'Rex', 101), 
+             (2, 'Whiskers needs no human', NULL), 
+             (3, 'Pet whos owner is nameless', 999)
+           """.update.run
 
-      _ <- sql"insert into foo values (1, 'a'), (2, 'b'), (3, 'c')".update.run
-      _ <- sql"insert into bar values (1, 1, 'c'), (2, 2, null)".update.run
+      leftJoinWithRequiredColumns <-
+        sql"""select animal.id, animal.name, person.id, person.name 
+              from animal 
+              left join person on animal.owner_id = person.id
+              order by animal.id"""
+          .query[(Animal, Option[Person])].to[List]
+      _ = assertEquals(
+        leftJoinWithRequiredColumns,
+        List(
+          (Animal(1, "Rex"), Some(Person(101, Some("Alice")))),
+          (Animal(2, "Whiskers needs no human"), None),
+          (Animal(3, "Pet whos owner is nameless"), Some(Person(999, None)))
+        )
+      )
 
-      q <-
-        sql"select f.foo_key, f.foo_value, b.bar_key, b.bar_value from foo f left join bar b on f.foo_key = b.foo_key"
-          .query[(Foo, Option[Bar])].to[List]
-    } yield q)
+      leftJoinWithOnlyOptionalColumns <-
+        sql"""select animal.id, animal.name, person.name 
+              from animal 
+              left join person on animal.owner_id = person.id
+              order by animal.id"""
+          .query[(Animal, Option[PersonJustName])].to[List]
+
+      _ = assertEquals(
+        leftJoinWithOnlyOptionalColumns,
+        List(
+          (Animal(1, "Rex"), Some(PersonJustName(Some("Alice")))),
+          // If you fetch an Option of all optional case class, you will always get a Some
+          (Animal(2, "Whiskers needs no human"), Some(PersonJustName(None))),
+          (Animal(3, "Pet whos owner is nameless"), Some(PersonJustName(None)))
+        )
+      )
+
+      // Use custom Option instances for our case class to convert case when all fields are None
+      leftJoinWithOnlyOptionalColumnsCustom <-
+        sql"""select animal.id, animal.name, person.name 
+              from animal 
+              left join person on animal.owner_id = person.id
+              order by animal.id"""
+          .query[(Animal, Option[PersonJustNameCustomOption])].to[List]
+
+      _ = assertEquals(
+        leftJoinWithOnlyOptionalColumnsCustom,
+        List(
+          (Animal(1, "Rex"), Some(PersonJustNameCustomOption(Some("Alice")))),
+          (Animal(2, "Whiskers needs no human"), None),
+          (Animal(3, "Pet whos owner is nameless"), None)
+        )
+      )
+    } yield ())
       .transact(xa)
-      .unsafeRunSync()
-
-    assertEquals(
-      result,
-      List(
-        (Foo(1, "a"), Some(Bar(1, Some("c")))),
-        (Foo(2, "b"), Some(Bar(2, None))),
-        (Foo(3, "c"), None)
-      ))
   }
 
   test("Read should read correct columns for instances with Option (Some)") {
@@ -388,4 +427,20 @@ class ReadSuite extends munit.CatsEffectSuite with ReadSuitePlatform {
     frag.query[A].analysis.transact(xa).map(_.columnAlignmentErrors.map(_.getClass)).assertEquals(List(
       classOf[ColumnMisalignment]))
 
+}
+
+object ReadSuite {
+  case class Animal(id: Int, name: String)
+  case class Person(id: Int, name: Option[String])
+  case class PersonJustName(name: Option[String])
+  case class PersonJustNameCustomOption(name: Option[String])
+
+  object PersonJustNameCustomOption {
+    implicit val read: Read[PersonJustNameCustomOption] = Read.derived[PersonJustNameCustomOption]
+    implicit val readOption: Read[Option[PersonJustNameCustomOption]] =
+      Read.optionalFromRead[PersonJustNameCustomOption].map {
+        case Some(PersonJustNameCustomOption(None)) => None
+        case other                                  => other
+      }
+  }
 }

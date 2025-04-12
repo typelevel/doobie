@@ -20,7 +20,7 @@ trait ReadPlatform extends LowerPriority1Read {
 
   trait Auto extends MkReadInstances
 
-  implicit def fromReadOption[A](implicit read: Read[A]): Read[Option[A]] = read.toOpt
+  implicit def optionalFromRead[A](implicit read: Read[A]): Read[Option[A]] = read.toOpt
 }
 
 trait LowerPriority1Read extends LowerPriority2Read {

@@ -216,7 +216,7 @@ you can use `import doobie.implicits.javatimedrivernative._`.
 References:
 
 - [Postgres JDBC - Using Java 8 Date and Time classes](https://jdbc.postgresql.org/documentation/query/#using-java-8-date-and-time-classes)
-
+- 
 ## I'm getting "Maximal number of successive inlines exceeds" error when deriving Read/Write instances!
 
 You will hit the the default Scala 3 compiler inline limit if you're deriving instances for large case classes (~30+).
@@ -226,3 +226,32 @@ You can increase this limit with the `-Xmax-inlines` setting. For example in bui
 ```
 scalacOptions ++= Seq("-Xmax-inlines", "64")
 ```
+
+## When fetching an `Option[MyCaseClass]`, it seems to always evaluted to `Some(..)`?
+
+The reason this happens is that all your fields in the case class are `Option`s.
+
+For example, given this case class definition:
+
+```scala
+case class MyCaseClass(name: Option[String], age: Option[String])
+```
+
+How do we deal with the following result?
+
+```scala
+fr"SELECT NULL, NULL".query[Option[MyCaseClass]].toList
+```
+
+There are two possible interpretations:
+
+- `Some(MyCaseClass(None, None))`
+- `None`
+
+Doobie have to choose the first interpretation because doobie allows obtaining `Read[Option[A]]`  from `Read[A]` for *any* `A`.
+(The second interpretation requires peeking into the definition of `A`, which breaks generality)
+
+If you want the alternative interpretation, you can:
+
+- Define your own `Option[MyClaseClass]` instance, ideally in the companion object
+- Change code that's querying `Option[MyCaseClass]` to `MyCaseClass`, which remove the ambiguity.
