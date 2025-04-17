@@ -4,4 +4,13 @@
 
 package doobie.util
 
-trait PutPlatform
+import scala.compiletime.constValue
+import scala.deriving.Mirror
+
+trait PutPlatform {
+  inline final def deriveEnumString[A](using mirror: Mirror.SumOf[A]): Put[A] =
+    val _ = summonSingletonCases[mirror.MirroredElemTypes, A](constValue[mirror.MirroredLabel])
+    val labels = summonLabels[mirror.MirroredElemLabels]
+
+    Put[String].contramap(a => labels(mirror.ordinal(a)))
+}
