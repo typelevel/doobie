@@ -23,7 +23,7 @@ import doobie.util.stream.repeatEvalChunks
 import doobie.util.log.{LogEvent, LoggingInfo}
 import doobie.util.{Get, Put, Read, Write}
 import fs2.Stream
-import doobie.hi.{preparedstatement as IHPS}
+import doobie.hi.preparedstatement as IHPS
 import doobie.free.{
   callablestatement as IFCS,
   connection as IFC,

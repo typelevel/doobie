@@ -4,14 +4,14 @@
 
 package doobie.util
 
-import shapeless._
-import shapeless.record._
+import shapeless.*
+import shapeless.record.*
 import doobie.testutils.VoidExtensions
 
 import scala.annotation.nowarn
 
 trait WriteSuitePlatform { self: munit.FunSuite =>
-  import doobie.generic.auto._
+  import doobie.generic.auto.*
 
   test("Write should exist for shapeless record types") {
     type DL = (Double, Long)

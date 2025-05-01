@@ -212,7 +212,7 @@ lazy val free = project
     freeGen2Dir := (Compile / scalaSource).value / "doobie" / "free",
     freeGen2Package := "doobie.free",
     freeGen2Classes := {
-      List[Class[_]](
+      List[Class[?]](
         classOf[java.sql.NClob],
         classOf[java.sql.Blob],
         classOf[java.sql.Clob],
@@ -229,10 +229,10 @@ lazy val free = project
         classOf[java.sql.ResultSet]
       )
     },
-    freeGen2AllImportExcludes := Set[Class[_]](
-      classOf[java.util.Map[_, _]]
+    freeGen2AllImportExcludes := Set[Class[?]](
+      classOf[java.util.Map[?, ?]]
     ),
-    freeGen2KleisliInterpreterImportExcludes := Set[Class[_]](
+    freeGen2KleisliInterpreterImportExcludes := Set[Class[?]](
       classOf[java.sql.DriverPropertyInfo],
       classOf[java.io.Writer],
       classOf[java.io.OutputStream]
@@ -344,7 +344,7 @@ lazy val postgres = project
     freeGen2Dir := (Compile / scalaSource).value / "doobie" / "postgres" / "free",
     freeGen2Package := "doobie.postgres.free",
     freeGen2Classes := {
-      List[Class[_]](
+      List[Class[?]](
         classOf[org.postgresql.copy.CopyIn],
         classOf[org.postgresql.copy.CopyManager],
         classOf[org.postgresql.copy.CopyOut],
@@ -359,10 +359,10 @@ lazy val postgres = project
       classOf[org.postgresql.copy.CopyManager] -> "PGCopyManager",
       classOf[org.postgresql.copy.CopyOut] -> "PGCopyOut"
     ),
-    freeGen2AllImportExcludes := Set[Class[_]](
-      classOf[java.util.Map[_, _]]
+    freeGen2AllImportExcludes := Set[Class[?]](
+      classOf[java.util.Map[?, ?]]
     ),
-    freeGen2KleisliInterpreterImportExcludes := Set[Class[_]](
+    freeGen2KleisliInterpreterImportExcludes := Set[Class[?]](
       classOf[java.sql.Array],
       classOf[org.postgresql.copy.CopyDual]
     ),

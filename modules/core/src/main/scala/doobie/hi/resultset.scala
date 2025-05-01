@@ -14,7 +14,7 @@ import doobie.util.{Read, Write}
 import doobie.util.compat.FactoryCompat
 import doobie.util.invariant.*
 import doobie.util.stream.repeatEvalChunks
-import doobie.free.{resultset as IFRS}
+import doobie.free.resultset as IFRS
 
 import fs2.Stream
 

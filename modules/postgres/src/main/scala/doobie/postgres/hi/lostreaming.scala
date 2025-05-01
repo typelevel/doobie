@@ -8,7 +8,7 @@ import cats.syntax.functor.*
 import doobie.ConnectionIO
 import doobie.implicits.*
 import doobie.postgres.free.{largeobjectmanager as IIPFLOM, largeobject as IPFLO}
-import doobie.postgres.hi.{connection as IPHC}
+import doobie.postgres.hi.connection as IPHC
 import fs2.Stream
 import java.io.{InputStream, OutputStream}
 import org.postgresql.largeobject.LargeObject
