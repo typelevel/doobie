@@ -105,13 +105,17 @@ lazy val compilerFlags = Seq(
   scalacOptions ++= Seq(
     "-Wconf:cat=unused-nowarn:s"
   ),
-  scalacOptions ++= (if (tlIsScala3.value)
-                       // Handle irrefutable patterns in for comprehensions
-                       Seq("-source:future", "-language:adhocExtensions", "-Xmax-inlines", "64")
-                     else
-                       Seq(
-                         "-Xsource:3"
-                       ))
+  scalacOptions ++= {
+    scalaBinaryVersion.value match {
+      case "3" =>
+        // Handle irrefutable patterns in for comprehensions
+        Seq("-source:future", "-language:adhocExtensions", "-Xmax-inlines", "64")
+      case "2.13" =>
+        Seq("-Xsource:3-cross")
+      case "2.12" =>
+        Seq("-Xsource:3")
+    }
+  }
 )
 
 lazy val buildSettings = Seq(
