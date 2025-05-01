@@ -2,13 +2,13 @@
 
 ### CHANGELOG is Deprecated
 
-**doobie** now uses [GitHub Releases](https://github.com/tpolecat/doobie/releases) for release notes.
+**doobie** now uses [GitHub Releases](https://github.com/typelevel/doobie/releases) for release notes.
 
 The old log remains below for your enjoyment.
 
 ----
 
-This file summarizes **notable** changes for each release, but does not describe internal changes unless they are particularly exciting. For complete details please see the corresponding [milestones](https://github.com/tpolecat/doobie/milestones?state=closed) and their associated issues.
+This file summarizes **notable** changes for each release, but does not describe internal changes unless they are particularly exciting. For complete details please see the corresponding [milestones](https://github.com/typelevel/doobie/milestones?state=closed) and their associated issues.
 
 ### <a name="0.8.2"></a>New and Noteworthy for Version 0.8.2
 
@@ -165,7 +165,7 @@ Notable changes:
 ---
 ### <a name="0.4.4"></a>New and Noteworthy for Version 0.4.4
 
-This release fixes an [issue](https://github.com/tpolecat/doobie/pull/569) with HikariTransactor (thanks Naoki Aoyama) and supersedes the botched 0.4.3 release.
+This release fixes an [issue](https://github.com/typelevel/doobie/pull/569) with HikariTransactor (thanks Naoki Aoyama) and supersedes the botched 0.4.3 release.
 
 ---
 ### <a name="0.4.3"></a>New and Noteworthy for Version 0.4.3
@@ -347,7 +347,7 @@ Additions:
 - Added `Composite` support for `HList`; anywhere you could map a product or tuple type in 0.2.0 you can now also use a [shapeless](https://github.com/milessabin/shapeless) `HList`.
 - Added `Atom` support for `scalaz.Maybe`; anywhere you could map an `Option` type in 0.2.0 you can now also use `Maybe`.
 - Added `.optionT` method on `Query` and `Query0`.
-- Added an [example](https://github.com/tpolecat/doobie/blob/v0.2.1/example/src/main/scala/example/PostgresNotify.scala) that exposes a PostgreSQL `NOTIFY` channel as an scalaz-stream `Process`.
+- Added an [example](https://github.com/typelevel/doobie/blob/v0.2.1/example/src/main/scala/example/PostgresNotify.scala) that exposes a PostgreSQL `NOTIFY` channel as an scalaz-stream `Process`.
 
 Improvements:
 

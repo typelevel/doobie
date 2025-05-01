@@ -58,7 +58,7 @@ class FragmentSuite extends CatsEffectSuite {
     assertEquals(fr"foo ${fr0"bar $a baz"}".query[Unit].sql, "foo bar ? baz ")
   }
 
-  // https://github.com/tpolecat/doobie/issues/1186
+  // https://github.com/typelevel/doobie/issues/1186
   test("Fragment must interpolate an expression `Option(1).getOrElse(2)` properly") {
     sql"${Option(1).getOrElse(2)} ${false} ${"xx"}".void
     fr"${Option(1).getOrElse(2)}".void
