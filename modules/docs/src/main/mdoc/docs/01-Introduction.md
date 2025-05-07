@@ -14,7 +14,7 @@ This book is organized cookbook-style: we demonstrate a common task and then exp
 
 This library is designed for people who are interested in typed, pure functional programming. If you are not a [Cats](https://github.com/typelevel/cats) user or are not familiar with functional I/O and monadic effects, you may need to go slowly and may want to spend some time reading [Functional Programming in Scala](http://manning.com/bjarnason/), which introduces all of the ideas that you will find when exploring **doobie**.
 
-Having said this, if you find yourself confused or frustrated by this documentation or the **doobie** API, *please* ask a question on [Gitter](https://gitter.im/tpolecat/doobie), file an [issue](https://github.com/tpolecat/doobie/issues) and ask for help. Both the library and the documentation are young and are changing quickly, and it is inevitable that some things will be unclear. Accordingly, **this book is updated continuously** to address problems and omissions.
+Having said this, if you find yourself confused or frustrated by this documentation or the **doobie** API, *please* ask a question on [Gitter](https://gitter.im/tpolecat/doobie), file an [issue](https://github.com/typelevel/doobie/issues) and ask for help. Both the library and the documentation are young and are changing quickly, and it is inevitable that some things will be unclear. Accordingly, **this book is updated continuously** to address problems and omissions.
 
 ### The Setup
 
@@ -25,7 +25,7 @@ This book is compiled as part of the build using the [tut](https://github.com/tp
 The example code assumes a local [PostgreSQL](http://www.postgresql.org/) server with a `postgres` user with no password, [PostGIS](http://postgis.net/) extensions (optional), and the sample `world` database loaded up. If you're on a Mac you might check out the excellent [Postgres.app](http://postgresapp.com/) if you don't want to install PostgreSQL as a service. You can set up the user and sample database (and an `enum` we use in a few examples) as follows:
 
 ```
-$ curl -O https://raw.githubusercontent.com/tpolecat/doobie/series/0.7.x/world.sql
+$ curl -O https://raw.githubusercontent.com/typelevel/doobie/series/0.7.x/world.sql
 $ psql -c 'create user postgres createdb' postgres
 $ psql -c 'create database world;' -U postgres
 $ psql -c '\i world.sql' -d world -U postgres
@@ -111,4 +111,4 @@ woozle(nel) // doesn't compile
 
 ### Feedback and Contributions
 
-Feedback on **doobie** or this book is genuinely welcome. Please feel free to file a [pull request](https://github.com/tpolecat/doobie) if you have a contribution, or file an [issue](https://github.com/tpolecat/doobie/issues), or chat with us on [Gitter](https://gitter.im/tpolecat/doobie).
+Feedback on **doobie** or this book is genuinely welcome. Please feel free to file a [pull request](https://github.com/tpolecat/doobie) if you have a contribution, or file an [issue](https://github.com/typelevel/doobie/issues), or chat with us on [Gitter](https://gitter.im/tpolecat/doobie).

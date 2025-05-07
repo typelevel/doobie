@@ -140,7 +140,7 @@ object preparedstatement {
     */
   def getColumnJdbcMeta: PreparedStatementIO[List[ColumnMeta]] =
     IFPS.getMetaData.flatMap {
-      case null => IFPS.pure(Nil) // https://github.com/tpolecat/doobie/issues/262
+      case null => IFPS.pure(Nil) // https://github.com/typelevel/doobie/issues/262
       case md =>
         (1 to md.getColumnCount).toList.traverse { i =>
           for {

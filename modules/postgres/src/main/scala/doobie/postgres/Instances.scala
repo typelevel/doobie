@@ -41,7 +41,7 @@ trait Instances {
   //   org.postgresql.jdbc2.AbstractJdbc2ResultSet.getObject(AbstractJdbc2ResultSet.java:2704)
 
   // Interval Type
-  // There is no natural mapping to java.time types (https://github.com/tpolecat/doobie/pull/315)
+  // There is no natural mapping to java.time types (https://github.com/typelevel/doobie/pull/315)
   // so we provide the bare mapping and leave it at that.
   implicit val PGIntervalType: Meta[PGInterval] = Meta.Advanced.other[PGInterval]("interval")
 
@@ -206,7 +206,7 @@ trait Instances {
 
   private def enumPartialMeta(name: String): Meta[String] =
     Meta.Basic.many[String](
-      NonEmptyListOf(JdbcType.Other, JdbcType.VarChar), // https://github.com/tpolecat/doobie/issues/303
+      NonEmptyListOf(JdbcType.Other, JdbcType.VarChar), // https://github.com/typelevel/doobie/issues/303
       NonEmptyListOf(JdbcType.Other, JdbcType.VarChar),
       Nil,
       (rs, n) => rs.getString(n),

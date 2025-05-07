@@ -98,7 +98,7 @@ And running this program gives us the desired result.
 HikariApp.main(Array())
 ```
 
-A runnable example with Hikari + Postgres can be found [here](https://github.com/tpolecat/doobie/blob/main/modules/example/src/main/scala/example/HikariExample.scala)
+A runnable example with Hikari + Postgres can be found [here](https://github.com/typelevel/doobie/blob/main/modules/example/src/main/scala/example/HikariExample.scala)
 
 ### Using the JDBC DriverManager
 

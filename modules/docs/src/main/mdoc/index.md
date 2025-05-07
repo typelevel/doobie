@@ -7,7 +7,7 @@
 
 # doobie
 
-<img align="right" src="https://cdn.rawgit.com/tpolecat/doobie/series/0.5.x/doobie_logo.svg" height="150px" style="padding-left: 20px"/>
+<img align="right" src="https://cdn.rawgit.com/typelevel/doobie/series/0.5.x/doobie_logo.svg" height="150px" style="padding-left: 20px"/>
 
 [![Travis CI](https://travis-ci.org/tpolecat/doobie.svg?branch=series%2F0.5.x)](https://travis-ci.org/tpolecat/doobie)
 [![Join the chat at https://gitter.im/tpolecat/doobie](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/tpolecat/doobie?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
@@ -83,7 +83,7 @@ Note that **doobie** is pre-1.0 software and is still undergoing active developm
 
 - Behold the sparkly [**documentation**](docs/01-Introduction.html) ← start here
 - The [**Scaladoc**](https://www.javadoc.io/doc/org.tpolecat/doobie-core_$scala.binary.version$) will be handy once you get your feet wet.
-- See [**releases**](https://github.com/tpolecat/doobie/releases) for an overview of changes in this and previous versions.
+- See [**releases**](https://github.com/typelevel/doobie/releases) for an overview of changes in this and previous versions.
 - The [**Gitter Channel**](https://gitter.im/tpolecat/doobie) is a great place to chat!
 - There is a [**Scala Exercises**](https://www.scala-exercises.org/) module, courtesy of our friends at 47 Degrees!
 - There is also the [**source**](https://github.com/tpolecat/doobie). Check out the examples too.
@@ -128,7 +128,7 @@ sbt:doce> ghpagesPushSite
 ## Adopters
 
 Here's a (non-exhaustive) list of companies that use doobie in production.
-Don't see yours? [You can add it in a PR!](https://github.com/tpolecat/doobie/edit/main/modules/docs/src/main/mdoc/index.md)
+Don't see yours? [You can add it in a PR!](https://github.com/typelevel/doobie/edit/main/modules/docs/src/main/mdoc/index.md)
 
  - [Avast](https://avast.com)
  - [Banno at Jack Henry & Associates](https://banno.com/)
