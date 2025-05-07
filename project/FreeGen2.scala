@@ -9,13 +9,13 @@ import org.typelevel.sbt.gha.GenerativePlugin.autoImport.WorkflowStep
 
 object FreeGen2 {
 
-  lazy val freeGen2Classes = settingKey[List[Class[_]]]("classes for which free algebras should be generated")
+  lazy val freeGen2Classes = settingKey[List[Class[?]]]("classes for which free algebras should be generated")
   lazy val freeGen2Dir = settingKey[File]("directory where free algebras go")
   lazy val freeGen2Package = settingKey[String]("package where free algebras go")
-  lazy val freeGen2Renames = settingKey[Map[Class[_], String]]("map of imports that must be renamed")
+  lazy val freeGen2Renames = settingKey[Map[Class[?], String]]("map of imports that must be renamed")
   lazy val freeGen2AllImportExcludes =
-    settingKey[Set[Class[_]]]("Imports to exclude for the generator for all generaated files")
-  lazy val freeGen2KleisliInterpreterImportExcludes = settingKey[Set[Class[_]]](
+    settingKey[Set[Class[?]]]("Imports to exclude for the generator for all generaated files")
+  lazy val freeGen2KleisliInterpreterImportExcludes = settingKey[Set[Class[?]]](
     "Imports to exclude for the generator kleisliinterpreter.scala file (to avoid unused import warning) ")
   lazy val freeGen2 = taskKey[Seq[File]]("generate free algebras")
 
@@ -40,11 +40,11 @@ object FreeGen2 {
 }
 
 class FreeGen2(
-    managed: List[Class[_]],
+    managed: List[Class[?]],
     pkg: String,
-    renames: Map[Class[_], String],
-    allImportExcludes: Set[Class[_]],
-    kleisliImportExcludes: Set[Class[_]],
+    renames: Map[Class[?], String],
+    allImportExcludes: Set[Class[?]],
+    kleisliImportExcludes: Set[Class[?]],
     log: Logger
 ) {
 
@@ -64,7 +64,7 @@ class FreeGen2(
     t match {
       case t: GenericArrayType  => tparams(t.getGenericComponentType)
       case t: ParameterizedType => t.getActualTypeArguments.toList.flatMap(tparams)
-      case t: TypeVariable[_]   => List(t.toString)
+      case t: TypeVariable[?]   => List(t.toString)
       case _                    => Nil
     }
 
@@ -75,11 +75,11 @@ class FreeGen2(
         s"${toScalaType(t.getRawType)}${t.getActualTypeArguments.map(toScalaType).mkString("[", ", ", "]")}"
       case t: WildcardType =>
         t.getUpperBounds.toList.filterNot(_ == classOf[Object]) match {
-          case (c: Class[_]) :: Nil => s"? <: ${c.getName}"
+          case (c: Class[?]) :: Nil => s"? <: ${c.getName}"
           case Nil                  => "?"
           case cs                   => sys.error("unhandled upper bounds: " + cs.toList)
         }
-      case t: TypeVariable[_] => t.toString
+      case t: TypeVariable[?] => t.toString
       case ClassVoid          => "Unit"
       case ClassBoolean       => "Boolean"
       case ClassByte          => "Byte"
@@ -90,7 +90,7 @@ class FreeGen2(
       case ClassDouble        => "Double"
       case ClassObject        => "AnyRef"
       case ClassChar          => "Char"
-      case x: Class[_] =>
+      case x: Class[?] =>
         if (x.isArray) {
           s"Array[${toScalaType(x.getComponentType)}]"
         } else if (x.getName == "java.util.Map") {
@@ -191,7 +191,7 @@ class FreeGen2(
   }
 
   // This class, plus any superclasses and interfaces, "all the way up"
-  def closure(c: Class[_]): List[Class[_]] =
+  def closure(c: Class[?]): List[Class[?]] =
     (c :: (Option(c.getSuperclass).toList ++ c.getInterfaces.toList).flatMap(closure)).distinct
       .filterNot(_.getName == "java.lang.AutoCloseable") // not available in jdk1.6
       .filterNot(_.getName == "java.lang.Object") // we don't want .equals, etc.
@@ -202,7 +202,7 @@ class FreeGen2(
   }
 
   // All non-deprecated methods for this class and any superclasses/interfaces
-  def methods(c: Class[_]): List[Method] =
+  def methods(c: Class[?]): List[Method] =
     closure(c).flatMap(_.getDeclaredMethods.toList).distinct
       .filterNot(_.isStatic)
       .filter(_.getAnnotation(classOf[Deprecated]) == null)
@@ -216,7 +216,7 @@ class FreeGen2(
     }.sortBy(c => (c.mname, c.index))
 
   // Fully qualified rename, if any
-  def renameImport(c: Class[_]): String = {
+  def renameImport(c: Class[?]): String = {
     val origName = c.getSimpleName
     renames.get(c) match {
       case None          => s"import ${c.getName}"
@@ -224,10 +224,10 @@ class FreeGen2(
     }
   }
 
-  import scala.util.chaining._
+  import scala.util.chaining.*
 
   // All types referenced by all methods on A, superclasses, interfaces, etc.
-  def imports[A](excludeImports: Set[Class[_]])(implicit ev: ClassTag[A]): List[String] = {
+  def imports[A](excludeImports: Set[Class[?]])(implicit ev: ClassTag[A]): List[String] = {
     (renameImport(ev.runtimeClass) :: ctors.map(_.method).flatMap { m =>
       m.getReturnType :: m.getParameterTypes.toList
     }.map { t =>
@@ -434,7 +434,7 @@ class FreeGen2(
   }
 
   // Import for the IO type for a carrer type, with renaming
-  def ioImport(c: Class[_]): String = {
+  def ioImport(c: Class[?]): String = {
     val sn = c.getSimpleName
     s"import ${sn.toLowerCase}.${sn}IO"
   }
@@ -508,7 +508,7 @@ class FreeGen2(
        |""".trim.stripMargin
   }
 
-  def interpreterDef(c: Class[_]): String = {
+  def interpreterDef(c: Class[?]): String = {
     val oname = c.getSimpleName // original name, without name mapping
     val sname = toScalaType(c)
     val opname = s"${oname}Op"
@@ -618,7 +618,7 @@ class FreeGen2(
   }
 
   def gen(base: File): Seq[java.io.File] = {
-    import java.io._
+    import java.io.*
     log.info("Generating free algebras into " + base)
     val fs = managed.map { c =>
       base.mkdirs

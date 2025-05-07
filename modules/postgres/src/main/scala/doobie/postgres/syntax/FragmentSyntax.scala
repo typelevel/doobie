@@ -11,7 +11,7 @@ import cats.syntax.all.*
 import doobie.*
 import doobie.implicits.*
 import doobie.postgres.*
-import doobie.postgres.hi.{connection as IPHC}
+import doobie.postgres.hi.connection as IPHC
 import doobie.postgres.free.{copymanager as IPFCM, copyin as IPFCI}
 import fs2.*
 

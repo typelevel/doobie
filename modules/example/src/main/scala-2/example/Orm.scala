@@ -6,12 +6,12 @@ package example
 
 import cats.Show
 import cats.effect.{IO, IOApp, ExitCode}
-import cats.syntax.all._
-import doobie._, doobie.implicits._
+import cats.syntax.all.*
+import doobie.*, doobie.implicits.*
 import fs2.Stream
-import shapeless._
-import shapeless.ops.record._
-import shapeless.ops.hlist._
+import shapeless.*
+import shapeless.ops.record.*
+import shapeless.ops.hlist.*
 
 /** A super-simple ORM for super-simple data types. We assume auto-generated keys, represented externally, and columns
   * map 1:1 with fields and have the same names.
@@ -114,7 +114,7 @@ object Orm extends IOApp {
 
   val prog: ConnectionIO[String] = {
     val dn = Dao[Neighbor]
-    import dn._
+    import dn.*
     for {
       _ <- ddl
       ka <- insert(Neighbor("Alice", 42))

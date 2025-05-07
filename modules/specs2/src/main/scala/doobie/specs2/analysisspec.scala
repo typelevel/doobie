@@ -11,7 +11,7 @@ import doobie.util.query.{Query, Query0}
 import doobie.util.testing.*
 import org.specs2.mutable.Specification
 import org.specs2.specification.core.{Fragment, Fragments}
-import org.specs2.specification.create.{FormattingFragments as Format}
+import org.specs2.specification.create.FormattingFragments as Format
 import org.specs2.specification.dsl.Online.*
 import org.tpolecat.typename.*
 

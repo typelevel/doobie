@@ -16,7 +16,7 @@ import org.postgresql.geometric.*
 
 import scala.reflect.ClassTag
 
-import cats.data.NonEmptyList.{of as NonEmptyListOf}
+import cats.data.NonEmptyList.of as NonEmptyListOf
 import org.tpolecat.typename.*
 
 trait Instances {

@@ -10,7 +10,7 @@ import cats.syntax.functor.*
 import doobie.ConnectionIO
 import doobie.implicits.*
 import doobie.util.transactor.Transactor
-import doobie.hi.{connection as IHC}
+import doobie.hi.connection as IHC
 
 class ConnectionIOOps[A](ma: ConnectionIO[A]) {
   def transact[M[_]: MonadCancelThrow](xa: Transactor[M]): M[A] = xa.trans.apply(ma)

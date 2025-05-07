@@ -12,7 +12,7 @@ import org.postgresql.PGNotification
 import scala.concurrent.duration.*
 
 class NotifySuite extends munit.CatsEffectSuite {
-  import FC.{commit}
+  import FC.commit
   import PostgresTestTransactor.xa
 
   // Listen on the given channel, notify on another connection

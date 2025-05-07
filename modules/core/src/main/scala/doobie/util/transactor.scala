@@ -11,7 +11,7 @@ import doobie.implicits.*
 import doobie.util.lens.*
 import doobie.util.log.LogHandler
 import doobie.util.yolo.Yolo
-import doobie.free.{connection as IFC}
+import doobie.free.connection as IFC
 import cats.{Monad, ~>}
 import cats.data.Kleisli
 import cats.effect.kernel.{Async, MonadCancelThrow, Resource}

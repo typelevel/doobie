@@ -5,7 +5,7 @@
 package doobie.util
 
 import doobie.util.log.{Parameters, ProcessingFailure, Success}
-import shapeless._
+import shapeless.*
 
 trait QueryLogSuitePlatform { self: QueryLogSuite =>
 

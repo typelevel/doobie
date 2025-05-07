@@ -5,7 +5,7 @@
 package doobie.postgres.hi
 
 import org.postgresql.PGNotification
-import doobie.postgres.free.{pgconnection as IPFPC}
+import doobie.postgres.free.pgconnection as IPFPC
 
 object pgconnection {
 

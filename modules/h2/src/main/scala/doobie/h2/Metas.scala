@@ -10,7 +10,7 @@ import java.util.UUID
 
 import scala.Predef.*
 import scala.reflect.ClassTag
-import cats.data.NonEmptyList.{of as NonEmptyListOf}
+import cats.data.NonEmptyList.of as NonEmptyListOf
 import doobie.util.meta.Meta
 
 trait Instances {

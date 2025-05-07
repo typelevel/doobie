@@ -11,7 +11,7 @@ import shapeless.record.*
 import scala.annotation.nowarn
 
 trait ReadSuitePlatform { self: munit.FunSuite =>
-  import doobie.generic.auto._
+  import doobie.generic.auto.*
 
   test("Read should exist for shapeless record types") {
     type DL = (Double, Long) // used below
