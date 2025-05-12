@@ -7,7 +7,7 @@ package example
 import cats.effect.IO
 import doobie.scalatest.IOChecker
 import doobie.util.transactor.Transactor
-import org.scalatest._
+import org.scalatest.*
 
 class AnalysisTestScalaTest extends funsuite.AnyFunSuite with matchers.must.Matchers with IOChecker {
 

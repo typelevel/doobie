@@ -4,7 +4,7 @@
 
 package doobie.util
 
-import java.{util as ju}
+import java.util as ju
 import scala.collection.mutable
 import scala.collection.immutable.Map
 import scala.jdk.CollectionConverters.*

@@ -18,7 +18,7 @@ trait PosPlatform {
 object PosPlatform {
 
   class PosMacros(val c: blackbox.Context) {
-    import c.universe._
+    import c.universe.*
     def instance_impl: Tree = {
       val file = c.enclosingPosition.source.path
       val line = c.enclosingPosition.line
