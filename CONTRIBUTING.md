@@ -39,7 +39,7 @@ We recommend instead to use alias the imports like `doobie.hi.{connection => IHC
 
 ### Snapshots
 
-doobie uses [sbt-ci-release](https://github.com/olafurpg/sbt-ci-release) which means all merges to `master` are pushed to Sonatype as snapshots and there's nothing to do.
+doobie uses [sbt-ci-release](https://github.com/sbt/sbt-ci-release) which means all merges to `master` are pushed to Sonatype as snapshots and there's nothing to do.
 
 ### Releases
 
