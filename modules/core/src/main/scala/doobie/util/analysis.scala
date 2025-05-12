@@ -88,7 +88,7 @@ object analysis {
   ) extends AlignmentError {
     override val tag = "C"
     override def msg = this match {
-      // https://github.com/tpolecat/doobie/issues/164 ... NoNulls means "maybe no nulls"  :-\
+      // https://github.com/typelevel/doobie/issues/164 ... NoNulls means "maybe no nulls"  :-\
       // case NullabilityMisalignment(i, name, st, NoNulls, Nullable) =>
       //   s"""Non-nullable column ${name.toUpperCase} is unnecessarily mapped to an Option type."""
       case NullabilityMisalignment(_, _, st, Nullable, NoNulls) =>
