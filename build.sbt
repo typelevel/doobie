@@ -28,7 +28,7 @@ lazy val scala3Version = "3.3.6"
 // scala-steward:off
 lazy val slf4jVersion = "1.7.36"
 // scala-steward:on
-lazy val weaverVersion = "0.8.4"
+lazy val weaverVersion = "0.9.0"
 
 // Basic versioning and publishing stuff
 ThisBuild / tlBaseVersion := "1.0"
@@ -495,7 +495,7 @@ lazy val weaver = project
     description := "Weaver support for doobie.",
     testFrameworks += new TestFramework("weaver.framework.CatsEffect"),
     libraryDependencies ++= Seq(
-      "com.disneystreaming" %% "weaver-cats" % weaverVersion,
+      "org.typelevel" %% "weaver-cats" % weaverVersion,
       "com.h2database" % "h2" % h2Version % "test"
     )
   )
