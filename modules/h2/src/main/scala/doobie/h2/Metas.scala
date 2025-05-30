@@ -20,7 +20,7 @@ trait Instances {
       NonEmptyListOf(JdbcType.Binary),
       NonEmptyListOf("uuid", "UUID"),
       _.getObject(_) match {
-        case null => null
+        case null    => null
         case uuidObj =>
           try uuidObj.asInstanceOf[UUID]
           catch {

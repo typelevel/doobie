@@ -67,10 +67,10 @@ object pretty {
     @tailrec
     def go(ws: List[String], accum: List[String]): List[String] =
       ws match {
-        case Nil => accum.reverse
+        case Nil     => accum.reverse
         case w :: ws =>
           accum match {
-            case Nil => go(ws, List(w))
+            case Nil     => go(ws, List(w))
             case l :: ls =>
               val l0 = l + " " + w
               if (l0.length > cols) go(ws, w :: accum)
