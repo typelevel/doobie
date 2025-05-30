@@ -70,7 +70,7 @@ class FreeGen2(
 
   def toScalaType(t: Type): String =
     t match {
-      case t: GenericArrayType => s"Array[${toScalaType(t.getGenericComponentType)}]"
+      case t: GenericArrayType  => s"Array[${toScalaType(t.getGenericComponentType)}]"
       case t: ParameterizedType =>
         s"${toScalaType(t.getRawType)}${t.getActualTypeArguments.map(toScalaType).mkString("[", ", ", "]")}"
       case t: WildcardType =>
@@ -90,7 +90,7 @@ class FreeGen2(
       case ClassDouble        => "Double"
       case ClassObject        => "AnyRef"
       case ClassChar          => "Char"
-      case x: Class[?] =>
+      case x: Class[?]        =>
         if (x.isArray) {
           s"Array[${toScalaType(x.getComponentType)}]"
         } else if (x.getName == "java.util.Map") {

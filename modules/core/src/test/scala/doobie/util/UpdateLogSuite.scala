@@ -97,7 +97,7 @@ class UpdateLogSuite extends munit.FunSuite {
     val ev = successEventForCIO(cio)
     assertEquals(ev.sql, "INSERT INTO foo VALUES (?, ?)")
     ev.params match {
-      case NonBatch(_) => fail("Expect batched params")
+      case NonBatch(_)                     => fail("Expect batched params")
       case Parameters.Batch(paramsAsLists) =>
         assertEquals(paramsAsLists(), List(List(1, 2), List(3, 4), List(5, 6)))
     }

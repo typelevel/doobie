@@ -49,7 +49,7 @@ object TransactionIsolation {
     Eq.by(_.toInt)
 
   implicit val TransactionIsolationShow: Show[TransactionIsolation] = {
-    case TransactionIsolation.TransactionNone => "TRANSACTION_NONE"
+    case TransactionIsolation.TransactionNone            => "TRANSACTION_NONE"
     case TransactionIsolation.TransactionReadUncommitted =>
       "TRANSACTION_READ_UNCOMMITTED"
     case TransactionIsolation.TransactionReadCommitted =>

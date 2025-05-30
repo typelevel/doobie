@@ -141,7 +141,7 @@ object preparedstatement {
   def getColumnJdbcMeta: PreparedStatementIO[List[ColumnMeta]] =
     IFPS.getMetaData.flatMap {
       case null => IFPS.pure(Nil) // https://github.com/typelevel/doobie/issues/262
-      case md =>
+      case md   =>
         (1 to md.getColumnCount).toList.traverse { i =>
           for {
             n <- ColumnNullable.fromIntF[PreparedStatementIO](md.isNullable(i))
