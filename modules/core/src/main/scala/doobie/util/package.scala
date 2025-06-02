@@ -19,7 +19,7 @@ package object util {
     var i = 0
     while (i < arr.length) {
       arr(i) match {
-        case None => return None
+        case None        => return None
         case Some(value) =>
           result(i) = value
           i += 1

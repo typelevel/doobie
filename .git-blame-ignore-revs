@@ -6,3 +6,6 @@ f6e03013f4c4a29074f528ac468129bdd2df63d3
 
 # Upgrade to scalafmt 3.8.6
 1c373a90e8fd788b666b037150e8912427708726
+
+# Scala Steward: Reformat with scalafmt 3.9.7
+e8f8b02a39c815c7084df4437cf7431ed6da330d
