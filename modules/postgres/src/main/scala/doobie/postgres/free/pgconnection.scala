@@ -20,6 +20,7 @@ import java.sql.{ Array as SqlArray }
 import org.postgresql.PGConnection
 import org.postgresql.PGNotification
 import org.postgresql.copy.{ CopyManager as PGCopyManager }
+import org.postgresql.fastpath.Fastpath
 import org.postgresql.jdbc.AutoSave
 import org.postgresql.jdbc.PreferQueryMode
 import org.postgresql.largeobject.LargeObjectManager
@@ -81,6 +82,7 @@ object pgconnection { module =>
       def getBackendPID: F[Int]
       def getCopyAPI: F[PGCopyManager]
       def getDefaultFetchSize: F[Int]
+      def getFastpathAPI: F[Fastpath]
       def getLargeObjectAPI: F[LargeObjectManager]
       def getNotifications: F[Array[PGNotification]]
       def getNotifications(a: Int): F[Array[PGNotification]]
@@ -180,6 +182,9 @@ object pgconnection { module =>
     case object GetDefaultFetchSize extends PGConnectionOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getDefaultFetchSize
     }
+    case object GetFastpathAPI extends PGConnectionOp[Fastpath] {
+      def visit[F[_]](v: Visitor[F]) = v.getFastpathAPI
+    }
     case object GetLargeObjectAPI extends PGConnectionOp[LargeObjectManager] {
       def visit[F[_]](v: Visitor[F]) = v.getLargeObjectAPI
     }
@@ -255,6 +260,7 @@ object pgconnection { module =>
   val getBackendPID: PGConnectionIO[Int] = FF.liftF(GetBackendPID)
   val getCopyAPI: PGConnectionIO[PGCopyManager] = FF.liftF(GetCopyAPI)
   val getDefaultFetchSize: PGConnectionIO[Int] = FF.liftF(GetDefaultFetchSize)
+  val getFastpathAPI: PGConnectionIO[Fastpath] = FF.liftF(GetFastpathAPI)
   val getLargeObjectAPI: PGConnectionIO[LargeObjectManager] = FF.liftF(GetLargeObjectAPI)
   val getNotifications: PGConnectionIO[Array[PGNotification]] = FF.liftF(GetNotifications)
   def getNotifications(a: Int): PGConnectionIO[Array[PGNotification]] = FF.liftF(GetNotifications1(a))

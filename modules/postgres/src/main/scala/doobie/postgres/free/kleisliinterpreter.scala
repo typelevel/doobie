@@ -28,6 +28,7 @@ import org.postgresql.PGNotification
 import org.postgresql.copy.{ CopyIn as PGCopyIn }
 import org.postgresql.copy.{ CopyManager as PGCopyManager }
 import org.postgresql.copy.{ CopyOut as PGCopyOut }
+import org.postgresql.fastpath.Fastpath
 import org.postgresql.jdbc.AutoSave
 import org.postgresql.jdbc.PreferQueryMode
 import org.postgresql.largeobject.LargeObject
@@ -354,6 +355,7 @@ class KleisliInterpreter[M[_]](logHandler: LogHandler[M])(implicit val asyncM: W
     override def getBackendPID: Kleisli[M, PGConnection, Int] = primitive(_.getBackendPID)
     override def getCopyAPI: Kleisli[M, PGConnection, PGCopyManager] = primitive(_.getCopyAPI)
     override def getDefaultFetchSize: Kleisli[M, PGConnection, Int] = primitive(_.getDefaultFetchSize)
+    override def getFastpathAPI: Kleisli[M, PGConnection, Fastpath] = primitive(_.getFastpathAPI)
     override def getLargeObjectAPI: Kleisli[M, PGConnection, LargeObjectManager] = primitive(_.getLargeObjectAPI)
     override def getNotifications: Kleisli[M, PGConnection, Array[PGNotification]] = primitive(_.getNotifications)
     override def getNotifications(a: Int) = primitive(_.getNotifications(a))
