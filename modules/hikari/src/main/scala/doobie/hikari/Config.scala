@@ -14,7 +14,6 @@ import com.zaxxer.hikari.metrics.MetricsTrackerFactory
 import doobie.enumerated.TransactionIsolation
 import javax.sql.DataSource
 
-import scala.annotation.nowarn
 import scala.concurrent.duration.Duration
 
 /** Configuration case class, susceptible to PureConfig. Helps with creating `com.zaxxer.hikari.HikariConfig`, which in
