@@ -19,9 +19,9 @@ class beforeall extends Specification with IOChecker with BeforeAll {
   import cats.effect.unsafe.implicits.global
 
   // Setup
-  val initQ = sql"create table some_table (value varchar not null)".update
+  val initQ = sql"create table some_table (test_value varchar not null)".update
 
-  val targetQ = sql"select value from some_table".query[String]
+  val targetQ = sql"select test_value from some_table".query[String]
 
   val transactor: Transactor[IO] = Transactor.fromDriverManager[IO](
     driver = "org.h2.Driver",
