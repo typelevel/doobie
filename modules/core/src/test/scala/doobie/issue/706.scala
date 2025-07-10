@@ -24,7 +24,7 @@ class `706` extends munit.ScalaCheckSuite {
   )
 
   val setup: ConnectionIO[Unit] =
-    sql"CREATE TABLE IF NOT EXISTS test (value INTEGER)".update.run.void
+    sql"CREATE TABLE IF NOT EXISTS test (test_value INTEGER)".update.run.void
 
   def insert[F[_]: Foldable, A: Write](as: F[A]): ConnectionIO[Int] =
     Update[A]("INSERT INTO test VALUES (?)").updateMany(as)
