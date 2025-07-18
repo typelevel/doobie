@@ -52,12 +52,7 @@ class H2JsonSuite extends CatsEffectSuite {
 
   test("json should check ok for write") {
     import doobie.h2.circe.json.implicits.*
-    sql"SELECT ${Json.obj()} FORMAT JSON"
-      .query[Json]
-      .analysis
-      .transact(xa)
-      .map(_.parameterTypeErrors)
-      .assertEquals(Nil)
+    sql"SELECT ${Json.obj()} FORMAT JSON".query[Json].analysis.transact(xa).map(_.parameterTypeErrors).assertEquals(Nil)
   }
 
   // Encoder / Decoders
