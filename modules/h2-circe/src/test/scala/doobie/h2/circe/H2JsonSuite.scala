@@ -22,8 +22,8 @@ class H2JsonSuite extends CatsEffectSuite {
 
   def inOut[A: Write: Read](col: String, a: A) =
     for {
-      _ <- Update0(s"CREATE TEMPORARY TABLE TEST (value $col)", None).run
-      a0 <- Update[A](s"INSERT INTO TEST VALUES (?)", None).withUniqueGeneratedKeys[A]("value")(a)
+      _ <- Update0(s"CREATE TEMPORARY TABLE TEST (test_value $col)", None).run
+      a0 <- Update[A](s"INSERT INTO TEST VALUES (?)", None).withUniqueGeneratedKeys[A]("test_value")(a)
     } yield a0
 
   def testInOut[A](col: String, a: A, t: Transactor[IO])(implicit m: Get[A], p: Put[A]) = {
