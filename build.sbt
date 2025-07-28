@@ -4,11 +4,11 @@ import org.typelevel.sbt.tpolecat.{DevMode, CiMode}
 
 // Library versions all in one place, for convenience and sanity.
 lazy val catsVersion = "2.13.0"
-lazy val catsEffectVersion = "3.6.2"
+lazy val catsEffectVersion = "3.6.3"
 lazy val circeVersion = "0.14.14"
 lazy val fs2Version = "3.12.0"
 lazy val h2Version = "2.1.210"
-lazy val hikariVersion = "6.3.0" // N.B. Hikari v4 introduces a breaking change via slf4j v2
+lazy val hikariVersion = "6.3.2" // N.B. Hikari v4 introduces a breaking change via slf4j v2
 lazy val kindProjectorVersion = "0.11.2"
 lazy val mysqlVersion = "9.3.0"
 lazy val log4catsVersion = "2.7.1"
@@ -28,7 +28,7 @@ lazy val scala3Version = "3.3.6"
 // scala-steward:off
 lazy val slf4jVersion = "1.7.36"
 // scala-steward:on
-lazy val weaverVersion = "0.9.2"
+lazy val weaverVersion = "0.9.3"
 
 // Basic versioning and publishing stuff
 ThisBuild / tlBaseVersion := "1.0"
