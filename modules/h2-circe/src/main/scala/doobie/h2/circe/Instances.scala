@@ -24,7 +24,7 @@ object Instances {
         jdbcTarget = JdbcType.VarChar,
         put = (ps, n, a) => ps.setBytes(n, a),
         update = (rs, n, a) => rs.updateBytes(n, a),
-        checkedVendorType = Some("VARCHAR")
+        checkedVendorType = Some("CHARACTER VARYING")
       )
         .tcontramap { a =>
           a.noSpaces.getBytes(UTF_8)
