@@ -75,6 +75,19 @@ class PGJsonSuite extends munit.CatsEffectSuite {
     a.map(_.parameterTypeErrors).assertEquals(Nil)
   }
 
+  test("array[jsonb] should check ok for read") {
+    import doobie.postgres.circe.jsonb.implicits.*
+    val a = sql"""select ARRAY['{"a":1}', '{"b":2}']::jsonb[]""".query[Array[Json]].analysis.transact(xa)
+    a.map(_.columnTypeErrors).assertEquals(Nil)
+  }
+
+  test("array[jsonb] should check ok for write") {
+    import doobie.postgres.circe.jsonb.implicits.*
+    val arr = Array(Json.obj("a" -> Json.fromInt(1)), Json.obj("b" -> Json.fromInt(2)))
+    val a = sql"select ${arr} :: jsonb[]".query[Array[Json]].analysis.transact(xa)
+    a.map(_.parameterTypeErrors).assertEquals(Nil)
+  }
+
   // Encoder / Decoders
   private case class Foo(x: Json)
   private object Foo {
