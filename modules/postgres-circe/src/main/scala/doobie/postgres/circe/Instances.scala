@@ -35,12 +35,18 @@ object Instances {
         parse(a.getValue).leftMap(_.show))
 
     implicit val arrayJsonGet: Get[Array[Json]] =
-      Get.Advanced.array[PGobject](NonEmptyList.of("jsonb[]", "_jsonb"))
-        .map(_.map(pgObj => parse(pgObj.getValue).fold(throw _, identity)))
+      Get.Advanced.array[String](NonEmptyList.of("jsonb[]", "_jsonb"))
+        .map(_.map(jsonStr => parse(jsonStr).fold(throw _, identity)))
 
     implicit val arrayJsonPut: Put[Array[Json]] =
       Put.Advanced.array[String](NonEmptyList.of("jsonb", "jsonb[]", "json[]", "_jsonb"), "jsonb")
         .tcontramap(_.map(_.noSpaces))
+
+    implicit val listJsonGet: Get[List[Json]] =
+      arrayJsonGet.map(_.toList)
+
+    implicit val listJsonPut: Put[List[Json]] =
+      arrayJsonPut.contramap(_.toArray)
 
     def pgEncoderPutT[A: Encoder]: Put[A] =
       Put[Json].tcontramap(_.asJson)

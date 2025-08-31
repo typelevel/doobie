@@ -48,6 +48,11 @@ class PGJsonSuite extends munit.CatsEffectSuite {
     testInOut("jsonb", Json.obj("something" -> Json.fromString("Yellow")), xa)
   }
 
+  {
+    import doobie.postgres.circe.jsonb.implicits.*
+    testInOut("jsonb[]", List(Json.obj("a" -> Json.fromInt(1)), Json.obj("b" -> Json.fromInt(2))), xa)
+  }
+
   // Explicit Type Checks
 
   test("json should check ok for read") {
