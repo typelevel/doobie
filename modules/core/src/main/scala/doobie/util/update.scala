@@ -46,8 +46,8 @@ object update {
       */
     val sql: String
 
-    /** An optional `[[Pos]]` indicating the source location where this `[[Update]]` was constructed. This is used only
-      * for diagnostic purposes.
+    /** An optional [[Pos]] indicating the source location where this [[Update]] was constructed. This is used only for
+      * diagnostic purposes.
       * @group Diagnostics
       */
     val pos: Option[Pos]
@@ -230,7 +230,7 @@ object update {
         val label: String = u.label
       }
 
-    /** Apply an argument, yielding a residual `[[Update0]]`.
+    /** Apply an argument, yielding a residual [[Update0]].
       * @group Transformations
       */
     def toUpdate0(a: A): Update0 =
@@ -297,8 +297,8 @@ object update {
       */
     val sql: String
 
-    /** An optional `[[Pos]]` indicating the source location where this `[[Query]]` was constructed. This is used only
-      * for diagnostic purposes.
+    /** An optional [[Pos]] indicating the source location where this [[Update0]] was constructed. This is used only for
+      * diagnostic purposes.
       * @group Diagnostics
       */
     val pos: Option[Pos]

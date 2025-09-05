@@ -27,7 +27,7 @@ object query {
   val DefaultChunkSize = 512
 
   /** A query parameterized by some input type `A` yielding values of type `B`. We define here the core operations that
-    * are needed. Additional operations are provided on `[[Query0]]` which is the residual query after applying an `A`.
+    * are needed. Additional operations are provided on [[Query0]] which is the residual query after applying an `A`.
     * This is the type constructed by the `sql` interpolator.
     */
   trait Query[A, B] { outer =>
@@ -40,8 +40,8 @@ object query {
       */
     def sql: String
 
-    /** An optional `[[Pos]]` indicating the source location where this `[[Query]]` was constructed. This is used only
-      * for diagnostic purposes.
+    /** An optional [[Pos]] indicating the source location where this [[Query]] was constructed. This is used only for
+      * diagnostic purposes.
       * @group Diagnostics
       */
     def pos: Option[Pos]
@@ -74,7 +74,7 @@ object query {
       f(sql, IHPS.set(a))
 
     /** Apply the argument `a` to construct a `Stream` with the given chunking factor, with effect type
-      * `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding elements of type `B`.
+      * [[doobie.free.connection.ConnectionIO ConnectionIO]] yielding elements of type `B`.
       * @group Results
       */
     def streamWithChunkSize(a: A, chunkSize: Int): Stream[ConnectionIO, B] =
@@ -91,13 +91,13 @@ object query {
       )
 
     /** Apply the argument `a` to construct a `Stream` with `DefaultChunkSize`, with effect type
-      * `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding elements of type `B`.
+      * [[doobie.free.connection.ConnectionIO ConnectionIO]] yielding elements of type `B`.
       * @group Results
       */
     def stream(a: A): Stream[ConnectionIO, B] =
       streamWithChunkSize(a, DefaultChunkSize)
 
-    /** Apply the argument `a` to construct a program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding
+    /** Apply the argument `a` to construct a program in [[doobie.free.connection.ConnectionIO ConnectionIO]] yielding
       * an `F[B]` accumulated via the provided `CanBuildFrom`. This is the fastest way to accumulate a collection.
       * @group Results
       */
@@ -114,7 +114,7 @@ object query {
       toConnectionIOAlteringExecution(a, IHRS.build[F, B], fn)
     }
 
-    /** Apply the argument `a` to construct a program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding
+    /** Apply the argument `a` to construct a program in [[doobie.free.connection.ConnectionIO ConnectionIO]] yielding
       * an `Map[(K, V)]` accumulated via the provided `CanBuildFrom`. This is the fastest way to accumulate a
       * collection. this function can call only when B is (K, V).
       * @group Results
@@ -133,7 +133,7 @@ object query {
     ): ConnectionIO[Map[K, V]] =
       toConnectionIOAlteringExecution(a, IHRS.buildPair[Map, K, V](using f, read.map(ev)), fn)
 
-    /** Apply the argument `a` to construct a program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding
+    /** Apply the argument `a` to construct a program in [[doobie.free.connection.ConnectionIO ConnectionIO]] yielding
       * an `F[B]` accumulated via `MonadPlus` append. This method is more general but less efficient than `to`.
       * @group Results
       */
@@ -148,8 +148,8 @@ object query {
     ): ConnectionIO[F[B]] =
       toConnectionIOAlteringExecution(a, IHRS.accumulate[F, B], fn)
 
-    /** Apply the argument `a` to construct a program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding
-      * a unique `B` and raising an exception if the resultset does not have exactly one row. See also `option`.
+    /** Apply the argument `a` to construct a program in [[doobie.free.connection.ConnectionIO ConnectionIO]] yielding a
+      * unique `B` and raising an exception if the resultset does not have exactly one row. See also `option`.
       * @group Results
       */
     def unique(a: A): ConnectionIO[B] =
@@ -160,7 +160,7 @@ object query {
     def uniqueAlteringExecution(a: A, fn: PreparedExecution[B] => PreparedExecution[B]): ConnectionIO[B] =
       toConnectionIOAlteringExecution(a, IHRS.getUnique[B], fn)
 
-    /** Apply the argument `a` to construct a program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding
+    /** Apply the argument `a` to construct a program in [[doobie.free.connection.ConnectionIO ConnectionIO]] yielding
       * an optional `B` and raising an exception if the resultset has more than one row. See also `unique`.
       * @group Results
       */
@@ -175,7 +175,7 @@ object query {
     ): ConnectionIO[Option[B]] =
       toConnectionIOAlteringExecution(a, IHRS.getOption[B], fn)
 
-    /** Apply the argument `a` to construct a program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding
+    /** Apply the argument `a` to construct a program in [[doobie.free.connection.ConnectionIO ConnectionIO]] yielding
       * an `NonEmptyList[B]` and raising an exception if the resultset does not have at least one row. See also
       * `unique`.
       * @group Results
@@ -236,7 +236,7 @@ object query {
         val label: String = outer.label
       }
 
-    /** Apply an argument, yielding a residual `[[Query0]]`.
+    /** Apply an argument, yielding a residual [[Query0]].
       * @group Transformations
       */
     def toQuery0(a: A): Query0[B] =
@@ -331,7 +331,7 @@ object query {
   }
 
   /** An abstract query closed over its input arguments and yielding values of type `B`, without a specified
-    * disposition. Methods provided on `[[Query0]]` allow the query to be interpreted as a stream or program in
+    * disposition. Methods provided on [[Query0]] allow the query to be interpreted as a stream or program in
     * `CollectionIO`.
     */
   trait Query0[B] { outer =>
@@ -367,21 +367,21 @@ object query {
       */
     def outputAnalysis: ConnectionIO[Analysis]
 
-    /** `Stream` with default chunk factor, with effect type `[[doobie.free.connection.ConnectionIO ConnectionIO]]`
+    /** `Stream` with default chunk factor, with effect type [[doobie.free.connection.ConnectionIO ConnectionIO]]
       * yielding elements of type `B`.
       * @group Results
       */
     def stream: Stream[ConnectionIO, B] =
       streamWithChunkSize(DefaultChunkSize)
 
-    /** `Stream` with given chunk factor, with effect type `[[doobie.free.connection.ConnectionIO ConnectionIO]]`
-      * yielding elements of type `B`.
+    /** `Stream` with given chunk factor, with effect type [[doobie.free.connection.ConnectionIO ConnectionIO]] yielding
+      * elements of type `B`.
       * @group Results
       */
     def streamWithChunkSize(n: Int): Stream[ConnectionIO, B]
 
-    /** Program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding an `F[B]` accumulated via the
-      * provided `CanBuildFrom`. This is the fastest way to accumulate a collection.
+    /** Program in [[doobie.free.connection.ConnectionIO ConnectionIO]] yielding an `F[B]` accumulated via the provided
+      * `CanBuildFrom`. This is the fastest way to accumulate a collection.
       * @group Results
       */
     def to[F[_]](implicit f: FactoryCompat[B, F[B]]): ConnectionIO[F[B]]
@@ -390,7 +390,7 @@ object query {
         fn: PreparedExecution[F[B]] => PreparedExecution[F[B]]
     )(implicit f: FactoryCompat[B, F[B]]): ConnectionIO[F[B]]
 
-    /** Apply the argument `a` to construct a program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding
+    /** Apply the argument `a` to construct a program in [[doobie.free.connection.ConnectionIO ConnectionIO]] yielding
       * an `Map[(K, V)]` accumulated via the provided `CanBuildFrom`. This is the fastest way to accumulate a
       * collection. this function can call only when B is (K, V).
       * @group Results
@@ -404,7 +404,7 @@ object query {
         f: FactoryCompat[(K, V), Map[K, V]]
     ): ConnectionIO[Map[K, V]]
 
-    /** Program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding an `F[B]` accumulated via `MonadPlus`
+    /** Program in [[doobie.free.connection.ConnectionIO ConnectionIO]] yielding an `F[B]` accumulated via `MonadPlus`
       * append. This method is more general but less efficient than `to`.
       * @group Results
       */
@@ -414,7 +414,7 @@ object query {
         fn: PreparedExecution[F[B]] => PreparedExecution[F[B]]
     ): ConnectionIO[F[B]]
 
-    /** Program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding a unique `B` and raising an exception
+    /** Program in [[doobie.free.connection.ConnectionIO ConnectionIO]] yielding a unique `B` and raising an exception
       * if the resultset does not have exactly one row. See also `option`.
       * @group Results
       */
@@ -422,7 +422,7 @@ object query {
 
     def uniqueAlteringExecution(fn: PreparedExecution[B] => PreparedExecution[B]): ConnectionIO[B]
 
-    /** Program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding an optional `B` and raising an
+    /** Program in [[doobie.free.connection.ConnectionIO ConnectionIO]] yielding an optional `B` and raising an
       * exception if the resultset has more than one row. See also `unique`.
       * @group Results
       */
@@ -432,7 +432,7 @@ object query {
         fn: PreparedExecution[Option[B]] => PreparedExecution[Option[B]]
     ): ConnectionIO[Option[B]]
 
-    /** Program in `[[doobie.free.connection.ConnectionIO ConnectionIO]]` yielding a `NonEmptyList[B]` and raising an
+    /** Program in [[doobie.free.connection.ConnectionIO ConnectionIO]] yielding a `NonEmptyList[B]` and raising an
       * exception if the resultset does not have at least one row. See also `unique`.
       * @group Results
       */
