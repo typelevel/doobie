@@ -39,7 +39,7 @@ object Instances {
         .map(_.map(jsonStr => parse(jsonStr).fold(throw _, identity)))
 
     implicit val arrayJsonPut: Put[Array[Json]] =
-      Put.Advanced.array[String](NonEmptyList.of("jsonb", "jsonb[]", "json[]", "_jsonb"), "jsonb")
+      Put.Advanced.array[String](NonEmptyList.of("_jsonb"), "jsonb")
         .tcontramap(_.map(_.noSpaces))
 
     implicit val listJsonGet: Get[List[Json]] =
