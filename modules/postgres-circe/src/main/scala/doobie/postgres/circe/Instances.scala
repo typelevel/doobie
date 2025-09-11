@@ -34,19 +34,16 @@ object Instances {
       ).temap(a =>
         parse(a.getValue).leftMap(_.show))
 
+    private implicit val showString: Show[Array[String]] = Show.show(_.mkString("Array(", ", ", ")"))
+
     implicit val arrayJsonGet: Get[Array[Json]] =
       Get.Advanced.array[String](NonEmptyList.of("jsonb[]", "_jsonb"))
-        .map(_.map(jsonStr => parse(jsonStr).fold(throw _, identity)))
+        .temap(_.toList.traverse(jsonStr =>
+          parse(jsonStr).leftMap(_.getMessage)).map(_.toArray))
 
     implicit val arrayJsonPut: Put[Array[Json]] =
       Put.Advanced.array[String](NonEmptyList.of("_jsonb"), "jsonb")
         .tcontramap(_.map(_.noSpaces))
-
-    implicit val listJsonGet: Get[List[Json]] =
-      arrayJsonGet.map(_.toList)
-
-    implicit val listJsonPut: Put[List[Json]] =
-      arrayJsonPut.contramap(_.toArray)
 
     def pgEncoderPutT[A: Encoder]: Put[A] =
       Put[Json].tcontramap(_.asJson)
