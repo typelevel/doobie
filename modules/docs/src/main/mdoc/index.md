@@ -156,4 +156,5 @@ Don't see yours? [You can add it in a PR!](https://github.com/typelevel/doobie/e
  - [Lawfully](https://www.lawfully.com)
  - [The Guardian](https://www.theguardian.com)
  - [APRA AMCOS](https://www.apraamcos.com.au/)
+ - [Xing](https://www.xing.com/)
 
