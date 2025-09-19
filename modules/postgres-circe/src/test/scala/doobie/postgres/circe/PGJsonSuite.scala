@@ -48,6 +48,11 @@ class PGJsonSuite extends munit.CatsEffectSuite {
     testInOut("jsonb", Json.obj("something" -> Json.fromString("Yellow")), xa)
   }
 
+  {
+    import doobie.postgres.circe.jsonb.implicits.*
+    testInOut("jsonb[]", List(Json.obj("a" -> Json.fromInt(1)), Json.obj("b" -> Json.fromInt(2))), xa)
+  }
+
   // Explicit Type Checks
 
   test("json should check ok for read") {
@@ -72,6 +77,19 @@ class PGJsonSuite extends munit.CatsEffectSuite {
   test("jsonb should check ok for write") {
     import doobie.postgres.circe.jsonb.implicits.*
     val a = sql"select ${Json.obj()} :: jsonb".query[Json].analysis.transact(xa)
+    a.map(_.parameterTypeErrors).assertEquals(Nil)
+  }
+
+  test("array[jsonb] should check ok for read") {
+    import doobie.postgres.circe.jsonb.implicits.*
+    val a = sql"""select ARRAY['{"a":1}', '{"b":2}']::jsonb[]""".query[Array[Json]].analysis.transact(xa)
+    a.map(_.columnTypeErrors).assertEquals(Nil)
+  }
+
+  test("array[jsonb] should check ok for write") {
+    import doobie.postgres.circe.jsonb.implicits.*
+    val arr = Array(Json.obj("a" -> Json.fromInt(1)), Json.obj("b" -> Json.fromInt(2)))
+    val a = sql"select ${arr} :: jsonb[]".query[Array[Json]].analysis.transact(xa)
     a.map(_.parameterTypeErrors).assertEquals(Nil)
   }
 
