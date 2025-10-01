@@ -5,7 +5,7 @@ import org.typelevel.sbt.tpolecat.{DevMode, CiMode}
 // Library versions all in one place, for convenience and sanity.
 lazy val catsVersion = "2.13.0"
 lazy val catsEffectVersion = "3.6.3"
-lazy val circeVersion = "0.14.14"
+lazy val circeVersion = "0.14.15"
 lazy val fs2Version = "3.12.2"
 lazy val h2Version = "2.3.232"
 lazy val hikariVersion = "7.0.2" // N.B. Hikari v4 introduces a breaking change via slf4j v2
