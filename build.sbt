@@ -146,7 +146,7 @@ lazy val commonSettings =
 
       // Kind Projector (Scala 2 only)
       libraryDependencies ++= Seq(
-        compilerPlugin("org.typelevel" %% "kind-projector" % "0.13.3" cross CrossVersion.full),
+        compilerPlugin("org.typelevel" %% "kind-projector" % "0.13.4" cross CrossVersion.full),
         compilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1")
       ).filterNot(_ => tlIsScala3.value),
 
