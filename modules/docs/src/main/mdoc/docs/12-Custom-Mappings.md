@@ -177,6 +177,25 @@ implicit val jsonMeta: Meta[Json] =
 
 There are similar constructors for array types and other possibilities, but `other` is by far the most common in user code and we won't discuss the others here. See the Scaladoc for more information.
 
+## Derivation for Scala 3 enums
+
+You can derive `Get` and `Put` instances for Scala 3 enums using the `Get.deriveEnumString` or `Put.deriveEnumString`.
+
+```scala
+enum Color:
+  case Red, Green, Blue
+
+object Color:
+  given Get[Color] = Get.deriveEnumString[Color]
+  given Put[Color] = Put.deriveEnumString[Color]
+
+fr"SELECT 'Red'".query[Color].unique
+```
+
+As shown above, 
+
+- The instances need to be explicitly derived
+- The string values converts from/to are the literal name of the enum cases
 
 ## Column Vector Mappings
 

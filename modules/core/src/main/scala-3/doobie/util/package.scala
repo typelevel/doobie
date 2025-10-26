@@ -15,8 +15,8 @@ private[util] inline final def summonLabels[T <: Tuple]: List[String] =
 private[util] inline final def summonSingletonCases[T <: Tuple, A](inline typeName: String): List[A] =
   inline erasedValue[T] match
     case _: EmptyTuple => Nil
-    case _: (h *: t) =>
+    case _: (h *: t)   =>
       inline summonInline[Mirror.Of[h]] match
         case m: Mirror.Singleton => m.fromProduct(EmptyTuple).asInstanceOf[A] :: summonSingletonCases[t, A](typeName)
-        case m: Mirror =>
+        case m: Mirror           =>
           error("Enum " + typeName + " contains non singleton case " + constValue[m.MirroredLabel])
