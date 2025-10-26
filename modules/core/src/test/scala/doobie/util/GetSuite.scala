@@ -9,7 +9,17 @@ import doobie.enumerated.JdbcType
 import doobie.testutils.VoidExtensions
 import doobie.util.transactor.Transactor
 
-class GetSuite extends munit.CatsEffectSuite {
+trait TransactorProvider {
+  lazy val xa = Transactor.fromDriverManager[IO](
+    driver = "org.h2.Driver",
+    url = "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
+    user = "sa",
+    password = "",
+    logHandler = None
+  )
+}
+
+class GetSuite extends munit.CatsEffectSuite with GetSuitePlatform {
 
   case class X(x: Int)
   case class Q(x: String)
@@ -27,16 +37,8 @@ class GetSuite extends munit.CatsEffectSuite {
 final case class Foo(s: String)
 final case class Bar(n: Int)
 
-class GetDBSuite extends munit.CatsEffectSuite {
+class GetDBSuite extends munit.CatsEffectSuite with TransactorProvider with GetDBSuitePlatform {
   import doobie.syntax.all.*
-
-  lazy val xa = Transactor.fromDriverManager[IO](
-    driver = "org.h2.Driver",
-    url = "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
-    user = "sa",
-    password = "",
-    logHandler = None
-  )
 
   // Both of these will fail at runtime if called with a null value, we check that this is
   // avoided below.
