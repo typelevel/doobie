@@ -344,16 +344,15 @@ class ReadSuite extends munit.CatsEffectSuite with ReadSuitePlatform {
   test("Derivation for big case class works") {
     Read.derived[Big30CaseClass].void
 
+    // Check "derived" still works in the presense of auto derivation
     import doobie.implicits.*
     Read.derived[Big30CaseClass].void
-  }
+  }: @nowarn("msg=.*(u|U)nused import.*")
 
-  test("Derivation for big case class works") {
-    Read.derived[Big30CaseClass].void
-
+  test("Auto-derivation for big case class works") {
     import doobie.implicits.*
     Read[Big30CaseClass].void
-  }
+  }: @nowarn("msg=.*(u|U)nused import.*")
 
   private def insertTuple3AndCheckRead[Tup <: (?, ?, ?): Write, A: Read](in: Tup, expectedOut: A)(implicit
       loc: Location
