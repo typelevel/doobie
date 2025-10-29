@@ -46,9 +46,14 @@ trait GetDBSuitePlatform { self: munit.CatsEffectSuite & TransactorProvider =>
   given Get[EnumWithOnlySingletonCases] = Get.deriveEnumString
 
   test("Get should properly read existing value of enum") {
-    sql"select 'One'".query[EnumWithOnlySingletonCases].unique.transact(xa).attempt.assertEquals(
+    sql"select 'One', 'Two', 'Three'".query[(
+        EnumWithOnlySingletonCases,
+        EnumWithOnlySingletonCases,
+        EnumWithOnlySingletonCases)].unique.transact(xa).attempt.assertEquals(
       Right(
-        EnumWithOnlySingletonCases.One
+        EnumWithOnlySingletonCases.One,
+        EnumWithOnlySingletonCases.Two,
+        EnumWithOnlySingletonCases.Three
       )
     )
   }
