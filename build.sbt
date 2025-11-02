@@ -7,10 +7,10 @@ lazy val catsVersion = "2.13.0"
 lazy val catsEffectVersion = "3.6.3"
 lazy val circeVersion = "0.14.15"
 lazy val fs2Version = "3.12.2"
-lazy val h2Version = "2.3.232"
+lazy val h2Version = "2.4.240"
 lazy val hikariVersion = "7.0.2" // N.B. Hikari v4 introduces a breaking change via slf4j v2
 lazy val kindProjectorVersion = "0.11.2"
-lazy val mysqlVersion = "9.4.0"
+lazy val mysqlVersion = "9.5.0"
 lazy val log4catsVersion = "2.7.1"
 lazy val postGisVersion = "2025.1.1"
 lazy val postgresVersion = "42.7.8"
@@ -18,13 +18,13 @@ lazy val refinedVersion = "0.11.3"
 lazy val scalaCollectionCompatVersion = "2.14.0"
 lazy val scalaCheckVersion = "1.15.4"
 lazy val scalatestVersion = "3.2.18"
-lazy val munitVersion = "1.2.0"
+lazy val munitVersion = "1.2.1"
 lazy val shapelessVersion = "2.3.13"
 lazy val silencerVersion = "1.7.1"
-lazy val specs2Version = "4.21.0"
+lazy val specs2Version = "4.23.0"
 lazy val scala212Version = "2.12.20"
-lazy val scala213Version = "2.13.16"
-lazy val scala3Version = "3.3.6"
+lazy val scala213Version = "2.13.17"
+lazy val scala3Version = "3.3.7"
 // scala-steward:off
 lazy val slf4jVersion = "1.7.36"
 // scala-steward:on
@@ -62,6 +62,8 @@ ThisBuild / githubWorkflowBuild := {
     case other => other
   }
 }
+// Disable running CI for Pull Requests (a normal push already triggers CI)
+ThisBuild / githubWorkflowPREventTypes := Seq.empty
 ThisBuild / githubWorkflowBuildPostamble ++= Seq(
   WorkflowStep.Sbt(
     commands = List("checkGitNoUncommittedChanges"),
@@ -111,7 +113,11 @@ lazy val compilerFlags = Seq(
         // Handle irrefutable patterns in for comprehensions
         Seq("-source:future", "-language:adhocExtensions", "-Xmax-inlines", "64")
       case "2.13" =>
-        Seq("-Xsource:3-cross")
+        Seq(
+          "-Xsource:3-cross",
+          // See https://github.com/scala/bug/issues/13128. Should no longer be need in 2.13.18 since change was reverted
+          "-Wconf:cat=lint-infer-any&msg=kind-polymorphic:s"
+        )
       case "2.12" =>
         Seq("-Xsource:3")
     }
@@ -143,6 +149,10 @@ lazy val commonSettings =
         "-doc-source-url",
         "https://github.com/typelevel/doobie/blob/v" + version.value + "€{FILE_PATH}.scala"
       ),
+
+      // I'm not sure why semanticdbVersion is 4.12.3 which doesn't exist for Scala version 2.13.17
+      // Perhaps SBT / Metals need to update their default version and this will be fixed in the future?
+      semanticdbVersion := "4.14.1",
 
       // Kind Projector (Scala 2 only)
       libraryDependencies ++= Seq(

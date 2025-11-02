@@ -8,12 +8,15 @@ package util
 import cats.effect.IO
 import doobie.util.yolo.*
 
+import scala.annotation.nowarn
+
 class YoloSuite extends munit.FunSuite {
 
   // Kind of a bogus test; just checking for compilation
   test("YOLO checks should compile for Query, Query0, Update, Update0") {
-    lazy val _ = {
-      val y = new Yolo[IO](null); import y.*
+    lazy val x = {
+      val y = new Yolo[IO](null);
+      import y.*
       void(
         (null: Query0[Int]).check,
         (null: Query[Int, Int]).check,
@@ -21,6 +24,6 @@ class YoloSuite extends munit.FunSuite {
         Update[Int]("", None).check
       )
     }
-  }
+  }: @nowarn("msg=.*(never used|unused).*")
 
 }
