@@ -152,8 +152,9 @@ lazy val commonSettings =
         "https://github.com/typelevel/doobie/blob/v" + version.value + "€{FILE_PATH}.scala"
       ),
 
-      // I'm not sure why semanticdbVersion is 4.12.3 which doesn't exist for Scala version 2.13.17
-      // Perhaps SBT / Metals need to update their default version and this will be fixed in the future?
+      // Setting semanticdbVersion explicitly as the version is defaulting to 4.12.3
+      // which doesn't exist for 2.13.17.
+      // Perhaps SBT / one of the plugins using need to update its version?
       semanticdbVersion := "4.14.1",
 
       // Kind Projector (Scala 2 only)
