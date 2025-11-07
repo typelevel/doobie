@@ -7,6 +7,7 @@ package doobie.util
 import scala.compiletime.constValue
 import scala.deriving.Mirror
 import scala.reflect.Enum
+import doobie.util.derivation.{summonSingletonCases, summonLabels}
 
 trait PutPlatform {
   inline final def deriveEnumString[A <: Enum](using mirror: Mirror.SumOf[A]): Put[A] =
