@@ -152,11 +152,6 @@ lazy val commonSettings =
         "https://github.com/typelevel/doobie/blob/v" + version.value + "€{FILE_PATH}.scala"
       ),
 
-      // Setting semanticdbVersion explicitly as the version is defaulting to 4.12.3
-      // which doesn't exist for 2.13.17.
-      // Perhaps SBT / one of the plugins using need to update its version?
-      semanticdbVersion := "4.14.1",
-
       // Kind Projector (Scala 2 only)
       libraryDependencies ++= Seq(
         compilerPlugin("org.typelevel" %% "kind-projector" % "0.13.4" cross CrossVersion.full),
