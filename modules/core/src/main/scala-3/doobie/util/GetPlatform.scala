@@ -7,6 +7,7 @@ package doobie.util
 import scala.deriving.Mirror
 import scala.compiletime.constValue
 import scala.reflect.Enum
+import doobie.util.derivation.{summonSingletonCases, summonLabels}
 
 trait GetPlatform {
   private def of[A](name: String, cases: List[A], labels: List[String]): Get[A] =
