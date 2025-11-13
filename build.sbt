@@ -28,7 +28,7 @@ lazy val scala3Version = "3.3.7"
 // scala-steward:off
 lazy val slf4jVersion = "1.7.36"
 // scala-steward:on
-lazy val weaverVersion = "0.10.1"
+lazy val weaverVersion = "0.11.0"
 
 // Basic versioning and publishing stuff
 ThisBuild / tlBaseVersion := "1.0"
