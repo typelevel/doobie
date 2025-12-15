@@ -275,6 +275,22 @@ implicit val jsonGet: Get[Json] =
   )
 </code></pre>
 <p>There are similar constructors for array types and other possibilities, but <code>other</code> is by far the most common in user code and we won&rsquo;t discuss the others here. See the Scaladoc for more information.</p>
+<h2><a href="#derivation-for-scala-3-enums" name="derivation-for-scala-3-enums" class="anchor"><span class="anchor-link"></span></a>Derivation for Scala 3 enums</h2>
+<p>You can derive <code>Get</code> and <code>Put</code> instances for Scala 3 enums using the <code>Get.deriveEnumString</code> or <code>Put.deriveEnumString</code>.</p>
+<pre class="prettyprint"><code class="language-scala">enum Color:
+  case Red, Green, Blue
+
+object Color:
+  given Get[Color] = Get.deriveEnumString[Color]
+  given Put[Color] = Put.deriveEnumString[Color]
+
+fr&quot;SELECT &#39;Red&#39;&quot;.query[Color].unique
+</code></pre>
+<p>As shown above, </p>
+<ul>
+  <li>The instances need to be explicitly derived</li>
+  <li>The string values converts from/to are the literal name of the enum cases</li>
+</ul>
 <h2><a href="#column-vector-mappings" name="column-vector-mappings" class="anchor"><span class="anchor-link"></span></a>Column Vector Mappings</h2>
 <p>The <code>Get</code> and <code>Put</code> typeclasses described above define mappings between Scala types and single-column schema types, however in general we need more than this. Queries return <strong>heterogeneous vectors</strong> of values that we wish to map to composite Scala data types, and similarly we may wish to map a composite Scala data type to a heterogeneous vector of schema values (when setting a <code>VALUES</code> clause in an update, for instance). Mappings for these &ldquo;wide&rdquo; data types are provided by the <code>Read</code> and <code>Write</code> typeclasses.</p>
 <ul>
@@ -299,11 +315,11 @@ implicit val jsonGet: Get[Json] =
 <p>Consider the <code>Point</code> class from Java AWT, which is logically a pair of <code>Int</code>s but is not a case class and is thus not eligible for automatic derivation of <code>Read</code> and <code>Write</code> instances. We can define these by hand by mapping to and from the Scala type <code>(Int, Int)</code> which <em>does</em> have automatically-derived instances.</p>
 <pre class="prettyprint"><code class="language-scala">implicit val pointRead: Read[Point] =
   Read[(Int, Int)].map { case (x, y) =&gt; new Point(x, y) }
-// pointRead: Read[Point] = doobie.util.Read$Transform@307dc971
+// pointRead: Read[Point] = doobie.util.Read$Transform@115ab2c9
 
 implicit val pointWrite: Write[Point] =
   Write[(Int, Int)].contramap(p =&gt; (p.x, p.y))
-// pointWrite: Write[Point] = doobie.util.Write$Composite@165bfed1
+// pointWrite: Write[Point] = doobie.util.Write$Composite@5f91c259
 </code></pre>
 <p>There is no equivalent to <code>Meta</code> for bidirectional column vector mappings.</p>
 <div class="source-github">
@@ -325,6 +341,7 @@ The source code for this page can be found <a href="https://github.com/typelevel
     <li><a href="../docs/12-Custom-Mappings.html#setup" class="header">Setup</a></li>
     <li><a href="../docs/12-Custom-Mappings.html#when-do-i-need-a-custom-type-mapping-" class="header">When do I need a custom type mapping?</a></li>
     <li><a href="../docs/12-Custom-Mappings.html#single-column-type-mappings" class="header">Single-Column Type Mappings</a></li>
+    <li><a href="../docs/12-Custom-Mappings.html#derivation-for-scala-3-enums" class="header">Derivation for Scala 3 enums</a></li>
     <li><a href="../docs/12-Custom-Mappings.html#column-vector-mappings" class="header">Column Vector Mappings</a></li>
   </ul></li>
 </ul>

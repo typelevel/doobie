@@ -153,12 +153,12 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <p>This book is organized cookbook-style: we demonstrate a common task and then explain how it works, perhaps in more detail than you want right now. The goal is to get you up and running quickly, but give you a handle on the deeper stuff if you need it later.</p>
 <h3><a href="#target-audience" name="target-audience" class="anchor"><span class="anchor-link"></span></a>Target Audience</h3>
 <p>This library is designed for people who are interested in typed, pure functional programming. If you are not a <a href="https://github.com/typelevel/cats">Cats</a> user or are not familiar with functional I/O and monadic effects, you may need to go slowly and may want to spend some time reading <a href="http://manning.com/bjarnason/">Functional Programming in Scala</a>, which introduces all of the ideas that you will find when exploring <strong>doobie</strong>.</p>
-<p>Having said this, if you find yourself confused or frustrated by this documentation or the <strong>doobie</strong> API, <em>please</em> ask a question on <a href="https://gitter.im/tpolecat/doobie">Gitter</a>, file an <a href="https://github.com/tpolecat/doobie/issues">issue</a> and ask for help. Both the library and the documentation are young and are changing quickly, and it is inevitable that some things will be unclear. Accordingly, <strong>this book is updated continuously</strong> to address problems and omissions.</p>
+<p>Having said this, if you find yourself confused or frustrated by this documentation or the <strong>doobie</strong> API, <em>please</em> ask a question on <a href="https://gitter.im/tpolecat/doobie">Gitter</a>, file an <a href="https://github.com/typelevel/doobie/issues">issue</a> and ask for help. Both the library and the documentation are young and are changing quickly, and it is inevitable that some things will be unclear. Accordingly, <strong>this book is updated continuously</strong> to address problems and omissions.</p>
 <h3><a href="#the-setup" name="the-setup" class="anchor"><span class="anchor-link"></span></a>The Setup</h3>
 <p>This book is compiled as part of the build using the <a href="https://github.com/tpolecat/tut">tut</a> tutorial generator, so the code examples are guaranteed to compile (and with luck should also work correctly). Each page stands on its own: if you copy and paste code samples starting from the top, it will work in your REPL as long as you have the proper setup, described here.</p>
 <h4><a href="#sample-database-setup" name="sample-database-setup" class="anchor"><span class="anchor-link"></span></a>Sample Database Setup</h4>
 <p>The example code assumes a local <a href="http://www.postgresql.org/">PostgreSQL</a> server with a <code>postgres</code> user with no password, <a href="http://postgis.net/">PostGIS</a> extensions (optional), and the sample <code>world</code> database loaded up. If you&rsquo;re on a Mac you might check out the excellent <a href="http://postgresapp.com/">Postgres.app</a> if you don&rsquo;t want to install PostgreSQL as a service. You can set up the user and sample database (and an <code>enum</code> we use in a few examples) as follows:</p>
-<pre><code>$ curl -O https://raw.githubusercontent.com/tpolecat/doobie/series/0.7.x/world.sql
+<pre><code>$ curl -O https://raw.githubusercontent.com/typelevel/doobie/series/0.7.x/world.sql
 $ psql -c &#39;create user postgres createdb&#39; postgres
 $ psql -c &#39;create database world;&#39; -U postgres
 $ psql -c &#39;\i world.sql&#39; -d world -U postgres
@@ -189,7 +189,7 @@ $
 <p>You can of course change this setup if you like, but you will need to adjust your JDBC connection information accordingly. Most examples will work with any compliant database, but in a few cases (noted in the text) we rely on vendor-specific behavior.</p>
 <h4><a href="#scala-setup" name="scala-setup" class="anchor"><span class="anchor-link"></span></a>Scala Setup</h4>
 <p>On the Scala side you just need a console with the proper dependencies. A minimal <code>build.sbt</code> would look something like this.</p>
-<pre class="prettyprint"><code class="language-scala">scalaVersion := &quot;2.13.16&quot; // Scala 2.13.16
+<pre class="prettyprint"><code class="language-scala">scalaVersion := &quot;2.13.18&quot; // Scala 2.13.18
 
 lazy val doobieVersion = &quot;1.0.0-RC8&quot;
 
@@ -223,7 +223,7 @@ nel.tail
 // ^^^^^^
 </code></pre>
 <h3><a href="#feedback-and-contributions" name="feedback-and-contributions" class="anchor"><span class="anchor-link"></span></a>Feedback and Contributions</h3>
-<p>Feedback on <strong>doobie</strong> or this book is genuinely welcome. Please feel free to file a <a href="https://github.com/tpolecat/doobie">pull request</a> if you have a contribution, or file an <a href="https://github.com/tpolecat/doobie/issues">issue</a>, or chat with us on <a href="https://gitter.im/tpolecat/doobie">Gitter</a>.</p>
+<p>Feedback on <strong>doobie</strong> or this book is genuinely welcome. Please feel free to file a <a href="https://github.com/tpolecat/doobie">pull request</a> if you have a contribution, or file an <a href="https://github.com/typelevel/doobie/issues">issue</a>, or chat with us on <a href="https://gitter.im/tpolecat/doobie">Gitter</a>.</p>
 <div class="source-github">
 The source code for this page can be found <a href="https://github.com/typelevel/doobie/tree/master/modules/docs/target/mdoc/docs/01-Introduction.md">here</a>.
 </div>

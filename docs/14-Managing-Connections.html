@@ -227,7 +227,7 @@ object HikariApp extends IOApp {
 <p>And running this program gives us the desired result.</p>
 <pre class="prettyprint"><code class="language-scala">HikariApp.main(Array())
 </code></pre>
-<p>A runnable example with Hikari + Postgres can be found <a href="https://github.com/tpolecat/doobie/blob/main/modules/example/src/main/scala/example/HikariExample.scala">here</a></p>
+<p>A runnable example with Hikari + Postgres can be found <a href="https://github.com/typelevel/doobie/blob/main/modules/example/src/main/scala/example/HikariExample.scala">here</a></p>
 <h3><a href="#using-the-jdbc-drivermanager" name="using-the-jdbc-drivermanager" class="anchor"><span class="anchor-link"></span></a>Using the JDBC DriverManager</h3>
 <p>JDBC provides a bare-bones connection provider via <code>DriverManager.getConnection</code>, which has the advantage of being extremely simple: there is no connection pooling and thus no configuration required. The disadvantage is that it is quite a bit slower than pooling connection managers, and provides no upper bound on the number of concurrent connections. It executes blocking operations on a similar unbounded pool of daemon threads.</p>
 <p>However, for test and for experimentation as described in this book (and for situations where you really do want to ensure that you get a truly fresh connection right away) the <code>DriverManager</code> is fine. Support in <strong>doobie</strong> is via <code>DriverManagerTransactor</code>. To construct one you must pass the name of the driver class and a connect URL. Normally you will also pass a user/password (the API provides several variants matching the <code>DriverManager</code> static API).</p>

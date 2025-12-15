@@ -140,7 +140,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <div class="page-content row">
 <div class="small-12 large-9 column" id="docs">
 <h1><a href="#doobie" name="doobie" class="anchor"><span class="anchor-link"></span></a>doobie</h1>
-<img align="right" src="https://cdn.rawgit.com/tpolecat/doobie/series/0.5.x/doobie_logo.svg" height="150px" style="padding-left: 20px"/>
+<img align="right" src="https://cdn.rawgit.com/typelevel/doobie/series/0.5.x/doobie_logo.svg" height="150px" style="padding-left: 20px"/>
 <p><a href="https://travis-ci.org/tpolecat/doobie"><img src="https://travis-ci.org/tpolecat/doobie.svg?branch=series%2F0.5.x" alt="Travis CI" /></a> <a href="https://gitter.im/tpolecat/doobie?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge"><img src="https://badges.gitter.im/Join%20Chat.svg" alt="Join the chat at https://gitter.im/tpolecat/doobie" /></a> <a href="https://maven-badges.herokuapp.com/maven-central/org.tpolecat/doobie-core_2.12"><img src="https://img.shields.io/maven-central/v/org.tpolecat/doobie-core_2.12.svg" alt="Maven Central" /></a> <a href="https://javadoc.io/doc/org.tpolecat/doobie-core_2.12"><img src="https://javadoc.io/badge/org.tpolecat/doobie-core_2.12.svg" alt="Javadocs" /></a></p>
 <p><strong>doobie</strong> is a pure functional JDBC layer for Scala and <a href="http://typelevel.org/cats/"><strong>Cats</strong></a>. It is not an ORM, nor is it a relational algebra; it simply provides a functional way to construct programs (and higher-level libraries) that use JDBC. For common use cases <strong>doobie</strong> provides a minimal but expressive high-level API:</p>
 <pre class="prettyprint"><code class="language-scala">import doobie._
@@ -170,7 +170,7 @@ def find(n: String): ConnectionIO[Option[Country]] =
 <p>The current version is <strong>1.0.0-RC8</strong> for <strong>Scala 2.12/13 and 3</strong> with</p>
 <ul>
   <li><a href="http://typelevel.org/cats/"><strong>cats</strong></a> 2.13.0</li>
-  <li><a href="https://github.com/functional-streams-for-scala/fs2"><strong>fs2</strong></a> 3.11.0</li>
+  <li><a href="https://github.com/functional-streams-for-scala/fs2"><strong>fs2</strong></a> 3.12.2</li>
   <li><a href="https://github.com/milessabin/shapeless"><strong>shapeless</strong></a> 2.3.13</li>
 </ul>
 <p>To use <strong>doobie</strong> you need to add the following to your <code>build.sbt</code>. If you&rsquo;re not using the Postgres or H2 add-ons you&rsquo;ll also need to provide a JDBC driver for the database you&rsquo;re using.</p>
@@ -180,9 +180,9 @@ def find(n: String): ConnectionIO[Option[Country]] =
   &quot;org.tpolecat&quot; %% &quot;doobie-core&quot;      % &quot;1.0.0-RC8&quot;,
 
   // And add any of these as needed
-  &quot;org.tpolecat&quot; %% &quot;doobie-h2&quot;        % &quot;1.0.0-RC8&quot;,          // H2 driver 1.4.200 + type mappings.
+  &quot;org.tpolecat&quot; %% &quot;doobie-h2&quot;        % &quot;1.0.0-RC8&quot;,          // H2 driver 2.4.240 + type mappings.
   &quot;org.tpolecat&quot; %% &quot;doobie-hikari&quot;    % &quot;1.0.0-RC8&quot;,          // HikariCP transactor.
-  &quot;org.tpolecat&quot; %% &quot;doobie-postgres&quot;  % &quot;1.0.0-RC8&quot;,          // Postgres driver 42.7.5 + type mappings.
+  &quot;org.tpolecat&quot; %% &quot;doobie-postgres&quot;  % &quot;1.0.0-RC8&quot;,          // Postgres driver 42.7.8 + type mappings.
   &quot;org.tpolecat&quot; %% &quot;doobie-specs2&quot;    % &quot;1.0.0-RC8&quot; % &quot;test&quot;, // Specs2 support for typechecking statements.
   &quot;org.tpolecat&quot; %% &quot;doobie-scalatest&quot; % &quot;1.0.0-RC8&quot; % &quot;test&quot;  // ScalaTest support for typechecking statements.
 
@@ -194,7 +194,7 @@ def find(n: String): ConnectionIO[Option[Country]] =
 <ul>
   <li>Behold the sparkly <a href="docs/01-Introduction.html"><strong>documentation</strong></a> ← start here</li>
   <li>The <a href="https://www.javadoc.io/doc/org.tpolecat/doobie-core_2.13"><strong>Scaladoc</strong></a> will be handy once you get your feet wet.</li>
-  <li>See <a href="https://github.com/tpolecat/doobie/releases"><strong>releases</strong></a> for an overview of changes in this and previous versions.</li>
+  <li>See <a href="https://github.com/typelevel/doobie/releases"><strong>releases</strong></a> for an overview of changes in this and previous versions.</li>
   <li>The <a href="https://gitter.im/tpolecat/doobie"><strong>Gitter Channel</strong></a> is a great place to chat!</li>
   <li>There is a <a href="https://www.scala-exercises.org/"><strong>Scala Exercises</strong></a> module, courtesy of our friends at 47 Degrees!</li>
   <li>There is also the <a href="https://github.com/tpolecat/doobie"><strong>source</strong></a>. Check out the examples too.</li>
@@ -228,7 +228,7 @@ sbt:docs&gt; makeSite
 sbt:doce&gt; ghpagesPushSite
 </code></pre>
 <h2><a href="#adopters" name="adopters" class="anchor"><span class="anchor-link"></span></a>Adopters</h2>
-<p>Here&rsquo;s a (non-exhaustive) list of companies that use doobie in production. Don&rsquo;t see yours? <a href="https://github.com/tpolecat/doobie/edit/main/modules/docs/src/main/mdoc/index.md">You can add it in a PR!</a></p>
+<p>Here&rsquo;s a (non-exhaustive) list of companies that use doobie in production. Don&rsquo;t see yours? <a href="https://github.com/typelevel/doobie/edit/main/modules/docs/src/main/mdoc/index.md">You can add it in a PR!</a></p>
 <ul>
   <li><a href="https://avast.com">Avast</a></li>
   <li><a href="https://banno.com/">Banno at Jack Henry &amp; Associates</a></li>
@@ -256,6 +256,7 @@ sbt:doce&gt; ghpagesPushSite
   <li><a href="https://www.lawfully.com">Lawfully</a></li>
   <li><a href="https://www.theguardian.com">The Guardian</a></li>
   <li><a href="https://www.apraamcos.com.au/">APRA AMCOS</a></li>
+  <li><a href="https://www.xing.com/">Xing</a></li>
 </ul>
 <div class="source-github">
 The source code for this page can be found <a href="https://github.com/typelevel/doobie/tree/master/modules/docs/target/mdoc/index.md">here</a>.

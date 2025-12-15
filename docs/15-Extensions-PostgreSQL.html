@@ -461,9 +461,9 @@ val foods = List(
   .transact(xa)
   .unsafeRunSync()
   .foreach(println)
-// Seq Scan on country  (cost=0.00..7.39 rows=239 width=11) (actual time=0.005..0.028 rows=239 loops=1)
-// Planning Time: 0.184 ms
-// Execution Time: 0.060 ms
+// Seq Scan on country  (cost=0.00..7.39 rows=239 width=11) (actual time=0.005..0.031 rows=239 loops=1)
+// Planning Time: 0.162 ms
+// Execution Time: 0.071 ms
 </code></pre>
 <p><code>explain</code> and <code>explainAnalyze</code> both return a <code>ConnectinIO[List[String]]</code> result, where each member of the list is one row of the query planner&rsquo;s output.</p>
 <div class="source-github">
