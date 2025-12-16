@@ -55,6 +55,7 @@ After the version is set correctly:
 git fetch && git worktree add doc_worktree gh-pages
 sbtn 'set ThisBuild / version := "<latest released version>" '
 sbtn makeSite ghpagesSynchLocal 
-# Check doc changes are expected
+# Check doc changes are expected, then
 sbtn ghpagesPushSite
+git worktree remove doc_worktree
 ```
