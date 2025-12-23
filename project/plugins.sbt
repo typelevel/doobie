@@ -9,6 +9,6 @@ addSbtPlugin("com.timushev.sbt" % "sbt-updates" % "0.6.2")
 addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.4.8")
 addSbtPlugin("com.github.sbt" % "sbt-header" % "5.11.0")
 addSbtPlugin("org.typelevel" % "sbt-tpolecat" % "0.5.2")
-addSbtPlugin("org.scalameta" % "sbt-mdoc" % "2.8.1")
+addSbtPlugin("org.scalameta" % "sbt-mdoc" % "2.8.2")
 addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.5.5")
 addDependencyTreePlugin
