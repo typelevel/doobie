@@ -198,7 +198,7 @@ object connection {
     createLogged
       .bracket(ps =>
         WeakAsyncConnectionIO.cancelable(
-          IFC.embed(ps, prepLogged *> execAndProcessLogged),
+          IFC.embed(ps, IFPS.trace(loggingInfo, prepLogged *> execAndProcessLogged)),
           IFC.embed(ps, IFPS.close)
         ))(IFC.embed(_, IFPS.close))
   }
