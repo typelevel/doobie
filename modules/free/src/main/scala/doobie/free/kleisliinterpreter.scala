@@ -12,7 +12,8 @@ import cats.data.Kleisli
 import cats.effect.kernel.{ Poll, Sync }
 import cats.free.Free
 import doobie.WeakAsync
-import doobie.util.log.{LogEvent, LogHandler}
+import doobie.util.log.{ LogEvent, LogHandler, LoggingInfo }
+
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 
@@ -115,6 +116,9 @@ class KleisliInterpreter[M[_]](logHandler: LogHandler[M])(implicit val asyncM: W
   def canceled[J]: Kleisli[M, J, Unit] = Kleisli(_ => asyncM.canceled)
 
   // for operations using free structures we call the interpreter recursively
+  def trace[G[_], J, A](info: LoggingInfo, interpreter: G ~> Kleisli[M, J, *])(fa: Free[G, A]): Kleisli[M, J, A] = Kleisli(j=>
+    fa.foldMap(interpreter).run(j)
+  )
   def handleErrorWith[G[_], J, A](interpreter: G ~> Kleisli[M, J, *])(fa: Free[G, A])(f: Throwable => Free[G, A]): Kleisli[M, J, A] = Kleisli (j =>
     asyncM.handleErrorWith(fa.foldMap(interpreter).run(j))(f.andThen(_.foldMap(interpreter).run(j)))
   )
@@ -892,6 +896,9 @@ class KleisliInterpreter[M[_]](logHandler: LogHandler[M])(implicit val asyncM: W
     override def canceled: Kleisli[M, PreparedStatement, Unit] = outer.canceled[PreparedStatement]
 
     override def performLogging(event: LogEvent): Kleisli[M, PreparedStatement, Unit] = Kleisli(_ => logHandler.run(event))
+
+    override def trace[A](info: LoggingInfo, fa: PreparedStatementIO[A]): Kleisli[M, PreparedStatement, A] =
+      outer.trace(info, this)(fa)
 
     // for operations using PreparedStatementIO we must call ourself recursively
     override def handleErrorWith[A](fa: PreparedStatementIO[A])(f: Throwable => PreparedStatementIO[A]): Kleisli[M, PreparedStatement, A] = outer.handleErrorWith(this)(fa)(f)

@@ -262,6 +262,8 @@ lazy val core = project
     description := "Pure functional JDBC layer for Scala.",
     libraryDependencies ++= Seq(
       "org.tpolecat" %% "typename" % "1.1.0",
+      "org.typelevel" %% "otel4s-core" % "0.14.0",
+      "org.typelevel" %% "otel4s-semconv" % "0.14.0",
       "com.h2database" % "h2" % h2Version % "test",
       "org.postgresql" % "postgresql" % postgresVersion % "test"
     ),
