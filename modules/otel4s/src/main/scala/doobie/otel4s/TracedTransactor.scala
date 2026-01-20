@@ -4,14 +4,15 @@
 
 package doobie.otel4s
 
-import cats.syntax.functor.*
-import doobie.{Transactor, WeakAsync}
+import cats.effect.{Async, LiftIO}
+import cats.syntax.functor._
+import doobie.Transactor
 import doobie.util.log.LogHandler
 import org.typelevel.otel4s.trace.TracerProvider
 
 object TracedTransactor {
 
-  def create[F[_]: WeakAsync: TracerProvider](
+  def create[F[_]: Async: TracerProvider: LiftIO](
       transactor: Transactor[F],
       config: TracedInterpreter.Config,
       logHandler: Option[LogHandler[F]]
