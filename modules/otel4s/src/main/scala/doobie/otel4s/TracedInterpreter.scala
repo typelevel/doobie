@@ -90,12 +90,12 @@ class TracedInterpreter[F[_]: WeakAsync: Tracer](
     }
 
   private def tracePreparedStatementAttributes(info: LoggingInfo): Attributes = {
-    val params = info.params
     val label = info.label
-
     val builder = Attributes.newBuilder
 
-    if (config.captureConfig.captureLabelAttributes) {
+    builder.addAll(config.constAttributes)
+
+    if (config.captureConfig.captureLabelAttributes && label.nonEmpty && label != doobie.util.unlabeled) {
       io.circe.parser.decode[Attributes](label) match {
         case Right(attributes) =>
           builder.addAll(attributes)
@@ -116,7 +116,7 @@ class TracedInterpreter[F[_]: WeakAsync: Tracer](
           builder.addOne(s"db.query.parameter.$prefix$idx", asString)
         }
 
-      params.allParams match {
+      info.params.allParams match {
         case Nil =>
 
         case nonBatch :: Nil =>
