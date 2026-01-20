@@ -2,19 +2,21 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie
+package doobie.otel4s
 
-import java.sql.{ PreparedStatement, ResultSet, SQLException }
+import java.sql.{PreparedStatement, ResultSet, SQLException}
 
 import cats.data.Kleisli
 import cats.effect.Resource
 import cats.free.Free
 import cats.syntax.all.*
 import cats.~>
-import doobie.util.log.LoggingInfo
+import doobie.WeakAsync
+import doobie.free.KleisliInterpreter
+import doobie.util.log.{LogHandler, LoggingInfo}
 import org.typelevel.otel4s.Attributes
 import org.typelevel.otel4s.semconv.attributes.DbAttributes
-import org.typelevel.otel4s.trace.{ SpanFinalizer, SpanKind, StatusCode, Tracer, TracerProvider }
+import org.typelevel.otel4s.trace.{SpanFinalizer, SpanKind, StatusCode, Tracer, TracerProvider}
 
 class TracedInterpreter[F[_]: WeakAsync: Tracer](logHandler: LogHandler[F]) extends KleisliInterpreter(logHandler) {
 
@@ -109,14 +111,4 @@ object TracedInterpreter {
     TracerProvider[F].get("doobie").map { implicit tracer =>
       new TracedInterpreter(logHandler)
     }
-}
-
-object TracedTransactor {
-  def wrap[F[_]: WeakAsync: TracerProvider](
-      transactor: Transactor[F],
-      logHandler: Option[LogHandler[F]]
-  ): F[Transactor[F]] =
-    for {
-      interpreter <- TracedInterpreter.create[F](logHandler.getOrElse(LogHandler.noop))
-    } yield Transactor.interpret.set(transactor, interpreter.ConnectionInterpreter)
 }
