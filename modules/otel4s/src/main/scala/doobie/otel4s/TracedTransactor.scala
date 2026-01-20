@@ -13,10 +13,11 @@ object TracedTransactor {
 
   def create[F[_]: WeakAsync: TracerProvider](
       transactor: Transactor[F],
+      config: TracedInterpreter.Config,
       logHandler: Option[LogHandler[F]]
   ): F[Transactor[F]] =
     for {
-      interpreter <- TracedInterpreter.create[F](logHandler.getOrElse(LogHandler.noop))
+      interpreter <- TracedInterpreter.create[F](config, logHandler.getOrElse(LogHandler.noop))
     } yield Transactor.interpret.set(transactor, interpreter.ConnectionInterpreter)
 
 }

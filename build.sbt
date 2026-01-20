@@ -593,6 +593,8 @@ lazy val otel4s = project
     libraryDependencies ++= Seq(
       "org.typelevel" %% "otel4s-core-trace" % otel4sVersion,
       "org.typelevel" %% "otel4s-semconv" % otel4sVersion,
+      "io.circe" %% "circe-core" % circeVersion,
+      "io.circe" %% "circe-parser" % circeVersion,
       "org.typelevel" %% "otel4s-oteljava-trace-testkit" % otel4sVersion % "test",
       "com.h2database" % "h2" % h2Version % "test"
     )

@@ -113,7 +113,7 @@ class TracedTransactorSuite extends munit.CatsEffectSuite {
       )
 
       for {
-        tx <- TracedTransactor.create(xa, None)
+        tx <- TracedTransactor.create(xa, TracedInterpreter.Config.default, None)
         tracer <- tracerProvider.get("test")
         traceId <- tracer.span("test").use { span =>
           for {
