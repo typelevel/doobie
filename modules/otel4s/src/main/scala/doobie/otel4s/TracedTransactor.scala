@@ -12,6 +12,10 @@ import org.typelevel.otel4s.trace.TracerProvider
 
 object TracedTransactor {
 
+  /** Returns a transactor that uses a traced interpreter.
+    *
+    * If no log handler is supplied, a no-op handler is used.
+    */
   def create[F[_]: Async: TracerProvider: LiftIO](
       transactor: Transactor[F],
       config: TracedInterpreter.Config,

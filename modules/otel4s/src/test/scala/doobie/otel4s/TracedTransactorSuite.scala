@@ -370,7 +370,9 @@ class TracedTransactorSuite extends munit.CatsEffectSuite {
   private def testkitTest(name: TestOptions)(f: Testkit => IO[Unit])(implicit loc: munit.Location): Unit =
     test(name) {
       TracesTestkit
-        .inMemory[IO](_.setResource(OTelResource.empty()))
+        .builder[IO]
+        .addTracerProviderCustomizer(_.setResource(OTelResource.empty()))
+        .build
         .use(testkit => f(new Testkit(testkit)))
     }
 
