@@ -72,7 +72,7 @@ class TracedInterpreter[F[_]: Async: Tracer](
 
       def runTraced[A](operation: String, f: Kleisli[F, PreparedStatement, A]): Kleisli[F, PreparedStatement, A] =
         Kleisli.liftF[F, PreparedStatement, Unit](
-          Tracer[F].currentSpanOrNoop.flatMap { span =>
+          Tracer[F].withCurrentSpanOrNoop { span =>
             local.ask[Option[String]].flatMap { customSpanName =>
               span.updateName(customSpanName.getOrElse(operation)) >>
                 span.addAttribute(DbAttributes.DbOperationName(operation))
