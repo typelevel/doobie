@@ -9,7 +9,7 @@ package doobie.free
 import cats.{~>, Applicative, Semigroup, Monoid}
 import cats.effect.kernel.{ CancelScope, Poll, Sync }
 import cats.free.{ Free as FF } // alias because some algebras have an op called Free
-import doobie.util.log.{ LogEvent, LoggingInfo }
+import doobie.util.log.LogEvent
 import doobie.util.trace.TraceEvent
 import doobie.WeakAsync
 import scala.concurrent.Future

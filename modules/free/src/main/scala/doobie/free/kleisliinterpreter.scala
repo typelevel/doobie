@@ -12,7 +12,7 @@ import cats.data.Kleisli
 import cats.effect.kernel.{ Poll, Sync }
 import cats.free.Free
 import doobie.WeakAsync
-import doobie.util.log.{ LogEvent, LogHandler, LoggingInfo }
+import doobie.util.log.{LogEvent, LogHandler}
 import doobie.util.trace.TraceEvent
 
 import scala.concurrent.Future
