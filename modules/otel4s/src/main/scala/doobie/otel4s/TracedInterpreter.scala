@@ -238,6 +238,18 @@ object TracedInterpreter {
     /** Controls query text/parameter capture and label handling.
       */
     def captureConfig: CaptureConfig
+
+    /** Returns a copy with a new tracer scope name. */
+    def withTracerScopeName(value: String): Config
+
+    /** Returns a copy with a new default span name. */
+    def withDefaultSpanName(value: String): Config
+
+    /** Returns a copy with new constant attributes. */
+    def withConstAttributes(value: Attributes): Config
+
+    /** Returns a copy with a new capture configuration. */
+    def withCaptureConfig(value: CaptureConfig): Config
   }
 
   object Config {
@@ -245,9 +257,16 @@ object TracedInterpreter {
       "doobie",
       "doobie:exec",
       Attributes.empty,
-      CaptureConfig.default
+      CaptureConfig.disabled
     )
 
+    /** Default config:
+      *
+      *   - `tracerScopeName`: `"doobie"`
+      *   - `defaultSpanName`: `"doobie:exec"`
+      *   - `constAttributes`: empty
+      *   - `captureConfig`: [[CaptureConfig.disabled]]
+      */
     def default: Config = Default
 
     /** Builds a configuration instance with the provided values. */
@@ -264,7 +283,12 @@ object TracedInterpreter {
         defaultSpanName: String,
         constAttributes: Attributes,
         captureConfig: CaptureConfig
-    ) extends Config
+    ) extends Config {
+      def withTracerScopeName(value: String): Config = copy(tracerScopeName = value)
+      def withDefaultSpanName(value: String): Config = copy(defaultSpanName = value)
+      def withConstAttributes(value: Attributes): Config = copy(constAttributes = value)
+      def withCaptureConfig(value: CaptureConfig): Config = copy(captureConfig = value)
+    }
   }
 
   /** Controls query text/parameter capture and label handling.
@@ -297,7 +321,7 @@ object TracedInterpreter {
     }
 
     object CaptureQuery {
-      
+
       /** Builds a query capture configuration.
         *
         * @param captureQueryStatementText
@@ -423,12 +447,13 @@ object TracedInterpreter {
       ) extends DecodeAttributes
     }
 
-    private val Default = CaptureConfig(
+    private val Disabled = CaptureConfig(
       captureQuery = None,
       captureLabel = None
     )
 
-    def default: CaptureConfig = Default
+    /** Disabled capture config with no query capture and no label capture. */
+    def disabled: CaptureConfig = Disabled
 
     /** Build a capture configuration with optional query/label capture. */
     def apply(
