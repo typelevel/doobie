@@ -5,7 +5,7 @@
 package doobie.otel4s
 
 import cats.effect.{Async, LiftIO}
-import cats.syntax.functor._
+import cats.syntax.functor.*
 import doobie.Transactor
 import doobie.util.log.LogHandler
 import org.typelevel.otel4s.trace.TracerProvider

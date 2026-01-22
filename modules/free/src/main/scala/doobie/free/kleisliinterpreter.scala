@@ -14,7 +14,6 @@ import cats.free.Free
 import doobie.WeakAsync
 import doobie.util.log.{LogEvent, LogHandler}
 import doobie.util.trace.TraceEvent
-
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 

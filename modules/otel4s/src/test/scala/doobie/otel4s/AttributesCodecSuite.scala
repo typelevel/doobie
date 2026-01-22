@@ -115,7 +115,7 @@ class AttributesCodecSuite extends munit.FunSuite {
     val decoded = json.as[Attribute[?]]
 
     decoded match {
-      case Left(err) => assert(err.message.contains("Unsupported attribute value shape"))
+      case Left(err)    => assert(err.message.contains("Unsupported attribute value shape"))
       case Right(value) => fail(s"Expected decoding failure but got $value")
     }
   }
