@@ -23,6 +23,9 @@ import doobie.otel4s.AttributesCodec.*
 
 /** Interpreter that wraps doobie execution in otel4s spans.
   *
+  * @see
+  *   [[https://opentelemetry.io/docs/specs/semconv/db/database-spans]]
+  *
   * @param config
   *   tracing configuration including default span naming and capture settings
   *
@@ -81,7 +84,7 @@ class TracedInterpreter[F[_]: Async: Tracer](
   override lazy val PreparedStatementInterpreter: PreparedStatementInterpreter =
     new PreparedStatementInterpreter {
 
-      def runTraced[A](operation: String, f: Kleisli[F, PreparedStatement, A]): Kleisli[F, PreparedStatement, A] =
+      def updateSpan(operation: String): Kleisli[F, PreparedStatement, Unit] =
         Kleisli.liftF[F, PreparedStatement, Unit](
           Tracer[F].withCurrentSpanOrNoop { span =>
             local.ask[Option[String]].flatMap { customSpanName =>
@@ -89,22 +92,64 @@ class TracedInterpreter[F[_]: Async: Tracer](
                 span.addAttribute(DbAttributes.DbOperationName(operation))
             }
           }
-        ) >> f
-
-      override def executeBatch: Kleisli[F, PreparedStatement, Array[Int]] =
-        runTraced("executeBatch", super.executeBatch)
-
-      override def executeLargeBatch: Kleisli[F, PreparedStatement, Array[Long]] =
-        runTraced("executeLargeBatch", super.executeLargeBatch)
+        )
 
       override def execute: Kleisli[F, PreparedStatement, Boolean] =
-        runTraced("execute", super.execute)
+        updateSpan("execute") >> super.execute
 
-      override def executeUpdate: Kleisli[F, PreparedStatement, Int] =
-        runTraced("executeUpdate", super.executeUpdate)
+      override def execute(a: String): Kleisli[F, PreparedStatement, Boolean] =
+        updateSpan("execute") >> super.execute(a)
+
+      override def execute(a: String, b: Array[Int]): Kleisli[F, PreparedStatement, Boolean] =
+        updateSpan("execute") >> super.execute(a, b)
+
+      override def execute(a: String, b: Array[String]): Kleisli[F, PreparedStatement, Boolean] =
+        updateSpan("execute") >> super.execute(a, b)
+
+      override def execute(a: String, b: Int): Kleisli[F, PreparedStatement, Boolean] =
+        updateSpan("execute") >> super.execute(a, b)
+
+      override def executeBatch: Kleisli[F, PreparedStatement, Array[Int]] =
+        updateSpan("executeBatch") >> super.executeBatch
+
+      override def executeLargeBatch: Kleisli[F, PreparedStatement, Array[Long]] =
+        updateSpan("executeLargeBatch") >> super.executeLargeBatch
+
+      override def executeLargeUpdate: Kleisli[F, PreparedStatement, Long] =
+        updateSpan("executeLargeUpdate") >> super.executeLargeUpdate
+
+      override def executeLargeUpdate(a: String): Kleisli[F, PreparedStatement, Long] =
+        updateSpan("executeLargeUpdate") >> super.executeLargeUpdate(a)
+
+      override def executeLargeUpdate(a: String, b: Array[Int]): Kleisli[F, PreparedStatement, Long] =
+        updateSpan("executeLargeUpdate") >> super.executeLargeUpdate(a, b)
+
+      override def executeLargeUpdate(a: String, b: Array[String]): Kleisli[F, PreparedStatement, Long] =
+        updateSpan("executeLargeUpdate") >> super.executeLargeUpdate(a, b)
+
+      override def executeLargeUpdate(a: String, b: Int): Kleisli[F, PreparedStatement, Long] =
+        updateSpan("executeLargeUpdate") >> super.executeLargeUpdate(a, b)
 
       override def executeQuery: Kleisli[F, PreparedStatement, ResultSet] =
-        runTraced("executeQuery", super.executeQuery)
+        updateSpan("executeQuery") >> super.executeQuery
+
+      override def executeQuery(a: String): Kleisli[F, PreparedStatement, ResultSet] =
+        updateSpan("executeQuery") >> super.executeQuery(a)
+
+      override def executeUpdate: Kleisli[F, PreparedStatement, Int] =
+        updateSpan("executeUpdate") >> super.executeUpdate
+
+      override def executeUpdate(a: String): Kleisli[F, PreparedStatement, Int] =
+        updateSpan("executeUpdate") >> super.executeUpdate(a)
+
+      override def executeUpdate(a: String, b: Array[Int]): Kleisli[F, PreparedStatement, Int] =
+        updateSpan("executeUpdate") >> super.executeUpdate(a, b)
+
+      override def executeUpdate(a: String, b: Array[String]): Kleisli[F, PreparedStatement, Int] =
+        updateSpan("executeUpdate") >> super.executeUpdate(a, b)
+
+      override def executeUpdate(a: String, b: Int): Kleisli[F, PreparedStatement, Int] =
+        updateSpan("executeUpdate") >> super.executeUpdate(a, b)
     }
 
   private def preparedStatementSpanParams(info: LoggingInfo): (Option[String], Attributes) = {
