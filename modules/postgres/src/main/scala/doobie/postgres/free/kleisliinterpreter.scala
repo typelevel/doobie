@@ -363,11 +363,13 @@ class KleisliInterpreter[M[_]](logHandler: LogHandler[M])(implicit val asyncM: W
     override def getParameterStatuses: Kleisli[M, PGConnection, java.util.Map[String, String]] = primitive(_.getParameterStatuses)
     override def getPreferQueryMode: Kleisli[M, PGConnection, PreferQueryMode] = primitive(_.getPreferQueryMode)
     override def getPrepareThreshold: Kleisli[M, PGConnection, Int] = primitive(_.getPrepareThreshold)
+    override def getQueryTimeout: Kleisli[M, PGConnection, Int] = primitive(_.getQueryTimeout)
     override def getReplicationAPI: Kleisli[M, PGConnection, PGReplicationConnection] = primitive(_.getReplicationAPI)
     override def setAdaptiveFetch(a: Boolean) = primitive(_.setAdaptiveFetch(a))
     override def setAutosave(a: AutoSave) = primitive(_.setAutosave(a))
     override def setDefaultFetchSize(a: Int) = primitive(_.setDefaultFetchSize(a))
     override def setPrepareThreshold(a: Int) = primitive(_.setPrepareThreshold(a))
+    override def setQueryTimeout(a: Int) = primitive(_.setQueryTimeout(a))
 
   }
 

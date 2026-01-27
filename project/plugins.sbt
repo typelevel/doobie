@@ -12,3 +12,8 @@ addSbtPlugin("org.typelevel" % "sbt-tpolecat" % "0.5.2")
 addSbtPlugin("org.scalameta" % "sbt-mdoc" % "2.8.2")
 addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.5.5")
 addDependencyTreePlugin
+
+// Setting semanticdbVersion explicitly as the version is defaulting to 4.12.3
+// which doesn't exist for 2.12.21
+// Perhaps SBT / one of the plugins using need to update its version?
+semanticdbVersion := "4.14.6"
