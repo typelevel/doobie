@@ -4,6 +4,7 @@
 
 package doobie.util
 
+import cats.Show
 import cats.effect.IO
 import doobie.util.TestTypes.*
 import doobie.util.transactor.Transactor
@@ -153,6 +154,32 @@ class ReadSuite extends munit.CatsEffectSuite with ReadSuitePlatform {
       ))
 
     insertTuple3AndCheckRead((1, "s1", "s2"), WrappedSimpleCaseClass(SimpleCaseClass(Some(1), "custom", Some("s2"))))
+  }
+
+  test(".emap should correctly transform the value") {
+    import doobie.implicits.*
+    implicit val s: Show[SimpleCaseClass] = _.toString
+    implicit val r: Read[WrappedSimpleCaseClass] = Read[SimpleCaseClass].emap(s =>
+      Right(WrappedSimpleCaseClass(
+        s.copy(s = "custom")
+      )))
+
+    insertTuple3AndCheckRead((1, "s1", "s2"), WrappedSimpleCaseClass(SimpleCaseClass(Some(1), "custom", Some("s2"))))
+  }
+
+  test(".emap should fail a transform") {
+    import doobie.implicits.*
+    implicit val s: Show[SimpleCaseClass] = _.toString
+    implicit val r: Read[WrappedSimpleCaseClass] = Read[SimpleCaseClass].emap(_ =>
+      Left("Invalid transformation")
+    )
+
+    sql"SELECT 1,'a','b'".query[WrappedSimpleCaseClass].unique.transact(xa).attempt.assertEquals(
+      Left(doobie.util.invariant.InvalidValue[SimpleCaseClass, WrappedSimpleCaseClass](
+        SimpleCaseClass(Some(1), "a", Some("b")),
+        "Invalid transformation")
+      )
+    )
   }
 
   /*
