@@ -265,13 +265,15 @@ lazy val core = project
       "com.h2database" % "h2" % h2Version % "test",
       "org.postgresql" % "postgresql" % postgresVersion % "test"
     ),
-    libraryDependencies ++= (if (tlIsScala3.value)
-                               Seq.empty
-                             else
-                               Seq("com.chuusai" %% "shapeless" % shapelessVersion)),
-    libraryDependencies ++= (if (scalaVersion.value == scala212Version)
-                               Seq("org.scala-lang.modules" %% "scala-collection-compat" % scalaCollectionCompatVersion)
-                             else Seq.empty),
+    libraryDependencies ++=
+      (if (tlIsScala3.value)
+         Seq.empty
+       else
+         Seq("com.chuusai" %% "shapeless" % shapelessVersion)),
+    libraryDependencies ++=
+      (if (scalaVersion.value == scala212Version)
+         Seq("org.scala-lang.modules" %% "scala-collection-compat" % scalaCollectionCompatVersion)
+       else Seq.empty),
     Compile / unmanagedSourceDirectories += {
       val sourceDir = (Compile / sourceDirectory).value
       CrossVersion.partialVersion(scalaVersion.value) match {
