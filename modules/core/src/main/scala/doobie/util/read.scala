@@ -61,7 +61,7 @@ trait Read[A] {
   }
 
   /** Equivalent to `map`, but allows the conversion to fail with an error message.
-   */
+    */
   final def emap[B](f: A => Either[String, B])(implicit sA: Show[A]): Read[B] =
     map { a =>
       f(a) match {

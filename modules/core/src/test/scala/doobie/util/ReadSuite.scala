@@ -171,13 +171,13 @@ class ReadSuite extends munit.CatsEffectSuite with ReadSuitePlatform {
     import doobie.implicits.*
     implicit val s: Show[SimpleCaseClass] = _.toString
     implicit val r: Read[WrappedSimpleCaseClass] = Read[SimpleCaseClass].emap(_ =>
-      Left("Invalid transformation")
-    )
+      Left("Invalid transformation"))
 
     sql"SELECT 1,'a','b'".query[WrappedSimpleCaseClass].unique.transact(xa).attempt.assertEquals(
-      Left(doobie.util.invariant.InvalidValue[SimpleCaseClass, WrappedSimpleCaseClass](
-        SimpleCaseClass(Some(1), "a", Some("b")),
-        "Invalid transformation")
+      Left(
+        doobie.util.invariant.InvalidValue[SimpleCaseClass, WrappedSimpleCaseClass](
+          SimpleCaseClass(Some(1), "a", Some("b")),
+          "Invalid transformation")
       )
     )
   }
