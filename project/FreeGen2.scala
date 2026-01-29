@@ -197,8 +197,7 @@ class FreeGen2(
       .filterNot(_.getName == "java.lang.Object") // we don't want .equals, etc.
 
   implicit class MethodOps(m: Method) {
-    def isStatic: Boolean =
-      (m.getModifiers & Modifier.STATIC) != 0
+    def isStatic: Boolean = (m.getModifiers & Modifier.STATIC) != 0
   }
 
   // All non-deprecated methods for this class and any superclasses/interfaces

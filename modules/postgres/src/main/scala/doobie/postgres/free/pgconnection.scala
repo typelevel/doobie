@@ -90,11 +90,13 @@ object pgconnection { module =>
       def getParameterStatuses: F[java.util.Map[String, String]]
       def getPreferQueryMode: F[PreferQueryMode]
       def getPrepareThreshold: F[Int]
+      def getQueryTimeout: F[Int]
       def getReplicationAPI: F[PGReplicationConnection]
       def setAdaptiveFetch(a: Boolean): F[Unit]
       def setAutosave(a: AutoSave): F[Unit]
       def setDefaultFetchSize(a: Int): F[Unit]
       def setPrepareThreshold(a: Int): F[Unit]
+      def setQueryTimeout(a: Int): F[Unit]
 
     }
 
@@ -206,6 +208,9 @@ object pgconnection { module =>
     case object GetPrepareThreshold extends PGConnectionOp[Int] {
       def visit[F[_]](v: Visitor[F]) = v.getPrepareThreshold
     }
+    case object GetQueryTimeout extends PGConnectionOp[Int] {
+      def visit[F[_]](v: Visitor[F]) = v.getQueryTimeout
+    }
     case object GetReplicationAPI extends PGConnectionOp[PGReplicationConnection] {
       def visit[F[_]](v: Visitor[F]) = v.getReplicationAPI
     }
@@ -220,6 +225,9 @@ object pgconnection { module =>
     }
     final case class SetPrepareThreshold(a: Int) extends PGConnectionOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.setPrepareThreshold(a)
+    }
+    final case class SetQueryTimeout(a: Int) extends PGConnectionOp[Unit] {
+      def visit[F[_]](v: Visitor[F]) = v.setQueryTimeout(a)
     }
 
   }
@@ -268,11 +276,13 @@ object pgconnection { module =>
   val getParameterStatuses: PGConnectionIO[java.util.Map[String, String]] = FF.liftF(GetParameterStatuses)
   val getPreferQueryMode: PGConnectionIO[PreferQueryMode] = FF.liftF(GetPreferQueryMode)
   val getPrepareThreshold: PGConnectionIO[Int] = FF.liftF(GetPrepareThreshold)
+  val getQueryTimeout: PGConnectionIO[Int] = FF.liftF(GetQueryTimeout)
   val getReplicationAPI: PGConnectionIO[PGReplicationConnection] = FF.liftF(GetReplicationAPI)
   def setAdaptiveFetch(a: Boolean): PGConnectionIO[Unit] = FF.liftF(SetAdaptiveFetch(a))
   def setAutosave(a: AutoSave): PGConnectionIO[Unit] = FF.liftF(SetAutosave(a))
   def setDefaultFetchSize(a: Int): PGConnectionIO[Unit] = FF.liftF(SetDefaultFetchSize(a))
   def setPrepareThreshold(a: Int): PGConnectionIO[Unit] = FF.liftF(SetPrepareThreshold(a))
+  def setQueryTimeout(a: Int): PGConnectionIO[Unit] = FF.liftF(SetQueryTimeout(a))
 
   // Typeclass instances for PGConnectionIO
   implicit val WeakAsyncPGConnectionIO: WeakAsync[PGConnectionIO] =

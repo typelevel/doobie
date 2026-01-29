@@ -4,11 +4,12 @@
 
 package doobie.util
 
-import cats.Applicative
+import cats.{Applicative, Show}
 import doobie.ResultSetIO
 import doobie.enumerated.Nullability
 import doobie.enumerated.Nullability.{NoNulls, NullabilityKnown}
 import doobie.free.resultset as IFRS
+import doobie.util.invariant.InvalidValue
 
 import java.sql.ResultSet
 import scala.annotation.implicitNotFound
@@ -58,6 +59,16 @@ trait Read[A] {
   final def ap[B](ff: Read[A => B]): Read[B] = {
     new Read.Composite[B, A => B, A](ff, this, (f, a) => f(a))
   }
+
+  /** Equivalent to `map`, but allows the conversion to fail with an error message.
+    */
+  final def emap[B](f: A => Either[String, B])(implicit sA: Show[A]): Read[B] =
+    map { a =>
+      f(a) match {
+        case Left(reason) => throw InvalidValue[A, B](a, reason)
+        case Right(b)     => b
+      }
+    }
 }
 
 object Read extends ReadPlatform {

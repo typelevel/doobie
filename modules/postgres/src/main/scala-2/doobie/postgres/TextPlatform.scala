@@ -19,8 +19,7 @@ trait TextPlatform { this: Text.type =>
       implicit
       h: Text[H],
       t: Text[T]
-  ): Text[H :: T] =
-    (h product t).contramap(l => (l.head, l.tail))
+  ): Text[H :: T] = (h product t).contramap(l => (l.head, l.tail))
 
   // Generic
   implicit def generic[A, B](

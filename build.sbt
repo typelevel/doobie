@@ -13,13 +13,14 @@ lazy val kindProjectorVersion = "0.11.2"
 lazy val mysqlVersion = "9.5.0"
 lazy val log4catsVersion = "2.7.1"
 lazy val postGisVersion = "2025.1.1"
-lazy val postgresVersion = "42.7.8"
+lazy val postgresVersion = "42.7.9"
 lazy val refinedVersion = "0.11.3"
 lazy val scalaCollectionCompatVersion = "2.14.0"
 lazy val scalaCheckVersion = "1.15.4"
 lazy val scalatestVersion = "3.2.18"
-lazy val munitVersion = "1.2.1"
+lazy val munitVersion = "1.2.2"
 lazy val otel4sVersion = "0.15.0"
+lazy val munitVersion = "1.2.2"
 lazy val shapelessVersion = "2.3.13"
 lazy val silencerVersion = "1.7.1"
 lazy val specs2Version = "4.23.0"
@@ -267,13 +268,15 @@ lazy val core = project
       "com.h2database" % "h2" % h2Version % "test",
       "org.postgresql" % "postgresql" % postgresVersion % "test"
     ),
-    libraryDependencies ++= (if (tlIsScala3.value)
-                               Seq.empty
-                             else
-                               Seq("com.chuusai" %% "shapeless" % shapelessVersion)),
-    libraryDependencies ++= (if (scalaVersion.value == scala212Version)
-                               Seq("org.scala-lang.modules" %% "scala-collection-compat" % scalaCollectionCompatVersion)
-                             else Seq.empty),
+    libraryDependencies ++=
+      (if (tlIsScala3.value)
+         Seq.empty
+       else
+         Seq("com.chuusai" %% "shapeless" % shapelessVersion)),
+    libraryDependencies ++=
+      (if (scalaVersion.value == scala212Version)
+         Seq("org.scala-lang.modules" %% "scala-collection-compat" % scalaCollectionCompatVersion)
+       else Seq.empty),
     Compile / unmanagedSourceDirectories += {
       val sourceDir = (Compile / sourceDirectory).value
       CrossVersion.partialVersion(scalaVersion.value) match {
