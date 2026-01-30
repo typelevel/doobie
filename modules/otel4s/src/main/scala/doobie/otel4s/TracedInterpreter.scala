@@ -64,21 +64,18 @@ class TracedInterpreter[F[_]: Async: Tracer](
       event: TraceEvent,
       interpreter: G ~> Kleisli[F, J, *]
   )(fa: Free[G, A]): Kleisli[F, J, A] =
-    event match {
-      case evt: TraceEvent.ExecutePreparedStatement =>
-        Kleisli { j =>
-          Async[F].uncancelable { poll =>
-            val (spanName, attributes) = preparedStatementSpanParams(evt.loggingInfo)
+    Kleisli { j =>
+      Async[F].uncancelable { poll =>
+        val (spanName, attributes) = preparedStatementSpanParams(event.loggingInfo)
 
-            Tracer[F]
-              .spanBuilder(spanName.getOrElse(config.defaultSpanName))
-              .withSpanKind(SpanKind.Client)
-              .addAttributes(attributes)
-              .withFinalizationStrategy(finalizationStrategy)
-              .build
-              .surround(poll(local.scope(super.trace(event, interpreter)(fa).run(j))(spanName)))
-          }
-        }
+        Tracer[F]
+          .spanBuilder(spanName.getOrElse(config.defaultSpanName))
+          .withSpanKind(SpanKind.Client)
+          .addAttributes(attributes)
+          .withFinalizationStrategy(finalizationStrategy)
+          .build
+          .surround(poll(local.scope(super.trace(event, interpreter)(fa).run(j))(spanName)))
+      }
     }
 
   override lazy val PreparedStatementInterpreter: PreparedStatementInterpreter =

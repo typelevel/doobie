@@ -587,7 +587,7 @@ lazy val refined = project
 
 lazy val otel4s = project
   .in(file("modules/otel4s"))
-  .enablePlugins(AutomateHeaderPlugin)
+  .enablePlugins(AutomateHeaderPlugin, NoPublishPlugin)
   .dependsOn(core)
   .settings(doobieSettings)
   .settings(

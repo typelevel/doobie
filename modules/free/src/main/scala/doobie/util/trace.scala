@@ -8,18 +8,17 @@ import doobie.util.log.LoggingInfo
 
 object trace {
 
-  sealed trait TraceEvent extends Product with Serializable
+  sealed trait TraceEvent {
+    def loggingInfo: LoggingInfo
+  }
 
   object TraceEvent {
 
-    sealed trait ExecutePreparedStatement extends TraceEvent {
-      def loggingInfo: LoggingInfo
-    }
+    private[doobie] def apply(loggingInfo: LoggingInfo): TraceEvent =
+      TraceEventImpl(loggingInfo)
 
-    private[doobie] def executePreparedStatement(query: LoggingInfo): ExecutePreparedStatement =
-      ExecutePreparedStatementImpl(query)
+    private final case class TraceEventImpl(loggingInfo: LoggingInfo) extends TraceEvent
 
-    private final case class ExecutePreparedStatementImpl(loggingInfo: LoggingInfo) extends ExecutePreparedStatement
   }
 
 }

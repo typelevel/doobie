@@ -199,9 +199,7 @@ object connection {
     createLogged
       .bracket(ps =>
         WeakAsyncConnectionIO.cancelable(
-          IFC.embed(
-            ps,
-            IFPS.trace(TraceEvent.executePreparedStatement(loggingInfo), prepLogged *> execAndProcessLogged)),
+          IFC.embed(ps, IFPS.trace(TraceEvent(loggingInfo), prepLogged *> execAndProcessLogged)),
           IFC.embed(ps, IFPS.close)
         ))(IFC.embed(_, IFPS.close))
   }
@@ -244,7 +242,7 @@ object connection {
       _ <- Stream.eval(runPreExecWithLogging(IFC.embed(ps, IFPS.setFetchSize(chunkSize) *> prep), loggingInfo))
       resultSet <- Stream.bracketFull[ConnectionIO, ResultSet](poll =>
         poll(WeakAsyncConnectionIO.cancelable(
-          IFC.embed(ps, IFPS.trace(TraceEvent.executePreparedStatement(loggingInfo), execLogged)),
+          IFC.embed(ps, IFPS.trace(TraceEvent(loggingInfo), execLogged)),
           IFC.embed(ps, IFPS.close)
         )))((rs, _) => IFC.embed(rs, IFRS.close))
       ele <- repeatEvalChunks(IFC.embed(resultSet, resultset.getNextChunk[A](chunkSize)))
