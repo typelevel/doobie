@@ -20,6 +20,7 @@ import doobie.util.analysis.ColumnMeta
 import doobie.util.analysis.ParameterMeta
 import doobie.util.compat.propertiesToScala
 import doobie.util.stream.repeatEvalChunks
+import doobie.util.trace.TraceEvent
 import doobie.util.log.{LogEvent, LoggingInfo}
 import doobie.util.{Get, Put, Read, Write}
 import fs2.Stream
@@ -198,7 +199,7 @@ object connection {
     createLogged
       .bracket(ps =>
         WeakAsyncConnectionIO.cancelable(
-          IFC.embed(ps, prepLogged *> execAndProcessLogged),
+          IFC.embed(ps, IFPS.trace(TraceEvent(loggingInfo), prepLogged *> execAndProcessLogged)),
           IFC.embed(ps, IFPS.close)
         ))(IFC.embed(_, IFPS.close))
   }
@@ -241,7 +242,7 @@ object connection {
       _ <- Stream.eval(runPreExecWithLogging(IFC.embed(ps, IFPS.setFetchSize(chunkSize) *> prep), loggingInfo))
       resultSet <- Stream.bracketFull[ConnectionIO, ResultSet](poll =>
         poll(WeakAsyncConnectionIO.cancelable(
-          IFC.embed(ps, execLogged),
+          IFC.embed(ps, IFPS.trace(TraceEvent(loggingInfo), execLogged)),
           IFC.embed(ps, IFPS.close)
         )))((rs, _) => IFC.embed(rs, IFRS.close))
       ele <- repeatEvalChunks(IFC.embed(resultSet, resultset.getNextChunk[A](chunkSize)))

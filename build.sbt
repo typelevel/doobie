@@ -19,6 +19,7 @@ lazy val scalaCollectionCompatVersion = "2.14.0"
 lazy val scalaCheckVersion = "1.15.4"
 lazy val scalatestVersion = "3.2.18"
 lazy val munitVersion = "1.2.2"
+lazy val otel4sVersion = "0.15.0"
 lazy val shapelessVersion = "2.3.13"
 lazy val silencerVersion = "1.7.1"
 lazy val specs2Version = "4.23.0"
@@ -198,6 +199,7 @@ lazy val doobie = project.in(file("."))
     postgres,
     `postgres-circe`,
     refined,
+    otel4s,
     scalatest,
     munit,
     specs2,
@@ -578,6 +580,24 @@ lazy val refined = project
     description := "Refined support for doobie.",
     libraryDependencies ++= Seq(
       "eu.timepit" %% "refined" % refinedVersion,
+      "com.h2database" % "h2" % h2Version % "test"
+    )
+  )
+
+lazy val otel4s = project
+  .in(file("modules/otel4s"))
+  .enablePlugins(AutomateHeaderPlugin, NoPublishPlugin)
+  .dependsOn(core)
+  .settings(doobieSettings)
+  .settings(
+    name := "doobie-otel4s",
+    description := "otel4s support for doobie.",
+    libraryDependencies ++= Seq(
+      "org.typelevel" %% "otel4s-core-trace" % otel4sVersion,
+      "org.typelevel" %% "otel4s-semconv" % otel4sVersion,
+      "io.circe" %% "circe-core" % circeVersion,
+      "io.circe" %% "circe-parser" % circeVersion,
+      "org.typelevel" %% "otel4s-oteljava-trace-testkit" % otel4sVersion % "test",
       "com.h2database" % "h2" % h2Version % "test"
     )
   )

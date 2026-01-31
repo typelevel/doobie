@@ -10,6 +10,7 @@ import cats.{~>, Applicative, Semigroup, Monoid}
 import cats.effect.kernel.{ CancelScope, Poll, Sync }
 import cats.free.{ Free as FF } // alias because some algebras have an op called Free
 import doobie.util.log.LogEvent
+import doobie.util.trace.TraceEvent
 import doobie.WeakAsync
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
@@ -82,6 +83,7 @@ object preparedstatement { module =>
       def fromFutureCancelable[A](fut: PreparedStatementIO[(Future[A], PreparedStatementIO[Unit])]): F[A]
       def cancelable[A](fa: PreparedStatementIO[A], fin: PreparedStatementIO[Unit]): F[A]
       def performLogging(event: LogEvent): F[Unit]
+      def trace[A](event: TraceEvent, fa: PreparedStatementIO[A]): F[A]
 
       // PreparedStatement
       def addBatch: F[Unit]
@@ -248,6 +250,9 @@ object preparedstatement { module =>
     }
     case class PerformLogging(event: LogEvent) extends PreparedStatementOp[Unit] {
       def visit[F[_]](v: Visitor[F]) = v.performLogging(event)
+    }
+    case class Trace[A](event: TraceEvent, fa: PreparedStatementIO[A]) extends PreparedStatementOp[A] {
+      def visit[F[_]](v: Visitor[F]) = v.trace(event, fa)
     }
 
     // PreparedStatement-specific operations.
@@ -616,6 +621,7 @@ object preparedstatement { module =>
   def fromFutureCancelable[A](fut: PreparedStatementIO[(Future[A], PreparedStatementIO[Unit])]) = FF.liftF[PreparedStatementOp, A](FromFutureCancelable(fut))
   def cancelable[A](fa: PreparedStatementIO[A], fin: PreparedStatementIO[Unit]) = FF.liftF[PreparedStatementOp, A](Cancelable(fa, fin))
   def performLogging(event: LogEvent) = FF.liftF[PreparedStatementOp, Unit](PerformLogging(event))
+  def trace[A](event: TraceEvent, a: PreparedStatementIO[A]) = FF.liftF[PreparedStatementOp, A](Trace(event, a))
 
   // Smart constructors for PreparedStatement-specific operations.
   val addBatch: PreparedStatementIO[Unit] = FF.liftF(AddBatch)
