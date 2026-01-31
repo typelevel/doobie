@@ -26,6 +26,7 @@ lazy val specs2Version = "4.23.0"
 lazy val scala212Version = "2.12.21"
 lazy val scala213Version = "2.13.18"
 lazy val scala3Version = "3.3.7"
+lazy val allScalaVersions = List(scala212Version, scala213Version, scala3Version)
 // scala-steward:off
 lazy val slf4jVersion = "1.7.36"
 // scala-steward:on
@@ -38,7 +39,6 @@ ThisBuild / tlCiScalafmtCheck := true
 //ThisBuild / scalaVersion := scala212Version
 ThisBuild / scalaVersion := scala213Version
 // ThisBuild / scalaVersion := scala3Version
-ThisBuild / crossScalaVersions := Seq(scala212Version, scala213Version, scala3Version)
 ThisBuild / developers += tlGitHubDev("tpolecat", "Rob Norris")
 ThisBuild / tpolecatDefaultOptionsMode :=
   (if (sys.env.contains("CI")) CiMode else DevMode)
@@ -74,8 +74,8 @@ ThisBuild / githubWorkflowBuildPostamble ++= Seq(
   ),
   WorkflowStep.Sbt(
     commands = List("docs/makeSite"),
-    name = Some(s"Check Doc Site (2.13 only)"),
-    cond = Some(s"matrix.scala == '2.13'")
+    name = Some(s"Check Doc Site (2.13 only)")
+    // cond = Some(s"matrix.scala == '2.13'")
   )
 )
 
@@ -186,28 +186,28 @@ lazy val doobie = project.in(file("."))
     }
   )
   .aggregate(
-    bench,
-    core,
-    docs,
-    example,
-    free,
-    h2,
-    `h2-circe`,
-    hikari,
-    mysql,
-    log4cats,
-    postgres,
-    `postgres-circe`,
-    refined,
-    otel4s,
-    scalatest,
-    munit,
-    specs2,
-    weaver,
-    testutils
+    bench.projectRefs ++
+      core.projectRefs ++
+      docs.projectRefs ++
+      example.projectRefs ++
+      free.projectRefs ++
+      h2.projectRefs ++
+      `h2-circe`.projectRefs ++
+      hikari.projectRefs ++
+      mysql.projectRefs ++
+      log4cats.projectRefs ++
+      postgres.projectRefs ++
+      `postgres-circe`.projectRefs ++
+      refined.projectRefs ++
+      otel4s.projectRefs ++
+      scalatest.projectRefs ++
+      munit.projectRefs ++
+      specs2.projectRefs ++
+      weaver.projectRefs ++
+      testutils.projectRefs: _*
   )
 
-lazy val free = project
+lazy val free = projectMatrix
   .in(file("modules/free"))
   .enablePlugins(AutomateHeaderPlugin)
   .settings(doobieSettings)
@@ -252,8 +252,9 @@ lazy val free = project
       classOf[java.io.OutputStream]
     )
   )
+  .jvmPlatform(scalaVersions = allScalaVersions)
 
-lazy val core = project
+lazy val core = projectMatrix
   .in(file("modules/core"))
   .enablePlugins(AutomateHeaderPlugin)
   .dependsOn(free)
@@ -305,8 +306,9 @@ lazy val core = project
       Seq(outFile)
     }.taskValue
   )
+  .jvmPlatform(scalaVersions = allScalaVersions)
 
-lazy val log4cats = project
+lazy val log4cats = projectMatrix
   .in(file("modules/log4cats"))
   .enablePlugins(AutomateHeaderPlugin)
   .dependsOn(core)
@@ -316,8 +318,9 @@ lazy val log4cats = project
     description := "log4cats support for doobie.",
     libraryDependencies += "org.typelevel" %% "log4cats-core" % log4catsVersion
   )
+  .jvmPlatform(scalaVersions = allScalaVersions)
 
-lazy val example = project
+lazy val example = projectMatrix
   .in(file("modules/example"))
   .enablePlugins(NoPublishPlugin)
   .enablePlugins(AutomateHeaderPlugin)
@@ -328,8 +331,9 @@ lazy val example = project
       "co.fs2" %% "fs2-io" % fs2Version
     )
   )
+  .jvmPlatform(scalaVersions = allScalaVersions)
 
-lazy val mysql = project
+lazy val mysql = projectMatrix
   .in(file("modules/mysql"))
   .enablePlugins(AutomateHeaderPlugin)
   .dependsOn(core % "compile->compile;test->test")
@@ -340,8 +344,9 @@ lazy val mysql = project
       "com.mysql" % "mysql-connector-j" % mysqlVersion
     )
   )
+  .jvmPlatform(scalaVersions = allScalaVersions)
 
-lazy val postgres = project
+lazy val postgres = projectMatrix
   .in(file("modules/postgres"))
   .enablePlugins(AutomateHeaderPlugin)
   .dependsOn(core % "compile->compile;test->test")
@@ -397,8 +402,9 @@ lazy val postgres = project
       """,
     consoleQuick / initialCommands := ""
   )
+  .jvmPlatform(scalaVersions = allScalaVersions)
 
-lazy val `postgres-circe` = project
+lazy val `postgres-circe` = projectMatrix
   .in(file("modules/postgres-circe"))
   .enablePlugins(AutomateHeaderPlugin)
   .dependsOn(core, postgres)
@@ -411,8 +417,9 @@ lazy val `postgres-circe` = project
       "io.circe" %% "circe-parser" % circeVersion
     )
   )
+  .jvmPlatform(scalaVersions = allScalaVersions)
 
-lazy val h2 = project
+lazy val h2 = projectMatrix
   .in(file("modules/h2"))
   .enablePlugins(AutomateHeaderPlugin)
   .settings(doobieSettings)
@@ -422,8 +429,9 @@ lazy val h2 = project
     description := "H2 support for doobie.",
     libraryDependencies += "com.h2database" % "h2" % h2Version
   )
+  .jvmPlatform(scalaVersions = allScalaVersions)
 
-lazy val `h2-circe` = project
+lazy val `h2-circe` = projectMatrix
   .in(file("modules/h2-circe"))
   .enablePlugins(AutomateHeaderPlugin)
   .dependsOn(core, h2)
@@ -436,8 +444,9 @@ lazy val `h2-circe` = project
       "io.circe" %% "circe-parser" % circeVersion
     )
   )
+  .jvmPlatform(scalaVersions = allScalaVersions)
 
-lazy val hikari = project
+lazy val hikari = projectMatrix
   .in(file("modules/hikari"))
   .enablePlugins(AutomateHeaderPlugin)
   .dependsOn(core)
@@ -456,8 +465,9 @@ lazy val hikari = project
       "org.slf4j" % "slf4j-nop" % slf4jVersion % "test"
     )
   )
+  .jvmPlatform(scalaVersions = allScalaVersions)
 
-lazy val specs2 = project
+lazy val specs2 = projectMatrix
   .in(file("modules/specs2"))
   .enablePlugins(AutomateHeaderPlugin)
   .dependsOn(core, testutils % "test->test", h2 % "test")
@@ -467,8 +477,9 @@ lazy val specs2 = project
     description := "Specs2 support for doobie.",
     libraryDependencies += "org.specs2" %% "specs2-core" % specs2Version
   )
+  .jvmPlatform(scalaVersions = allScalaVersions)
 
-lazy val scalatest = project
+lazy val scalatest = projectMatrix
   .in(file("modules/scalatest"))
   .enablePlugins(AutomateHeaderPlugin)
   .dependsOn(core)
@@ -481,8 +492,9 @@ lazy val scalatest = project
       "com.h2database" % "h2" % h2Version % "test"
     )
   )
+  .jvmPlatform(scalaVersions = allScalaVersions)
 
-lazy val munit = project
+lazy val munit = projectMatrix
   .in(file("modules/munit"))
   .enablePlugins(AutomateHeaderPlugin)
   .dependsOn(core)
@@ -496,8 +508,9 @@ lazy val munit = project
       "com.h2database" % "h2" % h2Version % "test"
     )
   )
+  .jvmPlatform(scalaVersions = allScalaVersions)
 
-lazy val weaver = project
+lazy val weaver = projectMatrix
   .in(file("modules/weaver"))
   .enablePlugins(AutomateHeaderPlugin)
   .dependsOn(core)
@@ -511,16 +524,18 @@ lazy val weaver = project
       "com.h2database" % "h2" % h2Version % "test"
     )
   )
+  .jvmPlatform(scalaVersions = allScalaVersions)
 
-lazy val bench = project
+lazy val bench = projectMatrix
   .in(file("modules/bench"))
   .enablePlugins(NoPublishPlugin)
   .enablePlugins(AutomateHeaderPlugin)
   .enablePlugins(JmhPlugin)
   .dependsOn(core, postgres, hikari)
   .settings(doobieSettings)
+  .jvmPlatform(scalaVersions = Seq(scala213Version, scala3Version))
 
-lazy val docs = project
+lazy val docs = projectMatrix
   .in(file("modules/docs"))
   .dependsOn(core, postgres, specs2, munit, hikari, h2, scalatest, weaver)
   .enablePlugins(NoPublishPlugin)
@@ -547,7 +562,7 @@ lazy val docs = project
     version := version.value.takeWhile(_ != '+'), // strip off the +3-f22dca22+20191110-1520-SNAPSHOT business
     paradoxProperties ++= Map(
       "scala-versions" -> {
-        val crossVersions = (core / crossScalaVersions).value.flatMap(CrossVersion.partialVersion)
+        val crossVersions = allScalaVersions.flatMap(CrossVersion.partialVersion)
         val scala2Versions = crossVersions.filter(_._1 == 2).map(_._2).mkString("2.", "/", "") // 2.12/13
         val scala3 = crossVersions.find(_._1 == 3).map(_ => "3") // 3
         List(Some(scala2Versions), scala3).flatten.filter(_.nonEmpty).mkString(" and ") // 2.12/13 and 3
@@ -569,8 +584,9 @@ lazy val docs = project
     Compile / paradox / sourceDirectory := mdocOut.value,
     makeSite := makeSite.dependsOn(mdoc.toTask("")).value
   )
+  .jvmPlatform(scalaVersions = Seq(scala213Version))
 
-lazy val refined = project
+lazy val refined = projectMatrix
   .in(file("modules/refined"))
   .enablePlugins(AutomateHeaderPlugin)
   .dependsOn(core)
@@ -583,8 +599,9 @@ lazy val refined = project
       "com.h2database" % "h2" % h2Version % "test"
     )
   )
+  .jvmPlatform(scalaVersions = allScalaVersions)
 
-lazy val otel4s = project
+lazy val otel4s = projectMatrix
   .in(file("modules/otel4s"))
   .enablePlugins(AutomateHeaderPlugin, NoPublishPlugin)
   .dependsOn(core)
@@ -602,12 +619,14 @@ lazy val otel4s = project
       "com.h2database" % "h2" % h2Version % "test"
     )
   )
+  .jvmPlatform(scalaVersions = Seq(scala213Version, scala3Version))
 
-lazy val testutils = project
+lazy val testutils = projectMatrix
   .in(file("modules/testutils"))
   .enablePlugins(AutomateHeaderPlugin)
   .settings(doobieSettings)
   .settings(publish / skip := true)
+  .jvmPlatform(scalaVersions = allScalaVersions)
 
 lazy val checkGitNoUncommittedChanges =
   taskKey[Unit]("Check git working tree is clean (no uncommitted changes) due to generated code not being committed")

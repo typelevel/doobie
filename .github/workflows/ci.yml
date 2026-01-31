@@ -29,7 +29,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-22.04]
-        scala: [2.12, 2.13, 3]
+        scala: [2.13]
         java: [temurin@11]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
@@ -83,16 +83,15 @@ jobs:
         run: sbt '++ ${{ matrix.scala }}' checkGitNoUncommittedChanges
 
       - name: Check Doc Site (2.13 only)
-        if: matrix.scala == '2.13'
         run: sbt '++ ${{ matrix.scala }}' docs/makeSite
 
       - name: Make target directories
         if: github.event_name != 'pull_request' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main')
-        run: mkdir -p modules/weaver/target modules/scalatest/target modules/refined/target modules/postgres/target modules/log4cats/target modules/postgres-circe/target modules/h2/target modules/testutils/target modules/hikari/target modules/munit/target modules/h2-circe/target modules/mysql/target modules/core/target modules/specs2/target modules/free/target project/target
+        run: mkdir -p modules/weaver/target/jvm-2.13 modules/munit/target/jvm-2.12 modules/scalatest/target/jvm-2.13 modules/refined/target/jvm-2.13 modules/testutils/target/jvm-2.12 modules/hikari/target/jvm-3 modules/free/target/jvm-2.12 modules/refined/target/jvm-2.12 modules/specs2/target/jvm-2.12 modules/core/target/jvm-2.12 modules/postgres/target/jvm-2.13 modules/core/target/jvm-3 modules/testutils/target/jvm-3 modules/munit/target/jvm-3 modules/refined/target/jvm-3 modules/hikari/target/jvm-2.12 modules/log4cats/target/jvm-2.13 modules/postgres-circe/target/jvm-2.13 modules/scalatest/target/jvm-3 modules/weaver/target/jvm-3 modules/h2/target/jvm-2.13 modules/testutils/target/jvm-2.13 modules/h2-circe/target/jvm-3 modules/postgres/target/jvm-3 modules/hikari/target/jvm-2.13 modules/scalatest/target/jvm-2.12 modules/mysql/target/jvm-2.12 modules/weaver/target/jvm-2.12 modules/log4cats/target/jvm-2.12 modules/postgres-circe/target/jvm-3 modules/munit/target/jvm-2.13 modules/h2/target/jvm-2.12 modules/h2-circe/target/jvm-2.13 modules/mysql/target/jvm-2.13 modules/postgres-circe/target/jvm-2.12 modules/specs2/target/jvm-3 modules/core/target/jvm-2.13 modules/free/target/jvm-3 modules/mysql/target/jvm-3 modules/h2-circe/target/jvm-2.12 modules/log4cats/target/jvm-3 modules/postgres/target/jvm-2.12 modules/specs2/target/jvm-2.13 modules/h2/target/jvm-3 modules/free/target/jvm-2.13 project/target
 
       - name: Compress target directories
         if: github.event_name != 'pull_request' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main')
-        run: tar cf targets.tar modules/weaver/target modules/scalatest/target modules/refined/target modules/postgres/target modules/log4cats/target modules/postgres-circe/target modules/h2/target modules/testutils/target modules/hikari/target modules/munit/target modules/h2-circe/target modules/mysql/target modules/core/target modules/specs2/target modules/free/target project/target
+        run: tar cf targets.tar modules/weaver/target/jvm-2.13 modules/munit/target/jvm-2.12 modules/scalatest/target/jvm-2.13 modules/refined/target/jvm-2.13 modules/testutils/target/jvm-2.12 modules/hikari/target/jvm-3 modules/free/target/jvm-2.12 modules/refined/target/jvm-2.12 modules/specs2/target/jvm-2.12 modules/core/target/jvm-2.12 modules/postgres/target/jvm-2.13 modules/core/target/jvm-3 modules/testutils/target/jvm-3 modules/munit/target/jvm-3 modules/refined/target/jvm-3 modules/hikari/target/jvm-2.12 modules/log4cats/target/jvm-2.13 modules/postgres-circe/target/jvm-2.13 modules/scalatest/target/jvm-3 modules/weaver/target/jvm-3 modules/h2/target/jvm-2.13 modules/testutils/target/jvm-2.13 modules/h2-circe/target/jvm-3 modules/postgres/target/jvm-3 modules/hikari/target/jvm-2.13 modules/scalatest/target/jvm-2.12 modules/mysql/target/jvm-2.12 modules/weaver/target/jvm-2.12 modules/log4cats/target/jvm-2.12 modules/postgres-circe/target/jvm-3 modules/munit/target/jvm-2.13 modules/h2/target/jvm-2.12 modules/h2-circe/target/jvm-2.13 modules/mysql/target/jvm-2.13 modules/postgres-circe/target/jvm-2.12 modules/specs2/target/jvm-3 modules/core/target/jvm-2.13 modules/free/target/jvm-3 modules/mysql/target/jvm-3 modules/h2-circe/target/jvm-2.12 modules/log4cats/target/jvm-3 modules/postgres/target/jvm-2.12 modules/specs2/target/jvm-2.13 modules/h2/target/jvm-3 modules/free/target/jvm-2.13 project/target
 
       - name: Upload target directories
         if: github.event_name != 'pull_request' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main')
@@ -132,32 +131,12 @@ jobs:
         if: matrix.java == 'temurin@11' && steps.setup-java-temurin-11.outputs.cache-hit == 'false'
         run: sbt +update
 
-      - name: Download target directories (2.12)
-        uses: actions/download-artifact@v6
-        with:
-          name: target-${{ matrix.os }}-${{ matrix.java }}-2.12
-
-      - name: Inflate target directories (2.12)
-        run: |
-          tar xf targets.tar
-          rm targets.tar
-
       - name: Download target directories (2.13)
         uses: actions/download-artifact@v6
         with:
           name: target-${{ matrix.os }}-${{ matrix.java }}-2.13
 
       - name: Inflate target directories (2.13)
-        run: |
-          tar xf targets.tar
-          rm targets.tar
-
-      - name: Download target directories (3)
-        uses: actions/download-artifact@v6
-        with:
-          name: target-${{ matrix.os }}-${{ matrix.java }}-3
-
-      - name: Inflate target directories (3)
         run: |
           tar xf targets.tar
           rm targets.tar
@@ -219,5 +198,5 @@ jobs:
       - name: Submit Dependencies
         uses: scalacenter/sbt-dependency-submission@v2
         with:
-          modules-ignore: doobie_2.12 doobie_2.13 doobie_3 docs_2.12 docs_2.13 docs_3 doobie-otel4s_2.13 doobie-otel4s_3 example_2.12 example_2.13 example_3 bench_2.12 bench_2.13 bench_3
+          modules-ignore: example_3 example_2.12 doobie_2.13 docs_2.13 bench_3 doobie-otel4s_2.13 doobie-otel4s_3 doobie-otel4s_2.13 doobie-otel4s_3 example_2.13 bench_2.13
           configs-ignore: test scala-tool scala-doc-tool test-internal

@@ -10,30 +10,52 @@ pull_request_rules:
   conditions:
   - author=scala-steward
   - body~=labels:.*early-semver-patch
-  - status-success=Test (ubuntu-22.04, 2.12, temurin@11)
   - status-success=Test (ubuntu-22.04, 2.13, temurin@11)
-  - status-success=Test (ubuntu-22.04, 3, temurin@11)
   actions:
     merge: {}
 - name: Label bench PRs
   conditions:
-  - files~=^modules/bench/
+  - files~=^.sbt/matrix/bench/
   actions:
     label:
       add:
       - bench
       remove: []
+- name: Label bench3 PRs
+  conditions:
+  - files~=^.sbt/matrix/bench3/
+  actions:
+    label:
+      add:
+      - bench3
+      remove: []
 - name: Label core PRs
   conditions:
-  - files~=^modules/core/
+  - files~=^.sbt/matrix/core/
   actions:
     label:
       add:
       - core
       remove: []
+- name: Label core2_12 PRs
+  conditions:
+  - files~=^.sbt/matrix/core2_12/
+  actions:
+    label:
+      add:
+      - core2_12
+      remove: []
+- name: Label core3 PRs
+  conditions:
+  - files~=^.sbt/matrix/core3/
+  actions:
+    label:
+      add:
+      - core3
+      remove: []
 - name: Label docs PRs
   conditions:
-  - files~=^modules/docs/
+  - files~=^.sbt/matrix/docs/
   actions:
     label:
       add:
@@ -41,23 +63,55 @@ pull_request_rules:
       remove: []
 - name: Label example PRs
   conditions:
-  - files~=^modules/example/
+  - files~=^.sbt/matrix/example/
   actions:
     label:
       add:
       - example
       remove: []
+- name: Label example2_12 PRs
+  conditions:
+  - files~=^.sbt/matrix/example2_12/
+  actions:
+    label:
+      add:
+      - example2_12
+      remove: []
+- name: Label example3 PRs
+  conditions:
+  - files~=^.sbt/matrix/example3/
+  actions:
+    label:
+      add:
+      - example3
+      remove: []
 - name: Label free PRs
   conditions:
-  - files~=^modules/free/
+  - files~=^.sbt/matrix/free/
   actions:
     label:
       add:
       - free
       remove: []
+- name: Label free2_12 PRs
+  conditions:
+  - files~=^.sbt/matrix/free2_12/
+  actions:
+    label:
+      add:
+      - free2_12
+      remove: []
+- name: Label free3 PRs
+  conditions:
+  - files~=^.sbt/matrix/free3/
+  actions:
+    label:
+      add:
+      - free3
+      remove: []
 - name: Label h2 PRs
   conditions:
-  - files~=^modules/h2/
+  - files~=^.sbt/matrix/h2/
   actions:
     label:
       add:
@@ -65,55 +119,159 @@ pull_request_rules:
       remove: []
 - name: Label h2-circe PRs
   conditions:
-  - files~=^modules/h2-circe/
+  - files~=^.sbt/matrix/h2-circe/
   actions:
     label:
       add:
       - h2-circe
       remove: []
+- name: Label h2-circe2_12 PRs
+  conditions:
+  - files~=^.sbt/matrix/h2-circe2_12/
+  actions:
+    label:
+      add:
+      - h2-circe2_12
+      remove: []
+- name: Label h2-circe3 PRs
+  conditions:
+  - files~=^.sbt/matrix/h2-circe3/
+  actions:
+    label:
+      add:
+      - h2-circe3
+      remove: []
+- name: Label h22_12 PRs
+  conditions:
+  - files~=^.sbt/matrix/h22_12/
+  actions:
+    label:
+      add:
+      - h22_12
+      remove: []
+- name: Label h23 PRs
+  conditions:
+  - files~=^.sbt/matrix/h23/
+  actions:
+    label:
+      add:
+      - h23
+      remove: []
 - name: Label hikari PRs
   conditions:
-  - files~=^modules/hikari/
+  - files~=^.sbt/matrix/hikari/
   actions:
     label:
       add:
       - hikari
       remove: []
+- name: Label hikari2_12 PRs
+  conditions:
+  - files~=^.sbt/matrix/hikari2_12/
+  actions:
+    label:
+      add:
+      - hikari2_12
+      remove: []
+- name: Label hikari3 PRs
+  conditions:
+  - files~=^.sbt/matrix/hikari3/
+  actions:
+    label:
+      add:
+      - hikari3
+      remove: []
 - name: Label log4cats PRs
   conditions:
-  - files~=^modules/log4cats/
+  - files~=^.sbt/matrix/log4cats/
   actions:
     label:
       add:
       - log4cats
       remove: []
+- name: Label log4cats2_12 PRs
+  conditions:
+  - files~=^.sbt/matrix/log4cats2_12/
+  actions:
+    label:
+      add:
+      - log4cats2_12
+      remove: []
+- name: Label log4cats3 PRs
+  conditions:
+  - files~=^.sbt/matrix/log4cats3/
+  actions:
+    label:
+      add:
+      - log4cats3
+      remove: []
 - name: Label munit PRs
   conditions:
-  - files~=^modules/munit/
+  - files~=^.sbt/matrix/munit/
   actions:
     label:
       add:
       - munit
       remove: []
+- name: Label munit2_12 PRs
+  conditions:
+  - files~=^.sbt/matrix/munit2_12/
+  actions:
+    label:
+      add:
+      - munit2_12
+      remove: []
+- name: Label munit3 PRs
+  conditions:
+  - files~=^.sbt/matrix/munit3/
+  actions:
+    label:
+      add:
+      - munit3
+      remove: []
 - name: Label mysql PRs
   conditions:
-  - files~=^modules/mysql/
+  - files~=^.sbt/matrix/mysql/
   actions:
     label:
       add:
       - mysql
       remove: []
+- name: Label mysql2_12 PRs
+  conditions:
+  - files~=^.sbt/matrix/mysql2_12/
+  actions:
+    label:
+      add:
+      - mysql2_12
+      remove: []
+- name: Label mysql3 PRs
+  conditions:
+  - files~=^.sbt/matrix/mysql3/
+  actions:
+    label:
+      add:
+      - mysql3
+      remove: []
 - name: Label otel4s PRs
   conditions:
-  - files~=^modules/otel4s/
+  - files~=^.sbt/matrix/otel4s/
   actions:
     label:
       add:
       - otel4s
       remove: []
+- name: Label otel4s3 PRs
+  conditions:
+  - files~=^.sbt/matrix/otel4s3/
+  actions:
+    label:
+      add:
+      - otel4s3
+      remove: []
 - name: Label postgres PRs
   conditions:
-  - files~=^modules/postgres/
+  - files~=^.sbt/matrix/postgres/
   actions:
     label:
       add:
@@ -121,57 +279,167 @@ pull_request_rules:
       remove: []
 - name: Label postgres-circe PRs
   conditions:
-  - files~=^modules/postgres-circe/
+  - files~=^.sbt/matrix/postgres-circe/
   actions:
     label:
       add:
       - postgres-circe
       remove: []
+- name: Label postgres-circe2_12 PRs
+  conditions:
+  - files~=^.sbt/matrix/postgres-circe2_12/
+  actions:
+    label:
+      add:
+      - postgres-circe2_12
+      remove: []
+- name: Label postgres-circe3 PRs
+  conditions:
+  - files~=^.sbt/matrix/postgres-circe3/
+  actions:
+    label:
+      add:
+      - postgres-circe3
+      remove: []
+- name: Label postgres2_12 PRs
+  conditions:
+  - files~=^.sbt/matrix/postgres2_12/
+  actions:
+    label:
+      add:
+      - postgres2_12
+      remove: []
+- name: Label postgres3 PRs
+  conditions:
+  - files~=^.sbt/matrix/postgres3/
+  actions:
+    label:
+      add:
+      - postgres3
+      remove: []
 - name: Label refined PRs
   conditions:
-  - files~=^modules/refined/
+  - files~=^.sbt/matrix/refined/
   actions:
     label:
       add:
       - refined
       remove: []
+- name: Label refined2_12 PRs
+  conditions:
+  - files~=^.sbt/matrix/refined2_12/
+  actions:
+    label:
+      add:
+      - refined2_12
+      remove: []
+- name: Label refined3 PRs
+  conditions:
+  - files~=^.sbt/matrix/refined3/
+  actions:
+    label:
+      add:
+      - refined3
+      remove: []
 - name: Label scalatest PRs
   conditions:
-  - files~=^modules/scalatest/
+  - files~=^.sbt/matrix/scalatest/
   actions:
     label:
       add:
       - scalatest
       remove: []
+- name: Label scalatest2_12 PRs
+  conditions:
+  - files~=^.sbt/matrix/scalatest2_12/
+  actions:
+    label:
+      add:
+      - scalatest2_12
+      remove: []
+- name: Label scalatest3 PRs
+  conditions:
+  - files~=^.sbt/matrix/scalatest3/
+  actions:
+    label:
+      add:
+      - scalatest3
+      remove: []
 - name: Label specs2 PRs
   conditions:
-  - files~=^modules/specs2/
+  - files~=^.sbt/matrix/specs2/
   actions:
     label:
       add:
       - specs2
       remove: []
+- name: Label specs22_12 PRs
+  conditions:
+  - files~=^.sbt/matrix/specs22_12/
+  actions:
+    label:
+      add:
+      - specs22_12
+      remove: []
+- name: Label specs23 PRs
+  conditions:
+  - files~=^.sbt/matrix/specs23/
+  actions:
+    label:
+      add:
+      - specs23
+      remove: []
 - name: Label testutils PRs
   conditions:
-  - files~=^modules/testutils/
+  - files~=^.sbt/matrix/testutils/
   actions:
     label:
       add:
       - testutils
       remove: []
+- name: Label testutils2_12 PRs
+  conditions:
+  - files~=^.sbt/matrix/testutils2_12/
+  actions:
+    label:
+      add:
+      - testutils2_12
+      remove: []
+- name: Label testutils3 PRs
+  conditions:
+  - files~=^.sbt/matrix/testutils3/
+  actions:
+    label:
+      add:
+      - testutils3
+      remove: []
 - name: Label weaver PRs
   conditions:
-  - files~=^modules/weaver/
+  - files~=^.sbt/matrix/weaver/
   actions:
     label:
       add:
       - weaver
       remove: []
+- name: Label weaver2_12 PRs
+  conditions:
+  - files~=^.sbt/matrix/weaver2_12/
+  actions:
+    label:
+      add:
+      - weaver2_12
+      remove: []
+- name: Label weaver3 PRs
+  conditions:
+  - files~=^.sbt/matrix/weaver3/
+  actions:
+    label:
+      add:
+      - weaver3
+      remove: []
 - name: merge-when-ci-pass
   conditions:
-  - status-success=Test (ubuntu-22.04, 2.12, temurin@11)
   - status-success=Test (ubuntu-22.04, 2.13, temurin@11)
-  - status-success=Test (ubuntu-22.04, 3, temurin@11)
   - label=merge-on-build-success
   actions:
     merge: {}
