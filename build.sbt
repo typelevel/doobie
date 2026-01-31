@@ -592,6 +592,7 @@ lazy val otel4s = project
   .settings(
     name := "doobie-otel4s",
     description := "otel4s support for doobie.",
+    crossScalaVersions := Seq(scala213Version, scala3Version),
     libraryDependencies ++= Seq(
       "org.typelevel" %% "otel4s-core-trace" % otel4sVersion,
       "org.typelevel" %% "otel4s-semconv" % otel4sVersion,
