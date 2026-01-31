@@ -219,5 +219,5 @@ jobs:
       - name: Submit Dependencies
         uses: scalacenter/sbt-dependency-submission@v2
         with:
-          modules-ignore: doobie_2.12 doobie_2.13 doobie_3 docs_2.12 docs_2.13 docs_3 example_2.12 example_2.13 example_3 bench_2.12 bench_2.13 bench_3
+          modules-ignore: doobie_2.12 doobie_2.13 doobie_3 docs_2.12 docs_2.13 docs_3 doobie-otel4s_2.13 doobie-otel4s_3 example_2.12 example_2.13 example_3 bench_2.12 bench_2.13 bench_3
           configs-ignore: test scala-tool scala-doc-tool test-internal

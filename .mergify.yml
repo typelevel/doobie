@@ -103,6 +103,14 @@ pull_request_rules:
       add:
       - mysql
       remove: []
+- name: Label otel4s PRs
+  conditions:
+  - files~=^modules/otel4s/
+  actions:
+    label:
+      add:
+      - otel4s
+      remove: []
 - name: Label postgres PRs
   conditions:
   - files~=^modules/postgres/
