@@ -135,8 +135,10 @@ class TracedTransactorSuite extends munit.CatsEffectSuite {
 
     for {
       tx <- testkit.tracedTransactor(config)
-      _ <- sql"select 1".query[Int].unique.transact(tx)
-      _ <- sql"select 2".query[Int].unique.transact(tx)
+      _ <- (for {
+        _ <- sql"select 1".query[Int].unique
+        _ <- sql"select 2".query[Int].unique
+      } yield ()).transact(tx)
       _ <- testkit.finishedSpans.assertEquals(expected)
     } yield ()
   }
