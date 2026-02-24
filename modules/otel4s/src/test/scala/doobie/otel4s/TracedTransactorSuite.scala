@@ -181,7 +181,7 @@ class TracedTransactorSuite extends munit.CatsEffectSuite {
     )
 
     val config =
-      TracingConfig.semconv(
+      TracingConfig.recommended(
         dbSystemName = DbAttributes.DbSystemNameValue.Postgresql,
         dbNamespace = "doobie"
       )

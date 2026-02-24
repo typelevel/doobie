@@ -51,23 +51,13 @@ trait TracingConfig {
 }
 
 object TracingConfig {
-  private val Default = TracingConfig(
-    "doobie",
-    "doobie:exec",
-    Attributes.empty,
-    QueryCaptureConfig.disabled,
-    AttributesExtractor.json,
-    SpanNamer.fromAttribute(DbAttributes.DbQuerySummary)
-  )
-
-  /** Default config:
-    *
-    *   - `tracerScopeName`: `"doobie"`
-    *   - `defaultSpanName`: `"doobie:exec"`
-    *   - `constAttributes`: empty
-    *   - `captureQuery`: [[QueryCaptureConfig.disabled]]
-    */
-  def default: TracingConfig = Default
+  private object Defaults {
+    val tracerScopeName = "doobie"
+    val defaultSpanName = "doobie:exec"
+    val queryCaptureConfig: QueryCaptureConfig = QueryCaptureConfig.recommended
+    val attributesExtractor: AttributesExtractor = AttributesExtractor.json
+    val spanNamer: SpanNamer = SpanNamer.fromAttribute(DbAttributes.DbQuerySummary)
+  }
 
   /** Builds a configuration instance with the provided values. */
   def apply(
@@ -111,28 +101,26 @@ object TracingConfig {
     *   - enables `db.query.text` capture
     *   - keeps parameter capture disabled by default
     */
-  def semconv(
+  def recommended(
       dbSystemName: DbAttributes.DbSystemNameValue,
       dbNamespace: String
   ): TracingConfig = {
     require(dbNamespace.nonEmpty, "dbNamespace must be non-empty")
 
-    val semconvConstAttributes = Attributes(
+    val constAttributes = Attributes(
       DbAttributes.DbSystemName(dbSystemName),
       DbAttributes.DbNamespace(dbNamespace)
     )
 
-    Default
-      .withConstAttributes(semconvConstAttributes)
-      .withCaptureQuery(QueryCaptureConfig.recommended)
+    TracingConfigImpl(
+      tracerScopeName = Defaults.tracerScopeName,
+      defaultSpanName = Defaults.defaultSpanName,
+      constAttributes = constAttributes,
+      captureQuery = Defaults.queryCaptureConfig,
+      attributesExtractor = Defaults.attributesExtractor,
+      spanNamer = Defaults.spanNamer,
+    )
   }
-
-  /** Alias for [[semconv]]. */
-  def recommended(
-      dbSystemName: DbAttributes.DbSystemNameValue,
-      dbNamespace: String
-  ): TracingConfig =
-    semconv(dbSystemName, dbNamespace)
 
   final case class TracingConfigImpl(
       tracerScopeName: String,
