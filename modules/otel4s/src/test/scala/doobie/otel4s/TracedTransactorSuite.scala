@@ -15,7 +15,7 @@ import munit.TestOptions
 import org.typelevel.otel4s.oteljava.AttributeConverters.*
 import org.typelevel.otel4s.oteljava.testkit.trace.TracesTestkit
 import org.typelevel.otel4s.oteljava.testkit.{InstrumentationScope, TelemetryResource}
-import org.typelevel.otel4s.semconv.attributes.{DbAttributes, ExceptionAttributes}
+import org.typelevel.otel4s.semconv.attributes.{DbAttributes, ErrorAttributes, ExceptionAttributes}
 import org.typelevel.otel4s.trace.TracerProvider
 import org.typelevel.otel4s.{Attribute, Attributes}
 
@@ -84,6 +84,7 @@ class TracedTransactorSuite extends munit.CatsEffectSuite {
       Span(
         name = "executeQuery",
         attributes = Attributes(
+          ErrorAttributes.ErrorType("org.h2.jdbc.JdbcSQLDataException"),
           DbAttributes.DbResponseStatusCode("22018"),
           DbAttributes.DbOperationName("executeQuery")
         ),

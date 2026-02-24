@@ -16,7 +16,7 @@ import doobie.free.KleisliInterpreter
 import doobie.util.log.{LogHandler, LoggingInfo}
 import doobie.util.trace.TraceEvent
 import org.typelevel.otel4s.Attributes
-import org.typelevel.otel4s.semconv.attributes.DbAttributes
+import org.typelevel.otel4s.semconv.attributes.{DbAttributes, ErrorAttributes}
 import org.typelevel.otel4s.trace.{SpanFinalizer, SpanKind, StatusCode, Tracer, TracerProvider}
 
 /** Interpreter that wraps doobie execution in otel4s spans.
@@ -42,7 +42,9 @@ class TracedInterpreter[F[_]: Async: Tracer](
 
   private val finalizationStrategy: SpanFinalizer.Strategy = {
     case Resource.ExitCase.Errored(error) =>
-      val general = SpanFinalizer.recordException(error) |+| SpanFinalizer.setStatus(StatusCode.Error)
+      val general = SpanFinalizer.addAttribute(ErrorAttributes.ErrorType(error.getClass.getName)) |+|
+        SpanFinalizer.recordException(error) |+|
+        SpanFinalizer.setStatus(StatusCode.Error)
 
       error match {
         case sql: SQLException =>
@@ -173,7 +175,7 @@ class TracedInterpreter[F[_]: Async: Tracer](
             case QueryCaptureConfig.QueryParametersPolicy.All =>
               batches.zipWithIndex.foreach { case (batch, idx) => addParams(batch, s"$idx.") }
             case QueryCaptureConfig.QueryParametersPolicy.NonBatchOnly =>
-            case QueryCaptureConfig.QueryParametersPolicy.None =>
+            case QueryCaptureConfig.QueryParametersPolicy.None         =>
           }
       }
     }
