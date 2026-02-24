@@ -151,26 +151,30 @@ class TracedInterpreter[F[_]: Async: Tracer](
 
     builder.addAll(config.constAttributes)
 
-    config.captureConfig.captureQuery.foreach { queryConfig =>
-      if (queryConfig.captureQueryStatementText)
-        builder.addOne(DbAttributes.DbQueryText(info.sql))
+    val queryConfig = config.captureQuery
+    if (queryConfig.captureQueryStatementText)
+      builder.addOne(DbAttributes.DbQueryText(info.sql))
 
-      if (queryConfig.captureQueryStatementParameters) {
-        def addParams(batch: List[Any], prefix: String): Unit =
-          batch.zipWithIndex.foreach { case (param, idx) =>
-            val asString = if (param != null) param.toString else "<null>"
-            builder.addOne(s"db.query.parameter.$prefix$idx", asString)
-          }
-
-        info.params.allParams match {
-          case Nil =>
-
-          case nonBatch :: Nil =>
-            addParams(nonBatch, "")
-
-          case batches =>
-            batches.zipWithIndex.foreach { case (batch, idx) => addParams(batch, s"$idx.") }
+    if (queryConfig.captureQueryStatementParameters != QueryCaptureConfig.QueryParametersPolicy.None) {
+      def addParams(batch: List[Any], prefix: String): Unit =
+        batch.zipWithIndex.foreach { case (param, idx) =>
+          val asString = if (param != null) param.toString else "<null>"
+          builder.addOne(s"db.query.parameter.$prefix$idx", asString)
         }
+
+      info.params.allParams match {
+        case Nil =>
+
+        case nonBatch :: Nil =>
+          addParams(nonBatch, "")
+
+        case batches =>
+          queryConfig.captureQueryStatementParameters match {
+            case QueryCaptureConfig.QueryParametersPolicy.All =>
+              batches.zipWithIndex.foreach { case (batch, idx) => addParams(batch, s"$idx.") }
+            case QueryCaptureConfig.QueryParametersPolicy.NonBatchOnly =>
+            case QueryCaptureConfig.QueryParametersPolicy.None =>
+          }
       }
     }
 
@@ -215,7 +219,7 @@ object TracedInterpreter {
 
     /** Controls query text/parameter capture.
       */
-    def captureConfig: CaptureConfig
+    def captureQuery: QueryCaptureConfig
 
     /** Extracts attributes from a raw label. */
     def attributesExtractor: AttributesExtractor
@@ -232,8 +236,8 @@ object TracedInterpreter {
     /** Returns a copy with new constant attributes. */
     def withConstAttributes(value: Attributes): Config
 
-    /** Returns a copy with a new capture configuration. */
-    def withCaptureConfig(value: CaptureConfig): Config
+    /** Returns a copy with query capture settings. */
+    def withCaptureQuery(value: QueryCaptureConfig): Config
 
     /** Returns a copy with a new attributes extractor. */
     def withAttributesExtractor(value: AttributesExtractor): Config
@@ -247,7 +251,7 @@ object TracedInterpreter {
       "doobie",
       "doobie:exec",
       Attributes.empty,
-      CaptureConfig.disabled,
+      QueryCaptureConfig.disabled,
       AttributesExtractor.json,
       SpanNamer.fromAttribute(DbAttributes.DbQuerySummary)
     )
@@ -257,7 +261,7 @@ object TracedInterpreter {
       *   - `tracerScopeName`: `"doobie"`
       *   - `defaultSpanName`: `"doobie:exec"`
       *   - `constAttributes`: empty
-      *   - `captureConfig`: [[CaptureConfig.disabled]]
+      *   - `captureQuery`: [[QueryCaptureConfig.disabled]]
       */
     def default: Config = Default
 
@@ -266,7 +270,7 @@ object TracedInterpreter {
         tracerScopeName: String,
         defaultSpanName: String,
         constAttributes: Attributes,
-        captureConfig: CaptureConfig,
+        captureQuery: QueryCaptureConfig,
         attributesExtractor: AttributesExtractor,
         spanNamer: SpanNamer
     ): Config =
@@ -274,7 +278,7 @@ object TracedInterpreter {
         tracerScopeName,
         defaultSpanName,
         constAttributes,
-        captureConfig,
+        captureQuery,
         attributesExtractor,
         spanNamer
       )
@@ -284,13 +288,13 @@ object TracedInterpreter {
         tracerScopeName: String,
         defaultSpanName: String,
         constAttributes: Attributes,
-        captureConfig: CaptureConfig
+        captureQuery: QueryCaptureConfig
     ): Config =
       ConfigImpl(
         tracerScopeName,
         defaultSpanName,
         constAttributes,
-        captureConfig,
+        captureQuery,
         AttributesExtractor.json,
         SpanNamer.fromAttribute(DbAttributes.DbQuerySummary)
       )
@@ -303,7 +307,7 @@ object TracedInterpreter {
       *   - enables `db.query.text` capture
       *   - keeps parameter capture disabled by default
       */
-    def recommended(
+    def semconv(
         dbSystemName: DbAttributes.DbSystemNameValue,
         dbNamespace: String
     ): Config = {
@@ -316,98 +320,31 @@ object TracedInterpreter {
 
       Default
         .withConstAttributes(semconvConstAttributes)
-        .withCaptureConfig(
-          CaptureConfig(
-            Some(
-              CaptureConfig.CaptureQuery(
-                captureQueryStatementText = true,
-                captureQueryStatementParameters = false
-              )
-            )
-          )
-        )
+        .withCaptureQuery(QueryCaptureConfig.recommended)
     }
+
+    /** Alias for [[semconv]]. */
+    def recommended(
+        dbSystemName: DbAttributes.DbSystemNameValue,
+        dbNamespace: String
+    ): Config =
+      semconv(dbSystemName, dbNamespace)
 
     final case class ConfigImpl(
         tracerScopeName: String,
         defaultSpanName: String,
         constAttributes: Attributes,
-        captureConfig: CaptureConfig,
+        captureQuery: QueryCaptureConfig,
         attributesExtractor: AttributesExtractor,
         spanNamer: SpanNamer
     ) extends Config {
       def withTracerScopeName(value: String): Config = copy(tracerScopeName = value)
       def withDefaultSpanName(value: String): Config = copy(defaultSpanName = value)
       def withConstAttributes(value: Attributes): Config = copy(constAttributes = value)
-      def withCaptureConfig(value: CaptureConfig): Config = copy(captureConfig = value)
+      def withCaptureQuery(value: QueryCaptureConfig): Config = copy(captureQuery = value)
       def withAttributesExtractor(value: AttributesExtractor): Config = copy(attributesExtractor = value)
       def withSpanNamer(value: SpanNamer): Config = copy(spanNamer = value)
     }
-  }
-
-  /** Controls query text/parameter capture.
-    */
-  sealed trait CaptureConfig {
-
-    /** When query capture is enabled, span attributes follow OpenTelemetry DB semantic conventions where possible.
-      */
-    def captureQuery: Option[CaptureConfig.CaptureQuery]
-  }
-
-  object CaptureConfig {
-
-    sealed trait CaptureQuery {
-
-      /** When `captureQueryStatementText` is true, the SQL text is attached as `db.query.text` via
-        * [[org.typelevel.otel4s.semconv.attributes.DbAttributes.DbQueryText]].
-        */
-      def captureQueryStatementText: Boolean
-
-      /** When `captureQueryStatementParameters` is true, parameters are added as string attributes named
-        * `db.query.parameter.<index>` for non-batched statements, or `db.query.parameter.<batch>.<index>` for batched
-        * statements. Null parameters are encoded as the literal string `"<null>"`.
-        */
-      def captureQueryStatementParameters: Boolean
-    }
-
-    object CaptureQuery {
-
-      /** Builds a query capture configuration.
-        *
-        * @param captureQueryStatementText
-        *   when true, attach `db.query.text` with the SQL text
-        *
-        * @param captureQueryStatementParameters
-        *   when true, attach `db.query.parameter.*` attributes for parameters
-        */
-      def apply(
-          captureQueryStatementText: Boolean,
-          captureQueryStatementParameters: Boolean
-      ): CaptureQuery =
-        CaptureQueryImpl(captureQueryStatementText, captureQueryStatementParameters)
-
-      private final case class CaptureQueryImpl(
-          captureQueryStatementText: Boolean,
-          captureQueryStatementParameters: Boolean
-      ) extends CaptureQuery
-    }
-
-    private val Disabled = CaptureConfig(
-      captureQuery = None
-    )
-
-    /** Disabled capture config with no query capture. */
-    def disabled: CaptureConfig = Disabled
-
-    /** Build a capture configuration with optional query capture. */
-    def apply(
-        captureQuery: Option[CaptureQuery]
-    ): CaptureConfig =
-      CaptureConfigImpl(captureQuery)
-
-    private final case class CaptureConfigImpl(
-        captureQuery: Option[CaptureQuery]
-    ) extends CaptureConfig
   }
 
   def create[F[_]: Async: TracerProvider: LiftIO](

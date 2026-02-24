@@ -22,7 +22,7 @@ import org.typelevel.otel4s.{Attribute, Attributes}
 import scala.jdk.CollectionConverters.*
 
 class TracedTransactorSuite extends munit.CatsEffectSuite {
-  import TracedInterpreter.CaptureConfig
+  import QueryCaptureConfig.QueryParametersPolicy
 
   private val xa = Transactor.fromDriverManager[IO](
     driver = "org.h2.Driver",
@@ -125,11 +125,9 @@ class TracedTransactorSuite extends munit.CatsEffectSuite {
     )
 
     val config = tracedConfig(
-      captureQuery = Some(
-        CaptureConfig.CaptureQuery(
-          captureQueryStatementText = true,
-          captureQueryStatementParameters = false
-        )
+      captureQuery = QueryCaptureConfig(
+        captureQueryStatementText = true,
+        captureQueryStatementParameters = QueryParametersPolicy.None
       )
     )
 
@@ -156,11 +154,9 @@ class TracedTransactorSuite extends munit.CatsEffectSuite {
     )
 
     val config = tracedConfig(
-      captureQuery = Some(
-        CaptureConfig.CaptureQuery(
-          captureQueryStatementText = true,
-          captureQueryStatementParameters = true
-        )
+      captureQuery = QueryCaptureConfig(
+        captureQueryStatementText = true,
+        captureQueryStatementParameters = QueryParametersPolicy.All
       )
     )
 
@@ -396,13 +392,13 @@ class TracedTransactorSuite extends munit.CatsEffectSuite {
 
   private def tracedConfig(
       constAttributes: Attributes = Attributes.empty,
-      captureQuery: Option[CaptureConfig.CaptureQuery] = None
+      captureQuery: QueryCaptureConfig = QueryCaptureConfig.disabled
   ): TracedInterpreter.Config =
     TracedInterpreter.Config(
       tracerScopeName = "doobie",
       defaultSpanName = "doobie:exec",
       constAttributes = constAttributes,
-      captureConfig = TracedInterpreter.CaptureConfig(captureQuery)
+      captureQuery = captureQuery
     )
 
   private class Testkit(testkit: TracesTestkit[IO]) {
