@@ -8,9 +8,9 @@ import doobie.Fragment
 import doobie.util.query.Query0
 import doobie.util.update.Update0
 import org.typelevel.otel4s.Attribute
-import io.circe.syntax._
-import doobie.otel4s.AttributesCodec._
-import doobie.otel4s.syntax.all._
+import io.circe.syntax.*
+import doobie.otel4s.AttributesCodec.*
+import doobie.otel4s.syntax.all.*
 import doobie.util.Read
 import org.typelevel.otel4s.semconv.attributes.DbAttributes
 

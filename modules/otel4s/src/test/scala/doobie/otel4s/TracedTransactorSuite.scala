@@ -171,6 +171,32 @@ class TracedTransactorSuite extends munit.CatsEffectSuite {
     } yield ()
   }
 
+  testkitTest("semconv config sets required db attributes and query text capture") { testkit =>
+    val expected = List(
+      Span(
+        name = "executeQuery",
+        attributes = Attributes(
+          DbAttributes.DbSystemName(DbAttributes.DbSystemNameValue.Postgresql),
+          DbAttributes.DbNamespace("doobie"),
+          DbAttributes.DbQueryText("select 1"),
+          DbAttributes.DbOperationName("executeQuery")
+        )
+      )
+    )
+
+    val config =
+      TracedInterpreter.Config.recommended(
+        dbSystemName = DbAttributes.DbSystemNameValue.Postgresql,
+        dbNamespace = "doobie"
+      )
+
+    for {
+      tx <- testkit.tracedTransactor(config)
+      _ <- sql"select 1".query[Int].unique.transact(tx)
+      _ <- testkit.finishedSpans.assertEquals(expected)
+    } yield ()
+  }
+
   testkitTest("capture explicit summary with default parser and span namer") { testkit =>
     val summary = "summary via syntax"
 
@@ -228,7 +254,9 @@ class TracedTransactorSuite extends munit.CatsEffectSuite {
   testkitTest("use custom span namer") { testkit =>
     val config = tracedConfig().withSpanNamer(new SpanNamer {
       def spanName(context: SpanNamer.Context): Option[String] =
-        context.summary.map(summary => s"sql:$summary")
+        context.attributes
+          .flatMap(_.get(DbAttributes.DbQuerySummary).map(_.value))
+          .map(summary => s"sql:$summary")
     })
 
     val summary = "named"

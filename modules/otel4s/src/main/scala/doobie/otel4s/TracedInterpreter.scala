@@ -288,6 +288,39 @@ object TracedInterpreter {
         SpanNamer.fromAttribute(DbAttributes.DbQuerySummary)
       )
 
+    /** Builds a semantic-conventions-oriented config that guarantees key DB identity attributes.
+      *
+      * This constructor enforces explicit database identity and applies semconv-friendly defaults:
+      *   - always sets `db.system.name`
+      *   - always sets `db.namespace`
+      *   - enables `db.query.text` capture
+      *   - keeps parameter capture disabled by default
+      */
+    def recommended(
+        dbSystemName: DbAttributes.DbSystemNameValue,
+        dbNamespace: String
+    ): Config = {
+      require(dbNamespace.nonEmpty, "dbNamespace must be non-empty")
+
+      val semconvConstAttributes = Attributes(
+        DbAttributes.DbSystemName(dbSystemName),
+        DbAttributes.DbNamespace(dbNamespace)
+      )
+
+      Default
+        .withConstAttributes(semconvConstAttributes)
+        .withCaptureConfig(
+          CaptureConfig(
+            Some(
+              CaptureConfig.CaptureQuery(
+                captureQueryStatementText = true,
+                captureQueryStatementParameters = false
+              )
+            )
+          )
+        )
+    }
+
     final case class ConfigImpl(
         tracerScopeName: String,
         defaultSpanName: String,
