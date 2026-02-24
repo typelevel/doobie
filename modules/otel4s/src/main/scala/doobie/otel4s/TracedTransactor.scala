@@ -18,7 +18,7 @@ object TracedTransactor {
     */
   def create[F[_]: Async: TracerProvider: LiftIO](
       transactor: Transactor[F],
-      config: TracedInterpreter.Config,
+      config: TracingConfig,
       logHandler: Option[LogHandler[F]]
   ): F[Transactor[F]] =
     for {

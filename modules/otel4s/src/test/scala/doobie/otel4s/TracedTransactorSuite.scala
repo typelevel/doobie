@@ -181,7 +181,7 @@ class TracedTransactorSuite extends munit.CatsEffectSuite {
     )
 
     val config =
-      TracedInterpreter.Config.semconv(
+      TracingConfig.semconv(
         dbSystemName = DbAttributes.DbSystemNameValue.Postgresql,
         dbNamespace = "doobie"
       )
@@ -393,8 +393,8 @@ class TracedTransactorSuite extends munit.CatsEffectSuite {
   private def tracedConfig(
       constAttributes: Attributes = Attributes.empty,
       captureQuery: QueryCaptureConfig = QueryCaptureConfig.disabled
-  ): TracedInterpreter.Config =
-    TracedInterpreter.Config(
+  ): TracingConfig =
+    TracingConfig(
       tracerScopeName = "doobie",
       defaultSpanName = "doobie:exec",
       constAttributes = constAttributes,
@@ -404,7 +404,7 @@ class TracedTransactorSuite extends munit.CatsEffectSuite {
   private class Testkit(testkit: TracesTestkit[IO]) {
     implicit val tracerProvider: TracerProvider[IO] = testkit.tracerProvider
 
-    def tracedTransactor(config: TracedInterpreter.Config): IO[Transactor[IO]] =
+    def tracedTransactor(config: TracingConfig): IO[Transactor[IO]] =
       TracedTransactor.create(xa, config, None)
 
     def finishedSpans: IO[List[Span]] =
