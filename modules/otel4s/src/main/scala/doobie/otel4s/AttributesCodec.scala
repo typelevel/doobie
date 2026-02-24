@@ -28,6 +28,11 @@ private[doobie] object AttributesCodec {
 
   implicit val anyValueDecoder: Decoder[AnyValue] =
     new Decoder[AnyValue] { self =>
+      implicit val ByteArrayDecoder: Decoder[Array[Byte]] =
+        Decoder[String].emap { base64 =>
+          ByteVector.fromHex(base64).toRight("Invalid base64 encoding for bytes value").map(_.toArray)
+        }
+
       def apply(c: HCursor): Decoder.Result[AnyValue] = {
         val valueFields = c.keys.map(_.toList).getOrElse(Nil)
 
@@ -39,8 +44,7 @@ private[doobie] object AttributesCodec {
           case "boolean" :: Nil => decode[Boolean]("boolean", AnyValue.boolean)
           case "double" :: Nil  => decode[Double]("double", AnyValue.double)
           case "long" :: Nil    => decode[Long]("long", AnyValue.long)
-          case "bytes" :: Nil   =>
-            decode[String]("bytes", base64 => AnyValue.bytes(ByteVector.fromValidBase64(base64).toArray))
+          case "bytes" :: Nil   => decode[Array[Byte]]("bytes", AnyValue.bytes)
           case "seq" :: Nil =>
             decode[Seq[AnyValue]]("seq", AnyValue.seq)(using Decoder.decodeSeq(self))
           case "map" :: Nil =>
