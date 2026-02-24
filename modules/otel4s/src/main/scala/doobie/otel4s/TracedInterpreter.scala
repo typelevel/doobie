@@ -209,17 +209,21 @@ object TracedInterpreter {
       config: TracingConfig,
       logHandler: LogHandler[F]
   ): F[TracedInterpreter[F]] =
-    TracerProvider[F].get(config.tracerScopeName).flatMap { implicit tracer =>
-      IOLocal(Option.empty[String]).to[F].map { ioLocal =>
-        val local: Local[F, Option[String]] = new Local[F, Option[String]] {
-          def applicative: Applicative[F] = implicitly
-          def ask[E2 >: Option[String]]: F[E2] =
-            Async[F].widen[Option[String], E2](ioLocal.get.to[F])
-          def local[A](fa: F[A])(f: Option[String] => Option[String]): F[A] =
-            Async[F].bracket(ioLocal.modify(e => (f(e), e)).to[F])(_ => fa)(ioLocal.set(_).to[F])
-        }
+    TracerProvider[F]
+      .tracer(config.tracerScopeName)
+      .withVersion(doobie.buildinfo.version)
+      .get
+      .flatMap { implicit tracer =>
+        IOLocal(Option.empty[String]).to[F].map { ioLocal =>
+          val local: Local[F, Option[String]] = new Local[F, Option[String]] {
+            def applicative: Applicative[F] = implicitly
+            def ask[E2 >: Option[String]]: F[E2] =
+              Async[F].widen[Option[String], E2](ioLocal.get.to[F])
+            def local[A](fa: F[A])(f: Option[String] => Option[String]): F[A] =
+              Async[F].bracket(ioLocal.modify(e => (f(e), e)).to[F])(_ => fa)(ioLocal.set(_).to[F])
+          }
 
-        new TracedInterpreter(config, logHandler, local)
+          new TracedInterpreter(config, logHandler, local)
+        }
       }
-    }
 }
