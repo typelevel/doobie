@@ -5,7 +5,6 @@
 package doobie.otel4s
 
 import java.sql.{PreparedStatement, ResultSet, SQLException}
-import java.util.logging.Logger
 
 import cats.data.Kleisli
 import cats.effect.{Async, IOLocal, LiftIO, Resource}
@@ -16,10 +15,9 @@ import cats.{Applicative, ~>}
 import doobie.free.KleisliInterpreter
 import doobie.util.log.{LogHandler, LoggingInfo}
 import doobie.util.trace.TraceEvent
-import org.typelevel.otel4s.{AttributeKey, Attributes}
+import org.typelevel.otel4s.Attributes
 import org.typelevel.otel4s.semconv.attributes.DbAttributes
 import org.typelevel.otel4s.trace.{SpanFinalizer, SpanKind, StatusCode, Tracer, TracerProvider}
-import doobie.otel4s.AttributesCodec.*
 
 /** Interpreter that wraps doobie execution in otel4s spans.
   *
@@ -40,9 +38,7 @@ class TracedInterpreter[F[_]: Async: Tracer](
     logHandler: LogHandler[F],
     local: Local[F, Option[String]]
 ) extends KleisliInterpreter(logHandler) {
-  import TracedInterpreter.CaptureConfig.CaptureLabel
-
-  private val jdkLogger = Logger.getLogger(getClass.getName)
+  import TracedInterpreter.SpanParams
 
   private val finalizationStrategy: SpanFinalizer.Strategy = {
     case Resource.ExitCase.Errored(error) =>
@@ -66,15 +62,15 @@ class TracedInterpreter[F[_]: Async: Tracer](
   )(fa: Free[G, A]): Kleisli[F, J, A] =
     Kleisli { j =>
       Async[F].uncancelable { poll =>
-        val (spanName, attributes) = preparedStatementSpanParams(event.loggingInfo)
+        val params = preparedStatementSpanParams(event.loggingInfo)
 
         Tracer[F]
-          .spanBuilder(spanName.getOrElse(config.defaultSpanName))
+          .spanBuilder(config.defaultSpanName)
           .withSpanKind(SpanKind.Client)
-          .addAttributes(attributes)
+          .addAttributes(params.attributes)
           .withFinalizationStrategy(finalizationStrategy)
           .build
-          .surround(poll(local.scope(super.trace(event, interpreter)(fa).run(j))(spanName)))
+          .surround(poll(local.scope(super.trace(event, interpreter)(fa).run(j))(params.customSpanName)))
       }
     }
 
@@ -149,7 +145,7 @@ class TracedInterpreter[F[_]: Async: Tracer](
         updateSpan("executeUpdate") >> super.executeUpdate(a, b)
     }
 
-  private def preparedStatementSpanParams(info: LoggingInfo): (Option[String], Attributes) = {
+  private def preparedStatementSpanParams(info: LoggingInfo): SpanParams = {
     val label = info.label
     val builder = Attributes.newBuilder
 
@@ -178,42 +174,30 @@ class TracedInterpreter[F[_]: Async: Tracer](
       }
     }
 
-    val spanName =
-      config.captureConfig.captureLabel.filter(_ => label.nonEmpty && label != doobie.util.unlabeled) match {
-        case Some(_: CaptureLabel.AsSpanName) =>
-          Some(label)
+    val parsedAttributes =
+      if (label.nonEmpty && label != doobie.util.unlabeled)
+        config.attributesExtractor.extract(label)
+      else
+        None
 
-        case Some(asAttribute: CaptureLabel.AsAttribute) =>
-          builder.addOne(asAttribute.attributeKey, label)
-          None
+    parsedAttributes.foreach { attributes =>
+      builder.addAll(attributes)
+    }
 
-        case Some(decodeAttributes: CaptureLabel.DecodeAttributes) =>
-          io.circe.parser.decode[Attributes](label) match {
-            case Right(attributes) =>
-              builder.addAll(attributes)
-              decodeAttributes.spanNameFromAttribute.flatMap(key => attributes.get(key)).map(_.value)
+    val customSpanName = config.spanNamer.spanName(
+      SpanNamer.Context(label, info.sql, parsedAttributes)
+    )
 
-            case Left(error) =>
-              decodeAttributes.fallback match {
-                case Some(fallback) =>
-                  builder.addOne(fallback.attributeKey, label)
-                  None
-
-                case None =>
-                  jdkLogger.warning(s"Error parsing query label '$label' as attributes: ${error.getMessage}")
-                  None
-              }
-          }
-
-        case _ =>
-          None
-      }
-
-    (spanName, builder.result())
+    SpanParams(customSpanName, builder.result())
   }
 }
 
 object TracedInterpreter {
+
+  private final case class SpanParams(
+      customSpanName: Option[String],
+      attributes: Attributes
+  )
 
   trait Config {
 
@@ -222,9 +206,6 @@ object TracedInterpreter {
     def tracerScopeName: String
 
     /** The default span name to use when no label is available.
-      *
-      * @see
-      *   [[CaptureConfig.captureLabel]] to customize the span name.
       */
     def defaultSpanName: String
 
@@ -232,9 +213,15 @@ object TracedInterpreter {
       */
     def constAttributes: Attributes
 
-    /** Controls query text/parameter capture and label handling.
+    /** Controls query text/parameter capture.
       */
     def captureConfig: CaptureConfig
+
+    /** Extracts attributes from a raw label. */
+    def attributesExtractor: AttributesExtractor
+
+    /** Computes the final span name from typed label context. */
+    def spanNamer: SpanNamer
 
     /** Returns a copy with a new tracer scope name. */
     def withTracerScopeName(value: String): Config
@@ -247,6 +234,12 @@ object TracedInterpreter {
 
     /** Returns a copy with a new capture configuration. */
     def withCaptureConfig(value: CaptureConfig): Config
+
+    /** Returns a copy with a new label parser. */
+    def withLabelParser(value: AttributesExtractor): Config
+
+    /** Returns a copy with a new span namer. */
+    def withSpanNamer(value: SpanNamer): Config
   }
 
   object Config {
@@ -254,7 +247,9 @@ object TracedInterpreter {
       "doobie",
       "doobie:exec",
       Attributes.empty,
-      CaptureConfig.disabled
+      CaptureConfig.disabled,
+      AttributesExtractor.json,
+      SpanNamer.fromAttribute(DbAttributes.DbQuerySummary)
     )
 
     /** Default config:
@@ -271,34 +266,52 @@ object TracedInterpreter {
         tracerScopeName: String,
         defaultSpanName: String,
         constAttributes: Attributes,
+        captureConfig: CaptureConfig,
+        labelParser: AttributesExtractor,
+        spanNamer: SpanNamer
+    ): Config =
+      ConfigImpl(tracerScopeName, defaultSpanName, constAttributes, captureConfig, labelParser, spanNamer)
+
+    /** Builds a configuration instance with default label parser and span namer. */
+    def apply(
+        tracerScopeName: String,
+        defaultSpanName: String,
+        constAttributes: Attributes,
         captureConfig: CaptureConfig
     ): Config =
-      ConfigImpl(tracerScopeName, defaultSpanName, constAttributes, captureConfig)
+      ConfigImpl(
+        tracerScopeName,
+        defaultSpanName,
+        constAttributes,
+        captureConfig,
+        AttributesExtractor.json,
+        SpanNamer.fromAttribute(DbAttributes.DbQuerySummary)
+      )
 
     final case class ConfigImpl(
         tracerScopeName: String,
         defaultSpanName: String,
         constAttributes: Attributes,
-        captureConfig: CaptureConfig
+        captureConfig: CaptureConfig,
+        attributesExtractor: AttributesExtractor,
+        spanNamer: SpanNamer
     ) extends Config {
       def withTracerScopeName(value: String): Config = copy(tracerScopeName = value)
       def withDefaultSpanName(value: String): Config = copy(defaultSpanName = value)
       def withConstAttributes(value: Attributes): Config = copy(constAttributes = value)
       def withCaptureConfig(value: CaptureConfig): Config = copy(captureConfig = value)
+      def withLabelParser(value: AttributesExtractor): Config = copy(attributesExtractor = value)
+      def withSpanNamer(value: SpanNamer): Config = copy(spanNamer = value)
     }
   }
 
-  /** Controls query text/parameter capture and label handling.
+  /** Controls query text/parameter capture.
     */
   sealed trait CaptureConfig {
 
     /** When query capture is enabled, span attributes follow OpenTelemetry DB semantic conventions where possible.
       */
     def captureQuery: Option[CaptureConfig.CaptureQuery]
-
-    /** Controls how the label is turned into span names or attributes.
-      */
-    def captureLabel: Option[CaptureConfig.CaptureLabel]
   }
 
   object CaptureConfig {
@@ -339,129 +352,21 @@ object TracedInterpreter {
       ) extends CaptureQuery
     }
 
-    /** Configures how a label is turned into span names or attributes.
-      */
-    sealed trait CaptureLabel
-
-    object CaptureLabel {
-
-      sealed trait AsSpanName extends CaptureLabel
-
-      sealed trait AsAttribute extends CaptureLabel {
-        def attributeKey: AttributeKey[String]
-      }
-
-      sealed trait DecodeAttributes extends CaptureLabel {
-        def spanNameFromAttribute: Option[AttributeKey[String]]
-        def fallback: Option[AsAttribute]
-      }
-
-      /** Use the label as the span name.
-        *
-        * @example
-        *   to use a label as a span name:
-        *   {{{
-        * CaptureLabel.asSpanName
-        *
-        * // span name will be "query summary"
-        * sql"select 1".queryWithLabel[Int]("query summary").unique.transact(tx)
-        *   }}}
-        */
-      def asSpanName: AsSpanName =
-        AsSpanName
-
-      /** Add the label as a span attribute.
-        *
-        * @example
-        *   to add the label as an attribute named `db.query.summary`:
-        *   {{{
-        * CaptureLabel.asAttribute(AttributeKey[String]("db.query.summary"))
-        *
-        * // span will have attribute: db.query.summary: "query summary"
-        * sql"select 1".queryWithLabel[Int]("query summary").unique.transact(tx)
-        *   }}}
-        *
-        * @param attributeKey
-        *   the [[org.typelevel.otel4s.AttributeKey]] to use for the attribute
-        */
-      def asAttribute(attributeKey: AttributeKey[String]): AsAttribute =
-        AsAttributeImpl(attributeKey)
-
-      /** `decodeAttributes` expects the `label` to be JSON encoded [[org.typelevel.otel4s.Attributes]]. When decoding
-        * succeeds, all attributes are added to the span and an optional attribute can be used as the span name.
-        *
-        * @example
-        *   to add attributes attached to the query:
-        *   {{{
-        * CaptureLabel.decodeAttributes(None, None)
-        *
-        * // span will have attribute: db.query.summary: "query summary"
-        * sql"select 1".queryWithAttributes[Int](Attribute("db.query.summary", "query summary")).unique.transact(tx)
-        *   }}}
-        *
-        * @example
-        *   to use an attribute as a span name:
-        *   {{{
-        * CaptureLabel.decodeAttributes(Some(AttributeKey[String]("db.query.summary")), None)
-        *
-        * // span name will be "query summary"
-        * sql"select 1".queryWithAttributes[Int](Attribute("db.query.summary", "query summary")).unique.transact(tx)
-        *   }}}
-        *
-        * @example
-        *   to attach the label as an attribute:
-        *   {{{
-        * CaptureLabel.decodeAttributes(None, Some(CaptureLabel.asAttribute(AttributeKey[String]("db.query.label"))))
-        *
-        * // span will have attribute: db.query.summary: "query summary"
-        * sql"select 1".queryWithAttributes[Int](Attribute("db.query.summary", "query summary")).unique.transact(tx)
-        *
-        * // span will have attribute: db.query.label: "query summary"
-        * sql"select 1".queryWithLabel[Int]("query summary").unique.transact(tx)
-        *   }}}
-        *
-        * @param spanNameFromAttribute
-        *   the optional [[org.typelevel.otel4s.AttributeKey]] to use as the span name when decoding succeeds
-        *
-        * @param fallback
-        *   the fallback [[CaptureLabel]] to use when decoding fails. If `None`, the label is discarded.
-        */
-      def decodeAttributes(
-          spanNameFromAttribute: Option[AttributeKey[String]],
-          fallback: Option[AsAttribute]
-      ): DecodeAttributes =
-        DecodeAttributesImpl(spanNameFromAttribute, fallback)
-
-      private object AsSpanName extends AsSpanName
-
-      private final case class AsAttributeImpl(
-          attributeKey: AttributeKey[String]
-      ) extends AsAttribute
-
-      private final case class DecodeAttributesImpl(
-          spanNameFromAttribute: Option[AttributeKey[String]],
-          fallback: Option[AsAttribute]
-      ) extends DecodeAttributes
-    }
-
     private val Disabled = CaptureConfig(
-      captureQuery = None,
-      captureLabel = None
+      captureQuery = None
     )
 
-    /** Disabled capture config with no query capture and no label capture. */
+    /** Disabled capture config with no query capture. */
     def disabled: CaptureConfig = Disabled
 
-    /** Build a capture configuration with optional query/label capture. */
+    /** Build a capture configuration with optional query capture. */
     def apply(
-        captureQuery: Option[CaptureQuery],
-        captureLabel: Option[CaptureLabel]
+        captureQuery: Option[CaptureQuery]
     ): CaptureConfig =
-      CaptureConfigImpl(captureQuery, captureLabel)
+      CaptureConfigImpl(captureQuery)
 
     private final case class CaptureConfigImpl(
-        captureQuery: Option[CaptureQuery],
-        captureLabel: Option[CaptureLabel]
+        captureQuery: Option[CaptureQuery]
     ) extends CaptureConfig
   }
 

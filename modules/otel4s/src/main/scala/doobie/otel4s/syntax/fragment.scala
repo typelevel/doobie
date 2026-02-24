@@ -8,46 +8,58 @@ import doobie.Fragment
 import doobie.util.query.Query0
 import doobie.util.update.Update0
 import org.typelevel.otel4s.Attribute
-import io.circe.syntax.*
-import doobie.otel4s.AttributesCodec.*
+import io.circe.syntax._
+import doobie.otel4s.AttributesCodec._
+import doobie.otel4s.syntax.all._
 import doobie.util.Read
+import org.typelevel.otel4s.semconv.attributes.DbAttributes
 
 import scala.collection.immutable
 
 class FragmentOps(fragment: Fragment) {
 
-  /** Build a query labeled with JSON-encoded attributes for tracing.
+  /** Build a query with explicit summary for tracing.
+    */
+  def queryWithSummary[A: Read](summary: String): Query0[A] =
+    fragment.queryWithAttributes(DbAttributes.DbQuerySummary(summary))
+
+  /** Build an update with explicit summary for tracing.
+    */
+  def updateWithSummary(summary: String): Update0 =
+    fragment.updateWithAttributes(DbAttributes.DbQuerySummary(summary))
+
+  /** Build a query with encoded tracing attributes payload.
     *
     * @note
-    *   the label is interpreted as attributes only when
-    *   [[doobie.otel4s.TracedInterpreter.CaptureConfig.CaptureLabel.decodeAttributes]] is enabled.
+    * these attributes are encoded as an internal label payload and interpreted by
+    * [[doobie.otel4s.AttributesExtractor.json]].
     */
   def queryWithAttributes[A: Read](attributes: immutable.Iterable[Attribute[?]]): Query0[A] =
     fragment.queryWithLabel(attributes.asJson.noSpaces)
 
-  /** Build a query labeled with JSON-encoded attributes for tracing.
+  /** Build a query with encoded tracing attributes payload.
     *
     * @note
-    *   the label is interpreted as attributes only when
-    *   [[doobie.otel4s.TracedInterpreter.CaptureConfig.CaptureLabel.decodeAttributes]] is enabled.
+    * these attributes are encoded as an internal label payload and interpreted by
+    * [[doobie.otel4s.AttributesExtractor.json]].
     */
   def queryWithAttributes[A: Read](attributes: Attribute[?]*): Query0[A] =
     fragment.queryWithLabel(attributes.asJson.noSpaces)
 
-  /** Build an update labeled with JSON-encoded attributes for tracing.
+  /** Build an update with encoded tracing attributes payload.
     *
     * @note
-    *   the label is interpreted as attributes only when
-    *   [[doobie.otel4s.TracedInterpreter.CaptureConfig.CaptureLabel.decodeAttributes]] is enabled.
+    * these attributes are encoded as an internal label payload and interpreted by
+    * [[doobie.otel4s.AttributesExtractor.json]].
     */
   def updateWithAttributes(attributes: immutable.Iterable[Attribute[?]]): Update0 =
     fragment.updateWithLabel(attributes.asJson.noSpaces)
 
-  /** Build an update labeled with JSON-encoded attributes for tracing.
+  /** Build an update with encoded tracing attributes payload.
     *
     * @note
-    *   the label is interpreted as attributes only when
-    *   [[doobie.otel4s.TracedInterpreter.CaptureConfig.CaptureLabel.decodeAttributes]] is enabled.
+    * these attributes are encoded as an internal label payload and interpreted by
+    * [[doobie.otel4s.AttributesExtractor.json]].
     */
   def updateWithAttributes(attributes: Attribute[?]*): Update0 =
     fragment.updateWithLabel(attributes.asJson.noSpaces)
