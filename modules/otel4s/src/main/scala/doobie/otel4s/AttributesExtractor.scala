@@ -35,7 +35,7 @@ object AttributesExtractor {
     *
     * @example
     *   {{{
-    * LabelParser.asAttribute(AttributeKey[String]("db.query.label"))
+    * AttributesExtractor.asSingleAttribute(AttributeKey[String]("db.query.label"))
     *
     * // label "my query" -> attribute db.query.label: "my query"
     *   }}}

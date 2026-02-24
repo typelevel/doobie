@@ -22,7 +22,7 @@ import org.typelevel.otel4s.trace.{SpanFinalizer, SpanKind, StatusCode, Tracer, 
 /** Interpreter that wraps doobie execution in otel4s spans.
   *
   * @see
-  *   [[https://opentelemetry.io/docs/specs/semconv/db/database-spans]]
+  *   [[https://opentelemetry.io/docs/specs/semconv/database/database-spans]]
   *
   * @param config
   *   tracing configuration including default span naming and capture settings
@@ -235,8 +235,8 @@ object TracedInterpreter {
     /** Returns a copy with a new capture configuration. */
     def withCaptureConfig(value: CaptureConfig): Config
 
-    /** Returns a copy with a new label parser. */
-    def withLabelParser(value: AttributesExtractor): Config
+    /** Returns a copy with a new attributes extractor. */
+    def withAttributesExtractor(value: AttributesExtractor): Config
 
     /** Returns a copy with a new span namer. */
     def withSpanNamer(value: SpanNamer): Config
@@ -267,12 +267,19 @@ object TracedInterpreter {
         defaultSpanName: String,
         constAttributes: Attributes,
         captureConfig: CaptureConfig,
-        labelParser: AttributesExtractor,
+        attributesExtractor: AttributesExtractor,
         spanNamer: SpanNamer
     ): Config =
-      ConfigImpl(tracerScopeName, defaultSpanName, constAttributes, captureConfig, labelParser, spanNamer)
+      ConfigImpl(
+        tracerScopeName,
+        defaultSpanName,
+        constAttributes,
+        captureConfig,
+        attributesExtractor,
+        spanNamer
+      )
 
-    /** Builds a configuration instance with default label parser and span namer. */
+    /** Builds a configuration instance with default attributes extractor and span namer. */
     def apply(
         tracerScopeName: String,
         defaultSpanName: String,
@@ -333,7 +340,7 @@ object TracedInterpreter {
       def withDefaultSpanName(value: String): Config = copy(defaultSpanName = value)
       def withConstAttributes(value: Attributes): Config = copy(constAttributes = value)
       def withCaptureConfig(value: CaptureConfig): Config = copy(captureConfig = value)
-      def withLabelParser(value: AttributesExtractor): Config = copy(attributesExtractor = value)
+      def withAttributesExtractor(value: AttributesExtractor): Config = copy(attributesExtractor = value)
       def withSpanNamer(value: SpanNamer): Config = copy(spanNamer = value)
     }
   }
