@@ -225,11 +225,11 @@ class TracedInterpreter[F[_]: Async: Tracer](
 
     config.captureQuery.queryTextPolicy match {
       case QueryCaptureConfig.QueryTextPolicy.Always =>
-        builder.addOne(DbAttributes.DbQueryText(info.sql))
+        builder.addOne(DbAttributes.DbQueryText(info.sql.trim))
 
       case QueryCaptureConfig.QueryTextPolicy.ParameterizedOnly =>
         if (isParameterized)
-          builder.addOne(DbAttributes.DbQueryText(info.sql))
+          builder.addOne(DbAttributes.DbQueryText(info.sql.trim))
 
       case QueryCaptureConfig.QueryTextPolicy.None =>
     }
