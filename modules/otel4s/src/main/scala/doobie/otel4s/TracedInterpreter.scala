@@ -76,9 +76,14 @@ class TracedInterpreter[F[_]: Async: Tracer](
 
   private val finalizationStrategy: SpanFinalizer.Strategy = {
     case Resource.ExitCase.Errored(error) =>
+      val setStatus = Option(error.getMessage).filter(_.nonEmpty) match {
+        case Some(message) => SpanFinalizer.setStatus(StatusCode.Error, message)
+        case None          => SpanFinalizer.setStatus(StatusCode.Error)
+      }
+
       val general = SpanFinalizer.addAttribute(ErrorAttributes.ErrorType(error.getClass.getName)) |+|
         SpanFinalizer.recordException(error) |+|
-        SpanFinalizer.setStatus(StatusCode.Error)
+        setStatus
 
       error match {
         case sql: SQLException =>

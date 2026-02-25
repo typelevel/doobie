@@ -9,9 +9,9 @@ import doobie.Transactor
 import doobie.Update
 import doobie.otel4s.syntax.fragment.*
 import doobie.syntax.all.*
-import io.opentelemetry.api.trace.SpanKind
+import io.opentelemetry.api.trace.{SpanKind, StatusCode}
 import io.opentelemetry.sdk.resources.Resource as OTelResource
-import io.opentelemetry.sdk.trace.data.{EventData, SpanData}
+import io.opentelemetry.sdk.trace.data.{EventData, SpanData, StatusData}
 import munit.TestOptions
 import org.typelevel.otel4s.oteljava.AttributeConverters.*
 import org.typelevel.otel4s.oteljava.testkit.trace.TracesTestkit
@@ -89,6 +89,7 @@ class TracedTransactorSuite extends munit.CatsEffectSuite {
           DbAttributes.DbResponseStatusCode("22018"),
           DbAttributes.DbOperationName("executeQuery")
         ),
+        status = StatusData.create(StatusCode.ERROR, "Data conversion error converting \"text\" [22018-240]"),
         events = List(
           Event(
             name = "exception",
@@ -472,6 +473,7 @@ class TracedTransactorSuite extends munit.CatsEffectSuite {
       resource: TelemetryResource = telemetryResource,
       scope: InstrumentationScope = doobieInstrumentationScope,
       kind: SpanKind = SpanKind.CLIENT,
+      status: StatusData = StatusData.unset(),
       events: List[Event] = Nil
   )
 
@@ -484,6 +486,7 @@ class TracedTransactorSuite extends munit.CatsEffectSuite {
         resource = TelemetryResource(spanData.getResource),
         scope = InstrumentationScope(spanData.getInstrumentationScopeInfo),
         kind = spanData.getKind,
+        status = spanData.getStatus,
         events = spanData.getEvents.asScala.toList.map(Event.from)
       )
   }
