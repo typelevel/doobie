@@ -101,7 +101,7 @@ class TracedInterpreter[F[_]: Async: Tracer](
         val params = preparedStatementSpanParams(event.loggingInfo)
 
         Tracer[F]
-          .spanBuilder(config.defaultSpanName)
+          .spanBuilder(params.customSpanName.getOrElse(config.defaultSpanName))
           .withSpanKind(SpanKind.Client)
           .addAttributes(params.attributes)
           .withFinalizationStrategy(finalizationStrategy)
