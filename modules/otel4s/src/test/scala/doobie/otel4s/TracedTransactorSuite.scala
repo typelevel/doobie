@@ -23,7 +23,7 @@ import org.typelevel.otel4s.{Attribute, Attributes}
 import scala.jdk.CollectionConverters.*
 
 class TracedTransactorSuite extends munit.CatsEffectSuite {
-  import QueryCaptureConfig.QueryParametersPolicy
+  import QueryCaptureConfig.{QueryParametersPolicy, QueryTextPolicy}
 
   private val xa = Transactor.fromDriverManager[IO](
     driver = "org.h2.Driver",
@@ -129,7 +129,7 @@ class TracedTransactorSuite extends munit.CatsEffectSuite {
 
     val config = tracedConfig(
       captureQuery = QueryCaptureConfig(
-        captureQueryStatementText = true,
+        queryTextPolicy = QueryTextPolicy.Always,
         captureQueryStatementParameters = QueryParametersPolicy.None
       )
     )
@@ -158,7 +158,7 @@ class TracedTransactorSuite extends munit.CatsEffectSuite {
 
     val config = tracedConfig(
       captureQuery = QueryCaptureConfig(
-        captureQueryStatementText = true,
+        queryTextPolicy = QueryTextPolicy.Always,
         captureQueryStatementParameters = QueryParametersPolicy.All
       )
     )
@@ -191,7 +191,7 @@ class TracedTransactorSuite extends munit.CatsEffectSuite {
 
     val config = tracedConfig(
       captureQuery = QueryCaptureConfig(
-        captureQueryStatementText = true,
+        queryTextPolicy = QueryTextPolicy.Always,
         captureQueryStatementParameters = QueryParametersPolicy.None
       )
     )
@@ -207,14 +207,39 @@ class TracedTransactorSuite extends munit.CatsEffectSuite {
     } yield ()
   }
 
-  testkitTest("semconv config sets required db attributes and query text capture") { testkit =>
+  testkitTest("semconv config captures query text only for parameterized queries") { testkit =>
     val expected = List(
       Span(
         name = "executeQuery",
         attributes = Attributes(
           DbAttributes.DbSystemName(DbAttributes.DbSystemNameValue.Postgresql),
           DbAttributes.DbNamespace("doobie"),
-          DbAttributes.DbQueryText("select 1"),
+          DbAttributes.DbQueryText("select ?"),
+          DbAttributes.DbOperationName("executeQuery")
+        )
+      )
+    )
+
+    val config =
+      TracingConfig.recommended(
+        dbSystemName = DbAttributes.DbSystemNameValue.Postgresql,
+        dbNamespace = "doobie"
+      )
+
+    for {
+      tx <- testkit.tracedTransactor(config)
+      _ <- sql"select ${1}".query[Int].unique.transact(tx)
+      _ <- testkit.finishedSpans.assertEquals(expected)
+    } yield ()
+  }
+
+  testkitTest("semconv config does not capture query text for non-parameterized queries") { testkit =>
+    val expected = List(
+      Span(
+        name = "executeQuery",
+        attributes = Attributes(
+          DbAttributes.DbSystemName(DbAttributes.DbSystemNameValue.Postgresql),
+          DbAttributes.DbNamespace("doobie"),
           DbAttributes.DbOperationName("executeQuery")
         )
       )

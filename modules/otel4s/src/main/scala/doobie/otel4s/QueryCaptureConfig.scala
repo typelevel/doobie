@@ -8,9 +8,8 @@ package doobie.otel4s
   */
 sealed trait QueryCaptureConfig {
 
-  /** When true, the SQL text is attached as `db.query.text`.
-    */
-  def captureQueryStatementText: Boolean
+  /** Query text capture policy for `db.query.text`. */
+  def queryTextPolicy: QueryCaptureConfig.QueryTextPolicy
 
   /** Parameter capture policy for `db.query.parameter.*` attributes.
     */
@@ -19,38 +18,52 @@ sealed trait QueryCaptureConfig {
 
 object QueryCaptureConfig {
 
-  /** `db.query.text` enabled and parameters disabled. */
+  /** Capture parameterized query text only, with parameters disabled. */
   val recommended: QueryCaptureConfig =
     QueryCaptureConfig(
-      captureQueryStatementText = true,
+      queryTextPolicy = QueryTextPolicy.ParameterizedOnly,
       captureQueryStatementParameters = QueryParametersPolicy.None
     )
 
   /** Both query text and parameters capture disabled. */
   val disabled: QueryCaptureConfig =
     QueryCaptureConfig(
-      captureQueryStatementText = false,
+      queryTextPolicy = QueryTextPolicy.None,
       captureQueryStatementParameters = QueryParametersPolicy.None
     )
 
   /** Builds query capture settings.
     *
-    * @param captureQueryStatementText
-    *   when true, attach `db.query.text` with the SQL text
+    * @param queryTextPolicy
+    *   policy controlling whether query text is captured in `db.query.text`
     *
     * @param captureQueryStatementParameters
     *   policy controlling whether parameters are captured for non-batch and/or batch operations
     */
   def apply(
-      captureQueryStatementText: Boolean,
+      queryTextPolicy: QueryTextPolicy,
       captureQueryStatementParameters: QueryParametersPolicy
   ): QueryCaptureConfig =
-    QueryCaptureConfigImpl(captureQueryStatementText, captureQueryStatementParameters)
+    QueryCaptureConfigImpl(queryTextPolicy, captureQueryStatementParameters)
 
   private final case class QueryCaptureConfigImpl(
-      captureQueryStatementText: Boolean,
+      queryTextPolicy: QueryTextPolicy,
       captureQueryStatementParameters: QueryParametersPolicy
   ) extends QueryCaptureConfig
+
+  sealed trait QueryTextPolicy
+
+  object QueryTextPolicy {
+
+    /** Never capture query text. */
+    case object None extends QueryTextPolicy
+
+    /** Capture query text only when the query has bound parameters. */
+    case object ParameterizedOnly extends QueryTextPolicy
+
+    /** Always capture query text. */
+    case object Always extends QueryTextPolicy
+  }
 
   sealed trait QueryParametersPolicy
 

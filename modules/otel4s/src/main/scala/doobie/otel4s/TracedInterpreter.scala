@@ -218,11 +218,21 @@ class TracedInterpreter[F[_]: Async: Tracer](
         builder.addOne(s"db.query.parameter.$prefix$idx", String.valueOf(param))
       }
 
+    val isParameterized = info.params.allParams.exists(_.nonEmpty)
+
     if (info.params.allParams.sizeIs > 1)
       builder.addOne(DbAttributes.DbOperationBatchSize(info.params.allParams.size.toLong))
 
-    if (config.captureQuery.captureQueryStatementText)
-      builder.addOne(DbAttributes.DbQueryText(info.sql))
+    config.captureQuery.queryTextPolicy match {
+      case QueryCaptureConfig.QueryTextPolicy.Always =>
+        builder.addOne(DbAttributes.DbQueryText(info.sql))
+
+      case QueryCaptureConfig.QueryTextPolicy.ParameterizedOnly =>
+        if (isParameterized)
+          builder.addOne(DbAttributes.DbQueryText(info.sql))
+
+      case QueryCaptureConfig.QueryTextPolicy.None =>
+    }
 
     config.captureQuery.captureQueryStatementParameters match {
       case QueryCaptureConfig.QueryParametersPolicy.NonBatchOnly =>

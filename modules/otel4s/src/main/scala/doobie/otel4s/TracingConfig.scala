@@ -96,7 +96,8 @@ object TracingConfig {
     * identity attributes:
     *   - `tracerScopeName`: `"doobie"`
     *   - `defaultSpanName`: `"doobie:exec"`
-    *   - `captureQuery`: [[QueryCaptureConfig.recommended]] (`db.query.text` enabled, query parameters disabled)
+    *   - `captureQuery`: [[QueryCaptureConfig.recommended]] (`db.query.text` for parameterized queries only, query
+    *     parameters disabled)
     *   - `attributesExtractor`: [[AttributesExtractor.json]]
     *   - `spanNamer`: [[SpanNamer.fromAttribute]](`db.query.summary`)
     *   - `constAttributes`: `db.system.name` and `db.namespace` from constructor args
