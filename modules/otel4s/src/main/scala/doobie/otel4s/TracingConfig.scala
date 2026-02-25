@@ -99,7 +99,7 @@ object TracingConfig {
     *   - always sets `db.system.name`
     *   - always sets `db.namespace`
     *   - enables `db.query.text` capture
-    *   - keeps parameter capture disabled by default
+    *   - keeps query parameter capture disabled by default
     */
   def recommended(
       dbSystemName: DbAttributes.DbSystemNameValue,

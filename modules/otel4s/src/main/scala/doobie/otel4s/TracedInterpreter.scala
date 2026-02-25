@@ -153,32 +153,7 @@ class TracedInterpreter[F[_]: Async: Tracer](
 
     builder.addAll(config.constAttributes)
 
-    val queryConfig = config.captureQuery
-    if (queryConfig.captureQueryStatementText)
-      builder.addOne(DbAttributes.DbQueryText(info.sql))
-
-    if (queryConfig.captureQueryStatementParameters != QueryCaptureConfig.QueryParametersPolicy.None) {
-      def addParams(batch: List[Any], prefix: String): Unit =
-        batch.zipWithIndex.foreach { case (param, idx) =>
-          val asString = if (param != null) param.toString else "<null>"
-          builder.addOne(s"db.query.parameter.$prefix$idx", asString)
-        }
-
-      info.params.allParams match {
-        case Nil =>
-
-        case nonBatch :: Nil =>
-          addParams(nonBatch, "")
-
-        case batches =>
-          queryConfig.captureQueryStatementParameters match {
-            case QueryCaptureConfig.QueryParametersPolicy.All =>
-              batches.zipWithIndex.foreach { case (batch, idx) => addParams(batch, s"$idx.") }
-            case QueryCaptureConfig.QueryParametersPolicy.NonBatchOnly =>
-            case QueryCaptureConfig.QueryParametersPolicy.None         =>
-          }
-      }
-    }
+    recordQuery(info, builder)
 
     val parsedAttributes =
       if (label.nonEmpty && label != doobie.util.unlabeled)
@@ -196,6 +171,42 @@ class TracedInterpreter[F[_]: Async: Tracer](
 
     SpanParams(customSpanName, builder.result())
   }
+
+  private def recordQuery(info: LoggingInfo, builder: Attributes.Builder): Unit = {
+
+    def addParams(batch: List[Any], prefix: String): Unit =
+      batch.zipWithIndex.foreach { case (param, idx) =>
+        builder.addOne(s"db.query.parameter.$prefix$idx", String.valueOf(param))
+      }
+
+    if (config.captureQuery.captureQueryStatementText)
+      builder.addOne(DbAttributes.DbQueryText(info.sql))
+
+    config.captureQuery.captureQueryStatementParameters match {
+      case QueryCaptureConfig.QueryParametersPolicy.NonBatchOnly =>
+        info.params.allParams match {
+          case nonBatch :: Nil =>
+            addParams(nonBatch, "")
+
+          case _ =>
+
+        }
+
+      case QueryCaptureConfig.QueryParametersPolicy.All =>
+        info.params.allParams match {
+          case Nil =>
+
+          case nonBatch :: Nil =>
+            addParams(nonBatch, "")
+
+          case batches =>
+            batches.zipWithIndex.foreach { case (batch, idx) => addParams(batch, s"$idx.") }
+        }
+
+      case QueryCaptureConfig.QueryParametersPolicy.None =>
+    }
+  }
+
 }
 
 object TracedInterpreter {
@@ -215,6 +226,7 @@ object TracedInterpreter {
       .get
       .flatMap { implicit tracer =>
         IOLocal(Option.empty[String]).to[F].map { ioLocal =>
+          // todo: use .asLocal[F] when CE 3.7.0 is released
           val local: Local[F, Option[String]] = new Local[F, Option[String]] {
             def applicative: Applicative[F] = implicitly
             def ask[E2 >: Option[String]]: F[E2] =
