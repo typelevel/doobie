@@ -35,7 +35,7 @@ class TracedTransactorSuite extends munit.CatsEffectSuite {
   private val telemetryResource = TelemetryResource(Attributes.empty)
   private val doobieInstrumentationScope = InstrumentationScope(
     name = "doobie",
-    version = None,
+    version = Some(doobie.buildinfo.version),
     schemaUrl = None,
     attributes = Attributes.empty
   )

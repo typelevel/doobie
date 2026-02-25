@@ -71,16 +71,16 @@ object SpanNamer {
   /** No span name override. */
   def none: SpanNamer = NoOverride
 
-  /** Use the raw label string as the span name.
+  /** Use the raw query label string as the span name.
     *
     * @example
     *   {{{
-    * SpanNamer.direct
+    * SpanNamer.fromQueryLabel
     *
     * // label "my query" -> span name "my query"
     *   }}}
     */
-  def direct: SpanNamer = Direct
+  def fromQueryLabel: SpanNamer = FromQueryLabel
 
   /** Look up a specific attribute value as the span name.
     *
@@ -107,7 +107,7 @@ object SpanNamer {
     def spanName(context: Context): Option[String] = None
   }
 
-  private object Direct extends SpanNamer {
+  private object FromQueryLabel extends SpanNamer {
     def spanName(context: Context): Option[String] =
       Option(context.rawLabel).filter(label => label.nonEmpty && label != doobie.util.unlabeled)
   }
