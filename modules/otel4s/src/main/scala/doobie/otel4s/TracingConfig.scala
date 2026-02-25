@@ -18,8 +18,7 @@ trait TracingConfig {
   /** The attributes to add to every span created by this interpreter. */
   def constAttributes: Attributes
 
-  /** Controls query text/parameter capture.
-    */
+  /** Controls query text/parameter capture. */
   def captureQuery: QueryCaptureConfig
 
   /** Extracts attributes from a raw label. */

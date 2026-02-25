@@ -69,7 +69,7 @@ object SpanNamer {
   }
 
   /** No span name override. */
-  def none: SpanNamer = NoOverride
+  def noop: SpanNamer = Noop
 
   /** Use the raw query label string as the span name.
     *
@@ -103,7 +103,7 @@ object SpanNamer {
     */
   def fromAttribute(key: AttributeKey[String]): SpanNamer = new FromAttribute(key)
 
-  private object NoOverride extends SpanNamer {
+  private object Noop extends SpanNamer {
     def spanName(context: Context): Option[String] = None
   }
 
