@@ -213,6 +213,9 @@ class TracedInterpreter[F[_]: Async: Tracer](
         builder.addOne(s"db.query.parameter.$prefix$idx", String.valueOf(param))
       }
 
+    if (info.params.allParams.sizeIs > 1)
+      builder.addOne(DbAttributes.DbOperationBatchSize(info.params.allParams.size.toLong))
+
     if (config.captureQuery.captureQueryStatementText)
       builder.addOne(DbAttributes.DbQueryText(info.sql))
 

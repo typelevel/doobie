@@ -6,6 +6,7 @@ package doobie.otel4s
 
 import cats.effect.IO
 import doobie.Transactor
+import doobie.Update
 import doobie.otel4s.syntax.fragment.*
 import doobie.syntax.all.*
 import io.opentelemetry.api.trace.SpanKind
@@ -164,6 +165,43 @@ class TracedTransactorSuite extends munit.CatsEffectSuite {
     for {
       tx <- testkit.tracedTransactor(config)
       _ <- sql"select ${1}".query[Int].unique.transact(tx)
+      _ <- testkit.finishedSpans.assertEquals(expected)
+    } yield ()
+  }
+
+  testkitTest("record db.operation.batch.size for batch operations") { testkit =>
+    val expected = List(
+      Span(
+        name = "executeUpdate",
+        attributes = Attributes(
+          DbAttributes.DbQueryText("CREATE LOCAL TEMPORARY TABLE TEST_BATCH (int_value INT)"),
+          DbAttributes.DbOperationName("executeUpdate")
+        )
+      ),
+      Span(
+        name = "executeBatch",
+        attributes = Attributes(
+          DbAttributes.DbQueryText("insert into TEST_BATCH (int_value) values (?)"),
+          DbAttributes.DbOperationBatchSize(3L),
+          DbAttributes.DbOperationName("executeBatch")
+        )
+      )
+    )
+
+    val config = tracedConfig(
+      captureQuery = QueryCaptureConfig(
+        captureQueryStatementText = true,
+        captureQueryStatementParameters = QueryParametersPolicy.None
+      )
+    )
+
+    for {
+      tx <- testkit.tracedTransactor(config)
+      _ <- (for {
+        _ <- sql"CREATE LOCAL TEMPORARY TABLE TEST_BATCH (int_value INT)".update.run
+        _ <- Update[Int]("insert into TEST_BATCH (int_value) values (?)")
+          .updateMany(List(1, 2, 3))
+      } yield ()).transact(tx)
       _ <- testkit.finishedSpans.assertEquals(expected)
     } yield ()
   }
