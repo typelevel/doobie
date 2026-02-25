@@ -21,6 +21,40 @@ import org.typelevel.otel4s.trace.{SpanFinalizer, SpanKind, StatusCode, Tracer, 
 
 /** Interpreter that wraps doobie execution in otel4s spans.
   *
+  * Span enrichment and naming are controlled by [[TracingConfig]]:
+  *
+  *   - [[TracingConfig.captureQuery]] controls query text/parameter capture.
+  *   - [[TracingConfig.attributesExtractor]] decodes a doobie label into attributes (default:
+  *     [[AttributesExtractor.json]]).
+  *   - [[TracingConfig.spanNamer]] chooses an optional custom span name from label/attributes context.
+  *
+  * With the default naming flow (`SpanNamer.fromAttribute(db.query.summary)`), span names come from extracted
+  * `db.query.summary` when present; otherwise naming falls back to JDBC operation names (`executeQuery`, etc.).
+  *
+  * @example
+  *   to support both new fragment helpers and legacy raw labels:
+  *   {{{
+  * import doobie.otel4s.*
+  * import org.typelevel.otel4s.AttributeKey
+  * import org.typelevel.otel4s.semconv.attributes.DbAttributes
+  *
+  * val legacyLabelKey = AttributeKey[String]("db.query.legacy_label")
+  *
+  * val config =
+  *   TracingConfig
+  *     .recommended(DbAttributes.DbSystemNameValue.Postgresql, "app")
+  *     .withAttributesExtractor(
+  *       AttributesExtractor
+  *         .json
+  *         .orElse(AttributesExtractor.asSingleAttribute(legacyLabelKey))
+  *     )
+  *     .withSpanNamer(
+  *       SpanNamer
+  *         .fromAttribute(DbAttributes.DbQuerySummary)
+  *         .orElse(SpanNamer.fromAttribute(legacyLabelKey))
+  *     )
+  *   }}}
+  *
   * @see
   *   [[https://opentelemetry.io/docs/specs/semconv/database/database-spans]]
   *

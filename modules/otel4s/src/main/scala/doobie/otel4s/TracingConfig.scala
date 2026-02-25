@@ -9,16 +9,13 @@ import org.typelevel.otel4s.semconv.attributes.DbAttributes
 
 trait TracingConfig {
 
-  /** The name of the [[org.typelevel.otel4s.trace.TracerProvider]] scope to use for this interpreter.
-    */
+  /** The name of the [[org.typelevel.otel4s.trace.TracerProvider]] scope to use for this interpreter. */
   def tracerScopeName: String
 
-  /** The default span name to use when no label is available.
-    */
+  /** The default span name to use when no label is available. */
   def defaultSpanName: String
 
-  /** The attributes to add to every span created by this interpreter.
-    */
+  /** The attributes to add to every span created by this interpreter. */
   def constAttributes: Attributes
 
   /** Controls query text/parameter capture.
@@ -93,13 +90,16 @@ object TracingConfig {
       SpanNamer.fromAttribute(DbAttributes.DbQuerySummary)
     )
 
-  /** Builds a semantic-conventions-oriented config that guarantees key DB identity attributes.
+  /** Builds a semantic-conventions-oriented tracing config.
     *
-    * This constructor enforces explicit database identity and applies semconv-friendly defaults:
-    *   - always sets `db.system.name`
-    *   - always sets `db.namespace`
-    *   - enables `db.query.text` capture
-    *   - keeps query parameter capture disabled by default
+    * This constructor applies the library defaults for scope, naming, extractor, and span namer, plus semantic DB
+    * identity attributes:
+    *   - `tracerScopeName`: `"doobie"`
+    *   - `defaultSpanName`: `"doobie:exec"`
+    *   - `captureQuery`: [[QueryCaptureConfig.recommended]] (`db.query.text` enabled, query parameters disabled)
+    *   - `attributesExtractor`: [[AttributesExtractor.json]]
+    *   - `spanNamer`: [[SpanNamer.fromAttribute]](`db.query.summary`)
+    *   - `constAttributes`: `db.system.name` and `db.namespace` from constructor args
     */
   def recommended(
       dbSystemName: DbAttributes.DbSystemNameValue,
@@ -118,7 +118,7 @@ object TracingConfig {
       constAttributes = constAttributes,
       captureQuery = Defaults.queryCaptureConfig,
       attributesExtractor = Defaults.attributesExtractor,
-      spanNamer = Defaults.spanNamer,
+      spanNamer = Defaults.spanNamer
     )
   }
 

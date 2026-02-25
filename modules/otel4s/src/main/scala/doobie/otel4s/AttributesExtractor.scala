@@ -28,6 +28,17 @@ trait AttributesExtractor { self =>
 
 object AttributesExtractor {
 
+  /** Decodes the raw doobie label as JSON-encoded [[org.typelevel.otel4s.Attributes]].
+    *
+    * This is the extractor used by [[doobie.otel4s.TracingConfig.recommended]]. It is also the expected decoder for
+    * syntax helpers that encode attributes into labels, e.g.:
+    *
+    *   - `queryWithAttributes(...)` / `updateWithAttributes(...)`
+    *   - `queryWithSummary(...)` / `updateWithSummary(...)` (they emit `db.query.summary` as attributes)
+    *
+    * If decoding fails, this extractor returns `None` and any `SpanNamer.fromAttribute(...)` strategy will not see
+    * extracted attributes for that operation unless composed with `orElse(...)`.
+    */
   val json: AttributesExtractor =
     JsonExtractor
 

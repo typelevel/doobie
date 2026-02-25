@@ -84,6 +84,13 @@ object SpanNamer {
 
   /** Look up a specific attribute value as the span name.
     *
+    * With the default interpreter flow, this strategy receives attributes produced by the configured
+    * [[AttributesExtractor]]. If the target key is found, that value is used as the operation span name; otherwise this
+    * namer returns `None`.
+    *
+    * When used as the only namer, `None` means the interpreter falls back to JDBC operation names (`executeQuery`,
+    * `executeUpdate`, etc.). Use [[SpanNamer.orElse]] to define explicit fallback naming chains.
+    *
     * @example
     *   {{{
     * SpanNamer.fromAttribute(DbAttributes.DbQuerySummary)

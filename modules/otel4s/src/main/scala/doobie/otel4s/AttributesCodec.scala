@@ -45,7 +45,7 @@ private[doobie] object AttributesCodec {
           case "double" :: Nil  => decode[Double]("double", AnyValue.double)
           case "long" :: Nil    => decode[Long]("long", AnyValue.long)
           case "bytes" :: Nil   => decode[Array[Byte]]("bytes", AnyValue.bytes)
-          case "seq" :: Nil =>
+          case "seq" :: Nil     =>
             decode[Seq[AnyValue]]("seq", AnyValue.seq)(using Decoder.decodeSeq(self))
           case "map" :: Nil =>
             decode[Map[String, AnyValue]]("map", AnyValue.map)(using Decoder.decodeMap(implicitly, self))

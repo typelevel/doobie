@@ -31,8 +31,8 @@ class FragmentOps(fragment: Fragment) {
   /** Build a query with encoded tracing attributes payload.
     *
     * @note
-    * these attributes are encoded as an internal label payload and interpreted by
-    * [[doobie.otel4s.AttributesExtractor.json]].
+    *   these attributes are encoded as an internal label payload and interpreted by
+    *   [[doobie.otel4s.AttributesExtractor.json]].
     */
   def queryWithAttributes[A: Read](attributes: immutable.Iterable[Attribute[?]]): Query0[A] =
     fragment.queryWithLabel(attributes.asJson.noSpaces)
@@ -40,8 +40,8 @@ class FragmentOps(fragment: Fragment) {
   /** Build a query with encoded tracing attributes payload.
     *
     * @note
-    * these attributes are encoded as an internal label payload and interpreted by
-    * [[doobie.otel4s.AttributesExtractor.json]].
+    *   these attributes are encoded as an internal label payload and interpreted by
+    *   [[doobie.otel4s.AttributesExtractor.json]].
     */
   def queryWithAttributes[A: Read](attributes: Attribute[?]*): Query0[A] =
     fragment.queryWithLabel(attributes.asJson.noSpaces)
@@ -49,8 +49,8 @@ class FragmentOps(fragment: Fragment) {
   /** Build an update with encoded tracing attributes payload.
     *
     * @note
-    * these attributes are encoded as an internal label payload and interpreted by
-    * [[doobie.otel4s.AttributesExtractor.json]].
+    *   these attributes are encoded as an internal label payload and interpreted by
+    *   [[doobie.otel4s.AttributesExtractor.json]].
     */
   def updateWithAttributes(attributes: immutable.Iterable[Attribute[?]]): Update0 =
     fragment.updateWithLabel(attributes.asJson.noSpaces)
@@ -58,8 +58,8 @@ class FragmentOps(fragment: Fragment) {
   /** Build an update with encoded tracing attributes payload.
     *
     * @note
-    * these attributes are encoded as an internal label payload and interpreted by
-    * [[doobie.otel4s.AttributesExtractor.json]].
+    *   these attributes are encoded as an internal label payload and interpreted by
+    *   [[doobie.otel4s.AttributesExtractor.json]].
     */
   def updateWithAttributes(attributes: Attribute[?]*): Update0 =
     fragment.updateWithLabel(attributes.asJson.noSpaces)
