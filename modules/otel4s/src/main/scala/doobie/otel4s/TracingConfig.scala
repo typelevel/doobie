@@ -122,7 +122,7 @@ object TracingConfig {
     )
   }
 
-  final case class TracingConfigImpl(
+  private final case class TracingConfigImpl(
       tracerScopeName: String,
       defaultSpanName: String,
       constAttributes: Attributes,
