@@ -7,7 +7,7 @@ package doobie.otel4s
 import org.typelevel.otel4s.Attributes
 import org.typelevel.otel4s.semconv.attributes.DbAttributes
 
-trait TracingConfig {
+sealed trait TracingConfig {
 
   /** The name of the [[org.typelevel.otel4s.trace.TracerProvider]] scope to use for this interpreter. */
   def tracerScopeName: String

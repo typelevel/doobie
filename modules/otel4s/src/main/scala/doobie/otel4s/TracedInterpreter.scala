@@ -67,7 +67,7 @@ import org.typelevel.otel4s.trace.{SpanFinalizer, SpanKind, StatusCode, Tracer, 
   * @param local
   *   local storage for an optional per-operation span name
   */
-class TracedInterpreter[F[_]: Async: Tracer](
+private class TracedInterpreter[F[_]: Async: Tracer](
     config: TracingConfig,
     logHandler: LogHandler[F],
     local: Local[F, Option[String]]
@@ -271,7 +271,7 @@ object TracedInterpreter {
   def create[F[_]: Async: TracerProvider: LiftIO](
       config: TracingConfig,
       logHandler: LogHandler[F]
-  ): F[TracedInterpreter[F]] =
+  ): F[KleisliInterpreter[F]] =
     TracerProvider[F]
       .tracer(config.tracerScopeName)
       .withVersion(doobie.buildinfo.version)
