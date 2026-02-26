@@ -27,6 +27,9 @@ trait TracingConfig {
   /** Computes the final span name from typed label context. */
   def spanNamer: SpanNamer
 
+  /** Returns a copy with added attributes. */
+  def addConstAttributes(attributes: Attributes): TracingConfig
+
   /** Returns a copy with a new tracer scope name. */
   def withTracerScopeName(value: String): TracingConfig
 
@@ -130,6 +133,8 @@ object TracingConfig {
       attributesExtractor: AttributesExtractor,
       spanNamer: SpanNamer
   ) extends TracingConfig {
+    def addConstAttributes(attributes: Attributes): TracingConfig =
+      copy(constAttributes = constAttributes ++ attributes)
     def withTracerScopeName(value: String): TracingConfig = copy(tracerScopeName = value)
     def withDefaultSpanName(value: String): TracingConfig = copy(defaultSpanName = value)
     def withConstAttributes(value: Attributes): TracingConfig = copy(constAttributes = value)
