@@ -130,7 +130,7 @@ class TracedTransactorSuite extends munit.CatsEffectSuite {
     val config = tracedConfig(
       captureQuery = QueryCaptureConfig(
         queryTextPolicy = QueryTextPolicy.Always,
-        captureQueryStatementParameters = QueryParametersPolicy.None
+        queryParametersPolicy = QueryParametersPolicy.None
       )
     )
 
@@ -159,7 +159,7 @@ class TracedTransactorSuite extends munit.CatsEffectSuite {
     val config = tracedConfig(
       captureQuery = QueryCaptureConfig(
         queryTextPolicy = QueryTextPolicy.Always,
-        captureQueryStatementParameters = QueryParametersPolicy.All
+        queryParametersPolicy = QueryParametersPolicy.All
       )
     )
 
@@ -192,7 +192,7 @@ class TracedTransactorSuite extends munit.CatsEffectSuite {
     val config = tracedConfig(
       captureQuery = QueryCaptureConfig(
         queryTextPolicy = QueryTextPolicy.Always,
-        captureQueryStatementParameters = QueryParametersPolicy.None
+        queryParametersPolicy = QueryParametersPolicy.None
       )
     )
 

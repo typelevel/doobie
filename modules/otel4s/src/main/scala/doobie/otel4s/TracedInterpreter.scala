@@ -234,7 +234,7 @@ private class TracedInterpreter[F[_]: Async: Tracer](
       case QueryCaptureConfig.QueryTextPolicy.None =>
     }
 
-    config.captureQuery.captureQueryStatementParameters match {
+    config.captureQuery.queryParametersPolicy match {
       case QueryCaptureConfig.QueryParametersPolicy.NonBatchOnly =>
         info.params.allParams match {
           case nonBatch :: Nil =>

@@ -13,7 +13,7 @@ sealed trait QueryCaptureConfig {
 
   /** Parameter capture policy for `db.query.parameter.*` attributes.
     */
-  def captureQueryStatementParameters: QueryCaptureConfig.QueryParametersPolicy
+  def queryParametersPolicy: QueryCaptureConfig.QueryParametersPolicy
 }
 
 object QueryCaptureConfig {
@@ -50,14 +50,14 @@ object QueryCaptureConfig {
   val recommended: QueryCaptureConfig =
     QueryCaptureConfig(
       queryTextPolicy = QueryTextPolicy.ParameterizedOnly,
-      captureQueryStatementParameters = QueryParametersPolicy.None
+      queryParametersPolicy = QueryParametersPolicy.None
     )
 
   /** Both query text and parameters capture disabled. */
   val disabled: QueryCaptureConfig =
     QueryCaptureConfig(
       queryTextPolicy = QueryTextPolicy.None,
-      captureQueryStatementParameters = QueryParametersPolicy.None
+      queryParametersPolicy = QueryParametersPolicy.None
     )
 
   /** Builds query capture settings.
@@ -65,18 +65,18 @@ object QueryCaptureConfig {
     * @param queryTextPolicy
     *   policy controlling whether query text is captured in `db.query.text`
     *
-    * @param captureQueryStatementParameters
+    * @param queryParametersPolicy
     *   policy controlling whether parameters are captured for non-batch and/or batch operations
     */
   def apply(
       queryTextPolicy: QueryTextPolicy,
-      captureQueryStatementParameters: QueryParametersPolicy
+      queryParametersPolicy: QueryParametersPolicy
   ): QueryCaptureConfig =
-    QueryCaptureConfigImpl(queryTextPolicy, captureQueryStatementParameters)
+    QueryCaptureConfigImpl(queryTextPolicy, queryParametersPolicy)
 
   private final case class QueryCaptureConfigImpl(
       queryTextPolicy: QueryTextPolicy,
-      captureQueryStatementParameters: QueryParametersPolicy
+      queryParametersPolicy: QueryParametersPolicy
   ) extends QueryCaptureConfig
 
 }
