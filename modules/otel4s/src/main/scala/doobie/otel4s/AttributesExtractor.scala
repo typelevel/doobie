@@ -46,7 +46,7 @@ object AttributesExtractor {
     *
     * @example
     *   {{{
-    * AttributesExtractor.asSingleAttribute(AttributeKey[String]("db.query.label"))
+    * AttributesExtractor.plain(AttributeKey[String]("db.query.label"))
     *
     * // label "my query" -> attribute db.query.label: "my query"
     *   }}}
@@ -54,8 +54,8 @@ object AttributesExtractor {
     * @param key
     *   the [[org.typelevel.otel4s.AttributeKey]] to use for the attribute
     */
-  def asSingleAttribute(key: AttributeKey[String]): AttributesExtractor =
-    new AsSingleAttribute(key)
+  def plain(key: AttributeKey[String]): AttributesExtractor =
+    new Plain(key)
 
   private object JsonExtractor extends AttributesExtractor {
     import AttributesCodec.*
@@ -63,7 +63,7 @@ object AttributesExtractor {
       io.circe.parser.decode[Attributes](label).toOption
   }
 
-  private final class AsSingleAttribute(key: AttributeKey[String]) extends AttributesExtractor {
+  private final class Plain(key: AttributeKey[String]) extends AttributesExtractor {
     def extract(label: String): Option[Attributes] =
       Some(Attributes(key(label)))
   }

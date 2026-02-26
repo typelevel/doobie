@@ -46,7 +46,7 @@ import org.typelevel.otel4s.trace.{SpanFinalizer, SpanKind, StatusCode, Tracer, 
   *     .withAttributesExtractor(
   *       AttributesExtractor
   *         .json
-  *         .orElse(AttributesExtractor.asSingleAttribute(legacyLabelKey))
+  *         .orElse(AttributesExtractor.plain(legacyLabelKey))
   *     )
   *     .withSpanNamer(
   *       SpanNamer
