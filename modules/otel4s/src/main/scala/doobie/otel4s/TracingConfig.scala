@@ -47,9 +47,9 @@ trait TracingConfig {
 }
 
 object TracingConfig {
-  private object Defaults {
-    val tracerScopeName = "doobie"
-    val defaultSpanName = "doobie:exec"
+  object Defaults {
+    val tracerScopeName: String = "doobie"
+    val defaultSpanName: String = "doobie:exec"
     val queryCaptureConfig: QueryCaptureConfig = QueryCaptureConfig.recommended
     val attributesExtractor: AttributesExtractor = AttributesExtractor.json
     val spanNamer: SpanNamer = SpanNamer.fromAttribute(DbAttributes.DbQuerySummary)
