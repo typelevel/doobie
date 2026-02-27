@@ -20,6 +20,7 @@ lazy val scalaCheckVersion = "1.15.4"
 lazy val scalatestVersion = "3.2.18"
 lazy val munitVersion = "1.2.3"
 lazy val otel4sVersion = "0.15.1"
+lazy val otelInstrumentationVersion = "2.25.0-alpha"
 lazy val shapelessVersion = "2.3.13"
 lazy val silencerVersion = "1.7.1"
 lazy val specs2Version = "4.23.0"
@@ -207,6 +208,7 @@ lazy val doobie = project.in(file("."))
       `postgres-circe`.projectRefs ++
       refined.projectRefs ++
       otel4s.projectRefs ++
+      `otel4s-instrumentation`.projectRefs ++
       scalatest.projectRefs ++
       munit.projectRefs ++
       specs2.projectRefs ++
@@ -622,6 +624,24 @@ lazy val otel4s = projectMatrix
       "org.typelevel" %% "otel4s-semconv" % otel4sVersion,
       "io.circe" %% "circe-core" % circeVersion,
       "io.circe" %% "circe-parser" % circeVersion,
+      "org.typelevel" %% "otel4s-oteljava-trace-testkit" % otel4sVersion % "test",
+      "com.h2database" % "h2" % h2Version % "test"
+    )
+  )
+  .jvmPlatform(scalaVersions = Seq(scala213Version, scala3Version))
+
+lazy val `otel4s-instrumentation` = projectMatrix
+  .in(file("modules/otel4s-instrumentation"))
+  .enablePlugins(AutomateHeaderPlugin, NoPublishPlugin)
+  .dependsOn(core)
+  .settings(doobieSettings)
+  .settings(
+    name := "doobie-otel4s-instrumentation",
+    description := "OpenTelemetry JDBC instrumentation support for doobie.",
+    crossScalaVersions := Seq(scala213Version, scala3Version),
+    libraryDependencies ++= Seq(
+      "org.typelevel" %% "otel4s-oteljava-trace" % otel4sVersion,
+      "io.opentelemetry.instrumentation" % "opentelemetry-jdbc" % otelInstrumentationVersion,
       "org.typelevel" %% "otel4s-oteljava-trace-testkit" % otel4sVersion % "test",
       "com.h2database" % "h2" % h2Version % "test"
     )
