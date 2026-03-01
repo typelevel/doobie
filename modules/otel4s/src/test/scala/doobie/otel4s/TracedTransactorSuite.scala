@@ -338,6 +338,40 @@ class TracedTransactorSuite extends munit.CatsEffectSuite {
     } yield ()
   }
 
+  testkitTest("use query analyzer metadata for span naming") { testkit =>
+    val analyzer = new QueryAnalyzer {
+      def analyze(sql: String): Option[QueryAnalyzer.QueryMetadata] =
+        Some(
+          QueryAnalyzer.QueryMetadata(
+            queryText = Some(sql),
+            operationName = Some("SELECT"),
+            collectionName = Some("users"),
+            storedProcedureName = None,
+            querySummary = Some("SELECT users")
+          )
+        )
+    }
+
+    val config = tracedConfig()
+      .withQueryAnalyzer(analyzer)
+      .withSpanNamer(SpanNamer.fromQueryMetadata)
+
+    val expected = List(
+      Span(
+        name = "SELECT users",
+        attributes = Attributes(
+          DbAttributes.DbOperationName("executeQuery")
+        )
+      )
+    )
+
+    for {
+      tx <- testkit.tracedTransactor(config)
+      _ <- sql"select 1".query[Int].unique.transact(tx)
+      _ <- testkit.finishedSpans.assertEquals(expected)
+    } yield ()
+  }
+
   testkitTest("ignore plain fragment labels by default") { testkit =>
     val label = "some label"
 
