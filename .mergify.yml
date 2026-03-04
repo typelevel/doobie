@@ -261,6 +261,22 @@ pull_request_rules:
       add:
       - otel4s
       remove: []
+- name: Label otel4s-instrumentation PRs
+  conditions:
+  - files~=^.sbt/matrix/otel4s-instrumentation/
+  actions:
+    label:
+      add:
+      - otel4s-instrumentation
+      remove: []
+- name: Label otel4s-instrumentation3 PRs
+  conditions:
+  - files~=^.sbt/matrix/otel4s-instrumentation3/
+  actions:
+    label:
+      add:
+      - otel4s-instrumentation3
+      remove: []
 - name: Label otel4s3 PRs
   conditions:
   - files~=^.sbt/matrix/otel4s3/
