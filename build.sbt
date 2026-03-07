@@ -150,6 +150,15 @@ lazy val commonSettings =
            |For more information see LICENSE or https://opensource.org/licenses/MIT
            |""".stripMargin
       )),
+      // Because of our use of sbt-projectmatrix, we can potentially run into
+      // multiple writers trampling over each other modifying the same files
+      // The fix is to only let 2.13 modify the src/scala files:
+      Compile / headerCreate / unmanagedSourceDirectories := {
+        if (scalaVersion.value == scala213Version)
+          (Compile / unmanagedSourceDirectories).value
+        else
+          (Compile / unmanagedSourceDirectories).value.filter(_ != (Compile / scalaSource).value)
+      },
 
       // Scaladoc options
       Compile / doc / scalacOptions ++= Seq(
