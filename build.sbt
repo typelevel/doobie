@@ -4,7 +4,7 @@ import org.typelevel.sbt.tpolecat.{DevMode, CiMode}
 
 // Library versions all in one place, for convenience and sanity.
 lazy val catsVersion = "2.13.0"
-lazy val catsEffectVersion = "3.6.3"
+lazy val catsEffectVersion = "3.7.0"
 lazy val circeVersion = "0.14.15"
 lazy val fs2Version = "3.12.2"
 lazy val h2Version = "2.4.240"
@@ -177,8 +177,8 @@ lazy val commonSettings =
 
       // MUnit
       libraryDependencies ++= Seq(
-        "org.typelevel" %% "scalacheck-effect-munit" % "2.0.0-M2" % Test,
-        "org.typelevel" %% "munit-cats-effect" % "2.2.0" % Test,
+        "org.typelevel" %% "scalacheck-effect-munit" % "2.1.0" % Test,
+        "org.typelevel" %% "munit-cats-effect" % "2.1.0" % Test,
         "org.typelevel" %% "cats-effect-testkit" % catsEffectVersion % Test
       ),
       testFrameworks += new TestFramework("munit.Framework"),
