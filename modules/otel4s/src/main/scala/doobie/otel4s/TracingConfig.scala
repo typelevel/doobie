@@ -24,6 +24,9 @@ sealed trait TracingConfig {
   /** Extracts attributes from a raw label. */
   def attributesExtractor: AttributesExtractor
 
+  /** Analyzes SQL text into structured query metadata. */
+  def queryAnalyzer: QueryAnalyzer
+
   /** Computes the final span name from typed label context. */
   def spanNamer: SpanNamer
 
@@ -45,6 +48,9 @@ sealed trait TracingConfig {
   /** Returns a copy with a new attributes extractor. */
   def withAttributesExtractor(value: AttributesExtractor): TracingConfig
 
+  /** Returns a copy with a new query analyzer. */
+  def withQueryAnalyzer(value: QueryAnalyzer): TracingConfig
+
   /** Returns a copy with a new span namer. */
   def withSpanNamer(value: SpanNamer): TracingConfig
 }
@@ -55,6 +61,7 @@ object TracingConfig {
     val defaultSpanName: String = "doobie:exec"
     val queryCaptureConfig: QueryCaptureConfig = QueryCaptureConfig.recommended
     val attributesExtractor: AttributesExtractor = AttributesExtractor.json
+    val queryAnalyzer: QueryAnalyzer = QueryAnalyzer.noop
     val spanNamer: SpanNamer = SpanNamer.fromAttribute(DbAttributes.DbQuerySummary)
   }
 
@@ -65,6 +72,7 @@ object TracingConfig {
       constAttributes: Attributes,
       captureQuery: QueryCaptureConfig,
       attributesExtractor: AttributesExtractor,
+      queryAnalyzer: QueryAnalyzer,
       spanNamer: SpanNamer
   ): TracingConfig =
     TracingConfigImpl(
@@ -73,6 +81,7 @@ object TracingConfig {
       constAttributes,
       captureQuery,
       attributesExtractor,
+      queryAnalyzer,
       spanNamer
     )
 
@@ -89,6 +98,7 @@ object TracingConfig {
       constAttributes,
       captureQuery,
       AttributesExtractor.json,
+      QueryAnalyzer.noop,
       SpanNamer.fromAttribute(DbAttributes.DbQuerySummary)
     )
 
@@ -101,6 +111,7 @@ object TracingConfig {
     *   - `captureQuery`: [[QueryCaptureConfig.recommended]] (`db.query.text` for parameterized queries only, query
     *     parameters disabled)
     *   - `attributesExtractor`: [[AttributesExtractor.json]]
+    *   - `queryAnalyzer`: [[QueryAnalyzer.noop]]
     *   - `spanNamer`: [[SpanNamer.fromAttribute]](`db.query.summary`)
     *   - `constAttributes`: `db.system.name` and `db.namespace` from constructor args
     */
@@ -121,6 +132,7 @@ object TracingConfig {
       constAttributes = constAttributes,
       captureQuery = Defaults.queryCaptureConfig,
       attributesExtractor = Defaults.attributesExtractor,
+      queryAnalyzer = Defaults.queryAnalyzer,
       spanNamer = Defaults.spanNamer
     )
   }
@@ -131,6 +143,7 @@ object TracingConfig {
       constAttributes: Attributes,
       captureQuery: QueryCaptureConfig,
       attributesExtractor: AttributesExtractor,
+      queryAnalyzer: QueryAnalyzer,
       spanNamer: SpanNamer
   ) extends TracingConfig {
     def addConstAttributes(attributes: Attributes): TracingConfig =
@@ -140,6 +153,7 @@ object TracingConfig {
     def withConstAttributes(value: Attributes): TracingConfig = copy(constAttributes = value)
     def withCaptureQuery(value: QueryCaptureConfig): TracingConfig = copy(captureQuery = value)
     def withAttributesExtractor(value: AttributesExtractor): TracingConfig = copy(attributesExtractor = value)
+    def withQueryAnalyzer(value: QueryAnalyzer): TracingConfig = copy(queryAnalyzer = value)
     def withSpanNamer(value: SpanNamer): TracingConfig = copy(spanNamer = value)
   }
 }

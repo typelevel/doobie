@@ -39,6 +39,10 @@ object SpanNamer {
       */
     def attributes: Option[Attributes]
 
+    /** Query metadata extracted by [[QueryAnalyzer]].
+      */
+    def queryMetadata: Option[QueryAnalyzer.QueryMetadata]
+
   }
 
   object Context {
@@ -53,18 +57,23 @@ object SpanNamer {
       *
       * @param attributes
       *   attributes extracted by [[AttributesExtractor]]
+      *
+      * @param queryMetadata
+      *   query metadata extracted by [[QueryAnalyzer]]
       */
     def apply(
         rawLabel: String,
         sql: String,
-        attributes: Option[Attributes]
+        attributes: Option[Attributes],
+        queryMetadata: Option[QueryAnalyzer.QueryMetadata]
     ): Context =
-      ContextImpl(rawLabel, sql, attributes)
+      ContextImpl(rawLabel, sql, attributes, queryMetadata)
 
     private final case class ContextImpl(
         rawLabel: String,
         sql: String,
-        attributes: Option[Attributes]
+        attributes: Option[Attributes],
+        queryMetadata: Option[QueryAnalyzer.QueryMetadata]
     ) extends Context
   }
 
@@ -81,6 +90,16 @@ object SpanNamer {
     *   }}}
     */
   def fromQueryLabel: SpanNamer = FromQueryLabel
+
+  /** Build a span name from [[QueryAnalyzer.QueryMetadata]].
+    *
+    * Precedence:
+    *   - `querySummary`
+    *   - `operationName` + (`collectionName` or `storedProcedureName`)
+    *   - `operationName`
+    *   - `collectionName` or `storedProcedureName`
+    */
+  def fromQueryMetadata: SpanNamer = FromQueryMetadata
 
   /** Look up a specific attribute value as the span name.
     *
@@ -110,6 +129,22 @@ object SpanNamer {
   private object FromQueryLabel extends SpanNamer {
     def spanName(context: Context): Option[String] =
       Option(context.rawLabel).filter(label => label.nonEmpty && label != doobie.util.unlabeled)
+  }
+
+  private object FromQueryMetadata extends SpanNamer {
+    def spanName(context: Context): Option[String] =
+      context.queryMetadata.flatMap { info =>
+        val target = info.collectionName.orElse(info.storedProcedureName)
+        info.querySummary
+          .orElse(targetName(info.operationName, target))
+          .orElse(info.operationName)
+          .orElse(target)
+      }
+
+    private def targetName(operationName: Option[String], target: Option[String]): Option[String] =
+      operationName.flatMap { op =>
+        target.map(t => s"$op $t")
+      }
   }
 
   final private class FromAttribute(key: AttributeKey[String]) extends SpanNamer {

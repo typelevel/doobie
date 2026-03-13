@@ -11,7 +11,7 @@ import cats.effect.{Async, IOLocal, LiftIO, Resource}
 import cats.free.Free
 import cats.mtl.Local
 import cats.syntax.all.*
-import cats.{Applicative, ~>}
+import cats.~>
 import doobie.free.KleisliInterpreter
 import doobie.util.log.{LogHandler, LoggingInfo}
 import doobie.util.trace.TraceEvent
@@ -26,6 +26,7 @@ import org.typelevel.otel4s.trace.{SpanFinalizer, SpanKind, StatusCode, Tracer, 
   *   - [[TracingConfig.captureQuery]] controls query text/parameter capture.
   *   - [[TracingConfig.attributesExtractor]] decodes a doobie label into attributes (default:
   *     [[AttributesExtractor.json]]).
+  *   - [[TracingConfig.queryAnalyzer]] extracts structured query info from SQL text (default: [[QueryAnalyzer.noop]]).
   *   - [[TracingConfig.spanNamer]] chooses an optional custom span name from label/attributes context.
   *
   * With the default naming flow (`SpanNamer.fromAttribute(db.query.summary)`), span names come from extracted
@@ -204,8 +205,11 @@ private class TracedInterpreter[F[_]: Async: Tracer](
       builder.addAll(attributes)
     }
 
+    val queryMetadata =
+      config.queryAnalyzer.analyze(info.sql)
+
     val customSpanName = config.spanNamer.spanName(
-      SpanNamer.Context(label, info.sql, parsedAttributes)
+      SpanNamer.Context(label, info.sql, parsedAttributes, queryMetadata)
     )
 
     SpanParams(customSpanName, builder.result())
@@ -278,16 +282,7 @@ object TracedInterpreter {
       .get
       .flatMap { implicit tracer =>
         IOLocal(Option.empty[String]).to[F].map { ioLocal =>
-          // todo: use .asLocal[F] when CE 3.7.0 is released
-          val local: Local[F, Option[String]] = new Local[F, Option[String]] {
-            def applicative: Applicative[F] = implicitly
-            def ask[E2 >: Option[String]]: F[E2] =
-              Async[F].widen[Option[String], E2](ioLocal.get.to[F])
-            def local[A](fa: F[A])(f: Option[String] => Option[String]): F[A] =
-              Async[F].bracket(ioLocal.modify(e => (f(e), e)).to[F])(_ => fa)(ioLocal.set(_).to[F])
-          }
-
-          new TracedInterpreter(config, logHandler, local)
+          new TracedInterpreter(config, logHandler, ioLocal.asLocal[F])
         }
       }
 }
