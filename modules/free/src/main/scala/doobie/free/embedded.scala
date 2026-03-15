@@ -4,7 +4,7 @@
 
 // format: off
 
-package doobie.free
+package org.typelevel.doobie.free
 
 import cats.free.Free
 

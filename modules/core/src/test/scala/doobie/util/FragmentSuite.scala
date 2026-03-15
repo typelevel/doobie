@@ -2,14 +2,14 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.util
+package org.typelevel.doobie.util
 
 import cats.effect.IO
 import cats.syntax.all.*
-import doobie.*
-import doobie.Fragment.const0
-import doobie.implicits.*
-import doobie.testutils.VoidExtensions
+import org.typelevel.doobie.*
+import org.typelevel.doobie.Fragment.const0
+import org.typelevel.doobie.implicits.*
+import org.typelevel.doobie.testutils.VoidExtensions
 import munit.CatsEffectSuite
 
 class FragmentSuite extends CatsEffectSuite {

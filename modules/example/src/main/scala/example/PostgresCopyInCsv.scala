@@ -6,9 +6,9 @@ package example
 
 import cats.syntax.all.*
 import cats.effect.{IO, IOApp}
-import doobie.*
-import doobie.implicits.*
-import doobie.postgres.*
+import org.typelevel.doobie.*
+import org.typelevel.doobie.implicits.*
+import org.typelevel.doobie.postgres.*
 import java.io.ByteArrayInputStream
 import java.nio.charset.StandardCharsets
 import java.io.InputStream

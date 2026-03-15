@@ -2,14 +2,14 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.mysql
+package org.typelevel.doobie.mysql
 
 import java.time.ZoneOffset
-import doobie.*
-import doobie.implicits.*
-import doobie.mysql.implicits.*
-import doobie.mysql.util.arbitraries.SQLArbitraries.*
-import doobie.mysql.util.arbitraries.TimeArbitraries.*
+import org.typelevel.doobie.*
+import org.typelevel.doobie.implicits.*
+import org.typelevel.doobie.mysql.implicits.*
+import org.typelevel.doobie.mysql.util.arbitraries.SQLArbitraries.*
+import org.typelevel.doobie.mysql.util.arbitraries.TimeArbitraries.*
 import org.scalacheck.{Arbitrary, Test}
 import org.scalacheck.Prop.forAll
 

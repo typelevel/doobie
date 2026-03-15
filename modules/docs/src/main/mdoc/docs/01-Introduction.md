@@ -87,7 +87,7 @@ Each page begins with some imports, like this.
 
 ```scala mdoc:silent
 import cats._, cats.data._, cats.implicits._
-import doobie._
+import org.typelevel.doobie._
 ```
 
 After that there is text interspersed with code examples. Sometimes definitions will stand alone.

@@ -2,7 +2,7 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.hikari
+package org.typelevel.doobie.hikari
 
 import java.util.Properties
 import java.util.concurrent.{ScheduledExecutorService, ThreadFactory, TimeUnit}
@@ -11,7 +11,7 @@ import cats.effect.Sync
 import cats.syntax.show.*
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.metrics.MetricsTrackerFactory
-import doobie.enumerated.TransactionIsolation
+import org.typelevel.doobie.enumerated.TransactionIsolation
 import javax.sql.DataSource
 
 import scala.concurrent.duration.Duration

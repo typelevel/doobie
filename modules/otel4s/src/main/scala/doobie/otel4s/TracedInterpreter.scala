@@ -2,7 +2,7 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.otel4s
+package org.typelevel.doobie.otel4s
 
 import java.sql.{PreparedStatement, ResultSet, SQLException}
 
@@ -12,9 +12,10 @@ import cats.free.Free
 import cats.mtl.Local
 import cats.syntax.all.*
 import cats.~>
-import doobie.free.KleisliInterpreter
-import doobie.util.log.{LogHandler, LoggingInfo}
-import doobie.util.trace.TraceEvent
+import org.typelevel.doobie
+import org.typelevel.doobie.free.KleisliInterpreter
+import org.typelevel.doobie.util.log.{LogHandler, LoggingInfo}
+import org.typelevel.doobie.util.trace.TraceEvent
 import org.typelevel.otel4s.Attributes
 import org.typelevel.otel4s.semconv.attributes.{DbAttributes, ErrorAttributes}
 import org.typelevel.otel4s.trace.{SpanFinalizer, SpanKind, StatusCode, Tracer, TracerProvider}
@@ -35,7 +36,7 @@ import org.typelevel.otel4s.trace.{SpanFinalizer, SpanKind, StatusCode, Tracer, 
   * @example
   *   to support both new fragment helpers and legacy raw labels:
   *   {{{
-  * import doobie.otel4s.*
+  * import org.typelevel.doobie.otel4s.*
   * import org.typelevel.otel4s.AttributeKey
   * import org.typelevel.otel4s.semconv.attributes.DbAttributes
   *
@@ -278,7 +279,7 @@ object TracedInterpreter {
   ): F[KleisliInterpreter[F]] =
     TracerProvider[F]
       .tracer(config.tracerScopeName)
-      .withVersion(doobie.buildinfo.version)
+      .withVersion(org.typelevel.doobie.buildinfo.version)
       .get
       .flatMap { implicit tracer =>
         IOLocal(Option.empty[String]).to[F].map { ioLocal =>

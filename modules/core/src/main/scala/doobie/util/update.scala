@@ -2,20 +2,20 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.util
+package org.typelevel.doobie.util
 
 import cats.*
 import cats.syntax.all.*
-import doobie.free.connection.ConnectionIO
-import doobie.free.preparedstatement.PreparedStatementIO
-import doobie.implicits.*
-import doobie.util.analysis.Analysis
-import doobie.util.pos.Pos
-import doobie.free.{connection as IFC, preparedstatement as IFPS}
-import doobie.hi.connection.{PreparedExecution, PreparedExecutionWithoutProcessStep}
-import doobie.hi.{connection as IHC, preparedstatement as IHPS, resultset as IHRS}
-import doobie.util.fragment.Fragment
-import doobie.util.log.{LoggingInfo, Parameters}
+import org.typelevel.doobie.free.connection.ConnectionIO
+import org.typelevel.doobie.free.preparedstatement.PreparedStatementIO
+import org.typelevel.doobie.implicits.*
+import org.typelevel.doobie.util.analysis.Analysis
+import org.typelevel.doobie.util.pos.Pos
+import org.typelevel.doobie.free.{connection as IFC, preparedstatement as IFPS}
+import org.typelevel.doobie.hi.connection.{PreparedExecution, PreparedExecutionWithoutProcessStep}
+import org.typelevel.doobie.hi.{connection as IHC, preparedstatement as IHPS, resultset as IHRS}
+import org.typelevel.doobie.util.fragment.Fragment
+import org.typelevel.doobie.util.log.{LoggingInfo, Parameters}
 import fs2.Stream
 
 import scala.Predef.genericArrayOps

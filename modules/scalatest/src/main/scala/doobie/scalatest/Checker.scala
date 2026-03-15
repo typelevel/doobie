@@ -2,13 +2,13 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.scalatest
+package org.typelevel.doobie.scalatest
 
 import cats.effect.{Async, IO}
-import doobie.{Update, Update0}
-import doobie.syntax.connectionio.*
-import doobie.util.query.{Query, Query0}
-import doobie.util.testing.*
+import org.typelevel.doobie.{Update, Update0}
+import org.typelevel.doobie.syntax.connectionio.*
+import org.typelevel.doobie.util.query.{Query, Query0}
+import org.typelevel.doobie.util.testing.*
 import org.scalatest.Assertions
 import org.tpolecat.typename.*
 

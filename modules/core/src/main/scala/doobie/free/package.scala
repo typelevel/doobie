@@ -2,7 +2,7 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie
+package org.typelevel.doobie
 
 /** The `free` module gives you access to the low-level API that directly corresponds to the JDBC methods. Because this
   * is the low level API, care needs to be taken to close resources, just like you would if using the JDBC API directly.

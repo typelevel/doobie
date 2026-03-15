@@ -2,14 +2,14 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.syntax
+package org.typelevel.doobie.syntax
 
-import cats.syntax.all.*
+import cats.syntax.foldable.*
 
-import doobie.syntax.SqlInterpolator.SingleFragment
-import doobie.util.{Put, Write}
-import doobie.util.fragment.{Elem, Fragment}
-import doobie.util.pos.Pos
+import org.typelevel.doobie.syntax.SqlInterpolator.SingleFragment
+import org.typelevel.doobie.util.{Put, Write}
+import org.typelevel.doobie.util.fragment.{Elem, Fragment}
+import org.typelevel.doobie.util.pos.Pos
 
 /** String interpolator for SQL literals. An expression of the form `sql".. \$a ... \$b ..."` with interpolated values
   * of type `A` and `B` (which must have instances of `Put`) yields a value of type [[Fragment]].
@@ -31,15 +31,15 @@ final class SqlInterpolator(private val sc: StringContext) extends AnyVal {
     * concatenate fragments because you don't need to think about intervening whitespace. If you do not want this
     * behavior, use `fr0`.
     */
-  def fr(a: SingleFragment[?]*)(implicit pos: Pos) = mkFragment(a.toList, true, pos)
+  def fr(a: SingleFragment[?]*)(implicit pos: Pos): Fragment = mkFragment(a.toList, true, pos)
 
   /** Alternative name for the `fr0` interpolator. */
-  def sql(a: SingleFragment[?]*)(implicit pos: Pos) = mkFragment(a.toList, false, pos)
+  def sql(a: SingleFragment[?]*)(implicit pos: Pos): Fragment = mkFragment(a.toList, false, pos)
 
   /** Interpolator for a statement fragment that can contain interpolated values. Unlike `fr` no attempt is made to be
     * helpful with respect to whitespace.
     */
-  def fr0(a: SingleFragment[?]*)(implicit pos: Pos) = mkFragment(a.toList, false, pos)
+  def fr0(a: SingleFragment[?]*)(implicit pos: Pos): Fragment = mkFragment(a.toList, false, pos)
 
 }
 

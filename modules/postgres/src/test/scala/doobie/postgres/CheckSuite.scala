@@ -2,13 +2,13 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.postgres
+package org.typelevel.doobie.postgres
 
-import doobie.*
-import doobie.implicits.*
-import doobie.postgres.implicits.*
-import doobie.postgres.enums.*
-import doobie.util.analysis.{ColumnTypeError, ParameterTypeError}
+import org.typelevel.doobie.*
+import org.typelevel.doobie.implicits.*
+import org.typelevel.doobie.postgres.implicits.*
+import org.typelevel.doobie.postgres.enums.*
+import org.typelevel.doobie.util.analysis.{ColumnTypeError, ParameterTypeError}
 import java.time.{Instant, LocalDate, LocalDateTime, LocalTime, OffsetDateTime, OffsetTime}
 
 class CheckSuite extends munit.FunSuite {

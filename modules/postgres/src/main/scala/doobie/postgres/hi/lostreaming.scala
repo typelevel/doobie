@@ -2,13 +2,13 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.postgres.hi
+package org.typelevel.doobie.postgres.hi
 
 import cats.syntax.functor.*
-import doobie.ConnectionIO
-import doobie.implicits.*
-import doobie.postgres.free.{largeobjectmanager as IIPFLOM, largeobject as IPFLO}
-import doobie.postgres.hi.connection as IPHC
+import org.typelevel.doobie.ConnectionIO
+import org.typelevel.doobie.implicits.*
+import org.typelevel.doobie.postgres.free.{largeobjectmanager as IIPFLOM, largeobject as IPFLO}
+import org.typelevel.doobie.postgres.hi.connection as IPHC
 import fs2.Stream
 import java.io.{InputStream, OutputStream}
 import org.postgresql.largeobject.LargeObject

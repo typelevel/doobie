@@ -4,16 +4,16 @@
 
 // format: off
 
-package doobie.postgres.free
+package org.typelevel.doobie.postgres.free
 
 // Library imports
 import cats.~>
 import cats.data.Kleisli
 import cats.effect.kernel.{ Poll, Sync }
 import cats.free.Free
-import doobie.WeakAsync
-import doobie.util.log.{LogEvent, LogHandler}
-import doobie.util.trace.TraceEvent
+import org.typelevel.doobie.WeakAsync
+import org.typelevel.doobie.util.log.{LogEvent, LogHandler}
+import org.typelevel.doobie.util.trace.TraceEvent
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 
@@ -38,12 +38,12 @@ import org.postgresql.replication.PGReplicationConnection
 import org.postgresql.util.ByteStreamWriter
 
 // Algebras and free monads thereof referenced by our interpreter.
-import doobie.postgres.free.copyin.{ CopyInIO, CopyInOp }
-import doobie.postgres.free.copymanager.{ CopyManagerIO, CopyManagerOp }
-import doobie.postgres.free.copyout.{ CopyOutIO, CopyOutOp }
-import doobie.postgres.free.largeobject.{ LargeObjectIO, LargeObjectOp }
-import doobie.postgres.free.largeobjectmanager.{ LargeObjectManagerIO, LargeObjectManagerOp }
-import doobie.postgres.free.pgconnection.{ PGConnectionIO, PGConnectionOp }
+import org.typelevel.doobie.postgres.free.copyin.{ CopyInIO, CopyInOp }
+import org.typelevel.doobie.postgres.free.copymanager.{ CopyManagerIO, CopyManagerOp }
+import org.typelevel.doobie.postgres.free.copyout.{ CopyOutIO, CopyOutOp }
+import org.typelevel.doobie.postgres.free.largeobject.{ LargeObjectIO, LargeObjectOp }
+import org.typelevel.doobie.postgres.free.largeobjectmanager.{ LargeObjectManagerIO, LargeObjectManagerOp }
+import org.typelevel.doobie.postgres.free.pgconnection.{ PGConnectionIO, PGConnectionOp }
 
 object KleisliInterpreter {
   def apply[M[_]: WeakAsync](logHandler: LogHandler[M]): KleisliInterpreter[M] =
@@ -137,7 +137,7 @@ class KleisliInterpreter[M[_]](logHandler: LogHandler[M])(implicit val asyncM: W
     // for operations using CopyInIO we must call ourself recursively
     override def handleErrorWith[A](fa: CopyInIO[A])(f: Throwable => CopyInIO[A]): Kleisli[M, PGCopyIn, A] = outer.handleErrorWith(this)(fa)(f)
     override def forceR[A, B](fa: CopyInIO[A])(fb: CopyInIO[B]): Kleisli[M, PGCopyIn, B] = outer.forceR(this)(fa)(fb)
-    override def uncancelable[A](body: Poll[CopyInIO] => CopyInIO[A]): Kleisli[M, PGCopyIn, A] = outer.uncancelable(this, doobie.postgres.free.copyin.capturePoll)(body)
+    override def uncancelable[A](body: Poll[CopyInIO] => CopyInIO[A]): Kleisli[M, PGCopyIn, A] = outer.uncancelable(this, org.typelevel.doobie.postgres.free.copyin.capturePoll)(body)
     override def poll[A](poll: Any, fa: CopyInIO[A]): Kleisli[M, PGCopyIn, A] = outer.poll(this)(poll, fa)
     override def onCancel[A](fa: CopyInIO[A], fin: CopyInIO[Unit]): Kleisli[M, PGCopyIn, A] = outer.onCancel(this)(fa, fin)
     override def fromFuture[A](fut: CopyInIO[Future[A]]): Kleisli[M, PGCopyIn, A] = outer.fromFuture(this)(fut)
@@ -176,7 +176,7 @@ class KleisliInterpreter[M[_]](logHandler: LogHandler[M])(implicit val asyncM: W
     // for operations using CopyManagerIO we must call ourself recursively
     override def handleErrorWith[A](fa: CopyManagerIO[A])(f: Throwable => CopyManagerIO[A]): Kleisli[M, PGCopyManager, A] = outer.handleErrorWith(this)(fa)(f)
     override def forceR[A, B](fa: CopyManagerIO[A])(fb: CopyManagerIO[B]): Kleisli[M, PGCopyManager, B] = outer.forceR(this)(fa)(fb)
-    override def uncancelable[A](body: Poll[CopyManagerIO] => CopyManagerIO[A]): Kleisli[M, PGCopyManager, A] = outer.uncancelable(this, doobie.postgres.free.copymanager.capturePoll)(body)
+    override def uncancelable[A](body: Poll[CopyManagerIO] => CopyManagerIO[A]): Kleisli[M, PGCopyManager, A] = outer.uncancelable(this, org.typelevel.doobie.postgres.free.copymanager.capturePoll)(body)
     override def poll[A](poll: Any, fa: CopyManagerIO[A]): Kleisli[M, PGCopyManager, A] = outer.poll(this)(poll, fa)
     override def onCancel[A](fa: CopyManagerIO[A], fin: CopyManagerIO[Unit]): Kleisli[M, PGCopyManager, A] = outer.onCancel(this)(fa, fin)
     override def fromFuture[A](fut: CopyManagerIO[Future[A]]): Kleisli[M, PGCopyManager, A] = outer.fromFuture(this)(fut)
@@ -215,7 +215,7 @@ class KleisliInterpreter[M[_]](logHandler: LogHandler[M])(implicit val asyncM: W
     // for operations using CopyOutIO we must call ourself recursively
     override def handleErrorWith[A](fa: CopyOutIO[A])(f: Throwable => CopyOutIO[A]): Kleisli[M, PGCopyOut, A] = outer.handleErrorWith(this)(fa)(f)
     override def forceR[A, B](fa: CopyOutIO[A])(fb: CopyOutIO[B]): Kleisli[M, PGCopyOut, B] = outer.forceR(this)(fa)(fb)
-    override def uncancelable[A](body: Poll[CopyOutIO] => CopyOutIO[A]): Kleisli[M, PGCopyOut, A] = outer.uncancelable(this, doobie.postgres.free.copyout.capturePoll)(body)
+    override def uncancelable[A](body: Poll[CopyOutIO] => CopyOutIO[A]): Kleisli[M, PGCopyOut, A] = outer.uncancelable(this, org.typelevel.doobie.postgres.free.copyout.capturePoll)(body)
     override def poll[A](poll: Any, fa: CopyOutIO[A]): Kleisli[M, PGCopyOut, A] = outer.poll(this)(poll, fa)
     override def onCancel[A](fa: CopyOutIO[A], fin: CopyOutIO[Unit]): Kleisli[M, PGCopyOut, A] = outer.onCancel(this)(fa, fin)
     override def fromFuture[A](fut: CopyOutIO[Future[A]]): Kleisli[M, PGCopyOut, A] = outer.fromFuture(this)(fut)
@@ -252,7 +252,7 @@ class KleisliInterpreter[M[_]](logHandler: LogHandler[M])(implicit val asyncM: W
     // for operations using LargeObjectIO we must call ourself recursively
     override def handleErrorWith[A](fa: LargeObjectIO[A])(f: Throwable => LargeObjectIO[A]): Kleisli[M, LargeObject, A] = outer.handleErrorWith(this)(fa)(f)
     override def forceR[A, B](fa: LargeObjectIO[A])(fb: LargeObjectIO[B]): Kleisli[M, LargeObject, B] = outer.forceR(this)(fa)(fb)
-    override def uncancelable[A](body: Poll[LargeObjectIO] => LargeObjectIO[A]): Kleisli[M, LargeObject, A] = outer.uncancelable(this, doobie.postgres.free.largeobject.capturePoll)(body)
+    override def uncancelable[A](body: Poll[LargeObjectIO] => LargeObjectIO[A]): Kleisli[M, LargeObject, A] = outer.uncancelable(this, org.typelevel.doobie.postgres.free.largeobject.capturePoll)(body)
     override def poll[A](poll: Any, fa: LargeObjectIO[A]): Kleisli[M, LargeObject, A] = outer.poll(this)(poll, fa)
     override def onCancel[A](fa: LargeObjectIO[A], fin: LargeObjectIO[Unit]): Kleisli[M, LargeObject, A] = outer.onCancel(this)(fa, fin)
     override def fromFuture[A](fut: LargeObjectIO[Future[A]]): Kleisli[M, LargeObject, A] = outer.fromFuture(this)(fut)
@@ -302,7 +302,7 @@ class KleisliInterpreter[M[_]](logHandler: LogHandler[M])(implicit val asyncM: W
     // for operations using LargeObjectManagerIO we must call ourself recursively
     override def handleErrorWith[A](fa: LargeObjectManagerIO[A])(f: Throwable => LargeObjectManagerIO[A]): Kleisli[M, LargeObjectManager, A] = outer.handleErrorWith(this)(fa)(f)
     override def forceR[A, B](fa: LargeObjectManagerIO[A])(fb: LargeObjectManagerIO[B]): Kleisli[M, LargeObjectManager, B] = outer.forceR(this)(fa)(fb)
-    override def uncancelable[A](body: Poll[LargeObjectManagerIO] => LargeObjectManagerIO[A]): Kleisli[M, LargeObjectManager, A] = outer.uncancelable(this, doobie.postgres.free.largeobjectmanager.capturePoll)(body)
+    override def uncancelable[A](body: Poll[LargeObjectManagerIO] => LargeObjectManagerIO[A]): Kleisli[M, LargeObjectManager, A] = outer.uncancelable(this, org.typelevel.doobie.postgres.free.largeobjectmanager.capturePoll)(body)
     override def poll[A](poll: Any, fa: LargeObjectManagerIO[A]): Kleisli[M, LargeObjectManager, A] = outer.poll(this)(poll, fa)
     override def onCancel[A](fa: LargeObjectManagerIO[A], fin: LargeObjectManagerIO[Unit]): Kleisli[M, LargeObjectManager, A] = outer.onCancel(this)(fa, fin)
     override def fromFuture[A](fut: LargeObjectManagerIO[Future[A]]): Kleisli[M, LargeObjectManager, A] = outer.fromFuture(this)(fut)
@@ -341,7 +341,7 @@ class KleisliInterpreter[M[_]](logHandler: LogHandler[M])(implicit val asyncM: W
     // for operations using PGConnectionIO we must call ourself recursively
     override def handleErrorWith[A](fa: PGConnectionIO[A])(f: Throwable => PGConnectionIO[A]): Kleisli[M, PGConnection, A] = outer.handleErrorWith(this)(fa)(f)
     override def forceR[A, B](fa: PGConnectionIO[A])(fb: PGConnectionIO[B]): Kleisli[M, PGConnection, B] = outer.forceR(this)(fa)(fb)
-    override def uncancelable[A](body: Poll[PGConnectionIO] => PGConnectionIO[A]): Kleisli[M, PGConnection, A] = outer.uncancelable(this, doobie.postgres.free.pgconnection.capturePoll)(body)
+    override def uncancelable[A](body: Poll[PGConnectionIO] => PGConnectionIO[A]): Kleisli[M, PGConnection, A] = outer.uncancelable(this, org.typelevel.doobie.postgres.free.pgconnection.capturePoll)(body)
     override def poll[A](poll: Any, fa: PGConnectionIO[A]): Kleisli[M, PGConnection, A] = outer.poll(this)(poll, fa)
     override def onCancel[A](fa: PGConnectionIO[A], fin: PGConnectionIO[Unit]): Kleisli[M, PGConnection, A] = outer.onCancel(this)(fa, fin)
     override def fromFuture[A](fut: PGConnectionIO[Future[A]]): Kleisli[M, PGConnection, A] = outer.fromFuture(this)(fut)

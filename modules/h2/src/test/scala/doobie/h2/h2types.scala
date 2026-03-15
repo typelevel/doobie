@@ -2,16 +2,16 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.h2
+package org.typelevel.doobie.h2
 
 import java.util.UUID
 import cats.effect.IO
-import doobie.*
-import doobie.implicits.*
-import doobie.h2.implicits.*
-import doobie.util.analysis.{Analysis, ColumnTypeError}
-import doobie.util.arbitraries.SQLArbitraries.*
-import doobie.util.arbitraries.StringArbitraries.*
+import org.typelevel.doobie.*
+import org.typelevel.doobie.implicits.*
+import org.typelevel.doobie.h2.implicits.*
+import org.typelevel.doobie.util.analysis.{Analysis, ColumnTypeError}
+import org.typelevel.doobie.util.arbitraries.SQLArbitraries.*
+import org.typelevel.doobie.util.arbitraries.StringArbitraries.*
 import org.scalacheck.{Arbitrary, Gen}
 import munit.CatsEffectAssertions.MUnitCatsAssertionsForIOOps
 import org.scalacheck.effect.PropF

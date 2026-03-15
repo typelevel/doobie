@@ -5,9 +5,9 @@
 package example
 
 import cats.effect.IO
-import doobie.*
-import doobie.specs2.analysisspec.*
-import doobie.testutils.VoidExtensions
+import org.typelevel.doobie.*
+import org.typelevel.doobie.specs2.analysisspec.*
+import org.typelevel.doobie.testutils.VoidExtensions
 import org.specs2.mutable.Specification
 
 class AnalysisTestSpecs2 extends Specification with IOChecker {

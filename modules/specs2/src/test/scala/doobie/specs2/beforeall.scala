@@ -2,13 +2,13 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.specs2
+package org.typelevel.doobie.specs2
 
 import cats.effect.IO
-import doobie.syntax.connectionio.*
-import doobie.syntax.string.*
-import doobie.testutils.VoidExtensions
-import doobie.util.transactor.Transactor
+import org.typelevel.doobie.syntax.connectionio.*
+import org.typelevel.doobie.syntax.string.*
+import org.typelevel.doobie.testutils.VoidExtensions
+import org.typelevel.doobie.util.transactor.Transactor
 import org.specs2.mutable.Specification
 import org.specs2.specification.BeforeAll
 

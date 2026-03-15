@@ -2,9 +2,9 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.postgres.enums
+package org.typelevel.doobie.postgres.enums
 
-import doobie.Meta
+import org.typelevel.doobie.Meta
 
 // This is an enum type defined in another schema (See other_enum in test-db.sql)
 sealed abstract class OtherEnum(val strValue: String)

@@ -2,16 +2,16 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.util
+package org.typelevel.doobie.util
 
 import cats.*
 import cats.data.Chain
-import doobie.free.connection.ConnectionIO
-import doobie.free.preparedstatement.PreparedStatementIO
-import doobie.util.pos.Pos
-import doobie.hi.connection as IHC
-import doobie.util.query.{Query, Query0}
-import doobie.util.update.{Update, Update0}
+import org.typelevel.doobie.free.connection.ConnectionIO
+import org.typelevel.doobie.free.preparedstatement.PreparedStatementIO
+import org.typelevel.doobie.util.pos.Pos
+import org.typelevel.doobie.hi.connection as IHC
+import org.typelevel.doobie.util.query.{Query, Query0}
+import org.typelevel.doobie.util.update.{Update, Update0}
 
 /** Module defining the `Fragment` data type. */
 object fragment {

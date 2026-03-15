@@ -7,8 +7,9 @@ package example
 
 import cats.effect.{IO, IOApp}
 import cats.syntax.all.*
-import doobie.*, doobie.implicits.*
-import doobie.postgres.*
+import org.typelevel.doobie.*
+import org.typelevel.doobie.implicits.*
+import org.typelevel.doobie.postgres.*
 import java.io.File
 
 /** Example of using the high-level Large Object API. See the Postgres JDBC driver doc and the source in

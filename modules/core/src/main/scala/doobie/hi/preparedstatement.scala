@@ -2,23 +2,23 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.hi
+package org.typelevel.doobie.hi
 
-import doobie.enumerated.JdbcType
-import doobie.util.{Get, Put}
-import doobie.enumerated.ColumnNullable
-import doobie.enumerated.ParameterNullable
-import doobie.enumerated.ParameterMode
-import doobie.enumerated.Holdability
-import doobie.enumerated.Nullability.NullabilityKnown
-import doobie.enumerated.FetchDirection
-import doobie.enumerated.ResultSetConcurrency
-import doobie.enumerated.ResultSetType
-import doobie.util.{Read, Write}
-import doobie.util.analysis.*
-import doobie.util.stream.repeatEvalChunks
-import doobie.free.{preparedstatement as IFPS, resultset as IFRS}
-import doobie.syntax.align.*
+import org.typelevel.doobie.enumerated.JdbcType
+import org.typelevel.doobie.util.{Get, Put}
+import org.typelevel.doobie.enumerated.ColumnNullable
+import org.typelevel.doobie.enumerated.ParameterNullable
+import org.typelevel.doobie.enumerated.ParameterMode
+import org.typelevel.doobie.enumerated.Holdability
+import org.typelevel.doobie.enumerated.Nullability.NullabilityKnown
+import org.typelevel.doobie.enumerated.FetchDirection
+import org.typelevel.doobie.enumerated.ResultSetConcurrency
+import org.typelevel.doobie.enumerated.ResultSetType
+import org.typelevel.doobie.util.{Read, Write}
+import org.typelevel.doobie.util.analysis.*
+import org.typelevel.doobie.util.stream.repeatEvalChunks
+import org.typelevel.doobie.free.{preparedstatement as IFPS, resultset as IFRS}
+import org.typelevel.doobie.syntax.align.*
 
 import java.sql.{ParameterMetaData, ResultSetMetaData, SQLWarning}
 import scala.Predef.{intArrayOps, intWrapper}

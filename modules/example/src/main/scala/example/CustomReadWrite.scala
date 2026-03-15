@@ -4,7 +4,8 @@
 
 package example
 
-import doobie.*, doobie.implicits.*
+import org.typelevel.doobie.*
+import org.typelevel.doobie.implicits.*
 
 import java.sql.Date
 

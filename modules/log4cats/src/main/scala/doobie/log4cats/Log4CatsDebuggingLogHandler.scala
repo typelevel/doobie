@@ -2,10 +2,10 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.log4cats
+package org.typelevel.doobie.log4cats
 
-import doobie.LogHandler
-import doobie.util.log.*
+import org.typelevel.doobie.LogHandler
+import org.typelevel.doobie.util.log.*
 import org.typelevel.log4cats.*
 
 /** A LogHandler that writes a default format to a log4cats MessageLogger. This is provided for debugging purposes and
