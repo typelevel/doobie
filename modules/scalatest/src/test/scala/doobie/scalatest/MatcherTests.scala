@@ -2,11 +2,11 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.scalatest
+package org.typelevel.doobie.scalatest
 
 import cats.effect.IO
-import doobie.syntax.string.*
-import doobie.util.transactor.Transactor
+import org.typelevel.doobie.syntax.string.*
+import org.typelevel.doobie.util.transactor.Transactor
 import org.scalatest.*
 
 trait MatcherChecks[M[_]] extends funsuite.AnyFunSuite

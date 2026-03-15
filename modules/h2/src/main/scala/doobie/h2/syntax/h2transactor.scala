@@ -2,7 +2,7 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.h2
+package org.typelevel.doobie.h2
 package syntax
 
 import cats.effect.kernel.Sync

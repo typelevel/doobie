@@ -2,13 +2,13 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.util
+package org.typelevel.doobie.util
 
-import doobie.enumerated.Nullability
-import doobie.enumerated.Nullability.*
-import doobie.enumerated.ParameterMode
-import doobie.enumerated.JdbcType
-import doobie.util.pretty.*
+import org.typelevel.doobie.enumerated.Nullability
+import org.typelevel.doobie.enumerated.Nullability.*
+import org.typelevel.doobie.enumerated.ParameterMode
+import org.typelevel.doobie.enumerated.JdbcType
+import org.typelevel.doobie.util.pretty.*
 
 import scala.Predef.* // TODO: minimize
 

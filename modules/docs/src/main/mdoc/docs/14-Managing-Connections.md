@@ -7,8 +7,8 @@ import cats._
 import cats.data._
 import cats.effect._
 import cats.implicits._
-import doobie._
-import doobie.implicits._
+import org.typelevel.doobie._
+import org.typelevel.doobie.implicits._
 ```
 
 ### About Transactors
@@ -54,9 +54,9 @@ The `doobie-hikari` add-on provides a `Transactor` implementation backed by a [H
 ```scala mdoc:silent:reset
 import cats.effect._
 import cats.implicits._
-import doobie._
-import doobie.implicits._
-import doobie.hikari._
+import org.typelevel.doobie._
+import org.typelevel.doobie.implicits._
+import org.typelevel.doobie.hikari._
 import com.zaxxer.hikari.HikariConfig
 
 object HikariApp extends IOApp {
@@ -107,7 +107,7 @@ JDBC provides a bare-bones connection provider via `DriverManager.getConnection`
 However, for test and for experimentation as described in this book (and for situations where you really do want to ensure that you get a truly fresh connection right away) the `DriverManager` is fine. Support in **doobie** is via `DriverManagerTransactor`. To construct one you must pass the name of the driver class and a connect URL. Normally you will also pass a user/password (the API provides several variants matching the `DriverManager` static API).
 
 ```scala mdoc:silent
-import doobie.util.ExecutionContexts
+import org.typelevel.doobie.util.ExecutionContexts
 
 // This is just for testing. Consider using cats.effect.IOApp instead of calling
 // unsafe methods directly.
@@ -125,7 +125,7 @@ val xa = Transactor.fromDriverManager[IO](
 ```
 
 ```scala mdoc:invisible
-implicit val mdocColors: doobie.util.Colors = doobie.util.Colors.None
+implicit val mdocColors: org.typelevel.doobie.util.Colors = org.typelevel.doobie.util.Colors.None
 ```
 
 ### Using an existing DataSource
@@ -168,7 +168,7 @@ val testXa = Transactor.after.set(xa, HC.rollback)
 As another example, Hive's JDBC driver doesn't support transaction commit or rollback, you can create your own  `Transactor` to accommodate that, like:
 
 ```scala
-import doobie.free.connection.unit
+import org.typelevel.doobie.free.connection.unit
 
 val hiveXa = Transactor.strategy.set(xa, Strategy.default.copy(after = unit, oops = unit))
 ```

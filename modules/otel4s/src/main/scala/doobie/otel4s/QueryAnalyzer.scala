@@ -2,7 +2,7 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.otel4s
+package org.typelevel.doobie.otel4s
 
 /** Analyzes SQL text and returns semantic query metadata.
   *

@@ -2,16 +2,16 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.munit
+package org.typelevel.doobie.munit
 
 // Copyright (c) 2013-2020 Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
 import cats.effect.IO
-import doobie.syntax.string.*
-import doobie.util.Read
-import doobie.util.transactor.Transactor
+import org.typelevel.doobie.syntax.string.*
+import org.typelevel.doobie.util.Read
+import org.typelevel.doobie.util.transactor.Transactor
 import munit.*
 
 trait CheckerChecks[M[_]] extends FunSuite with Checker[M] {
@@ -28,14 +28,14 @@ trait CheckerChecks[M[_]] extends FunSuite with Checker[M] {
   test("fail".fail) { check(sql"select 1".query[String]) }
 
   test("trivial case-class") {
-    import doobie.generic.auto.*
+    import org.typelevel.doobie.generic.auto.*
 
     check(sql"select 1".query[CheckerChecks.Foo[cats.Id]])
   }
 
   test("Read should select correct columns when combined with `product`") {
     import cats.syntax.all.*
-    import doobie.implicits.*
+    import org.typelevel.doobie.implicits.*
 
     val ri = Read[Int]
     val rs = Read[String]

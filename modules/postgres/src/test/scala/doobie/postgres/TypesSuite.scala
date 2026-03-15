@@ -2,23 +2,23 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.postgres
+package org.typelevel.doobie.postgres
 
 import java.math.BigDecimal as JBigDecimal
 import java.net.InetAddress
 import java.time.{LocalDate, LocalDateTime, OffsetDateTime, ZoneOffset}
 import java.util.UUID
-import doobie.*
-import doobie.implicits.*
-import doobie.postgres.enums.*
-import doobie.postgres.implicits.*
-import doobie.postgres.pgisimplicits.*
-import doobie.postgres.rangeimplicits.*
-import doobie.postgres.types.{EmptyRange, NonEmptyRange, Range}
-import doobie.postgres.types.Range.Edge.*
-import doobie.postgres.util.arbitraries.SQLArbitraries.*
-import doobie.postgres.util.arbitraries.TimeArbitraries.*
-import doobie.util.arbitraries.StringArbitraries.*
+import org.typelevel.doobie.*
+import org.typelevel.doobie.implicits.*
+import org.typelevel.doobie.postgres.enums.*
+import org.typelevel.doobie.postgres.implicits.*
+import org.typelevel.doobie.postgres.pgisimplicits.*
+import org.typelevel.doobie.postgres.rangeimplicits.*
+import org.typelevel.doobie.postgres.types.{EmptyRange, NonEmptyRange, Range}
+import org.typelevel.doobie.postgres.types.Range.Edge.*
+import org.typelevel.doobie.postgres.util.arbitraries.SQLArbitraries.*
+import org.typelevel.doobie.postgres.util.arbitraries.TimeArbitraries.*
+import org.typelevel.doobie.util.arbitraries.StringArbitraries.*
 import net.postgis.jdbc.geometry.*
 import org.postgresql.geometric.*
 import org.postgresql.util.*
@@ -177,7 +177,7 @@ class TypesSuite extends munit.CatsEffectSuite with munit.ScalaCheckEffectSuite 
       p
     }
 
-    import doobie.postgres.pgisgeographyimplicits.*
+    import org.typelevel.doobie.postgres.pgisgeographyimplicits.*
     val point1 = createPoint(1, 2)
     val point2 = createPoint(1, 3)
     val lineString = new LineString(Array[Point](point1, point2))

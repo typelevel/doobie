@@ -244,7 +244,7 @@ We cleaned up the add-on modules a bit and made some naming simplifications that
 - There is now a **ScalaTest** add-on. See the book chapter on unit testing for details and examples.
 - The `contrib` segment has been removed from module names, so `doobie-contrib-h2` is now just `doobie-h2`. It has also been removed from *package* names. So `doobie.contrib.h2` is now just `doobie.h2`.
 - In both cases the `postgresql` segment has been shortened to `postgres`.
-- All modules now have a consistent import story. `import doobie.<module>.imports._` should get you everything you need.
+- All modules now have a consistent import story. `import org.typelevel.doobie.<module>.imports._` should get you everything you need.
 
 That's it! Enjoy the release. Once again many thanks to our contributors.
 

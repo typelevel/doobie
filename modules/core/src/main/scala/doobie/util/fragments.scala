@@ -2,21 +2,20 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie
-package util
+package org.typelevel.doobie.util
 
 import cats.Foldable
 import cats.Reducible
 import cats.data.NonEmptyList
 import cats.syntax.all.*
-import doobie.Fragment.*
-import doobie.implicits.*
+import org.typelevel.doobie.util.fragment.Fragment
+import org.typelevel.doobie.syntax.string.toSqlInterpolator
 
 /** Module of `Fragment` constructors. */
 object fragments {
 
   /** Returns `VALUES (fs0), (fs1), ...`. */
-  def values[F[_]: Reducible, A](fs: F[A])(implicit w: util.Write[A]): Fragment =
+  def values[F[_]: Reducible, A](fs: F[A])(implicit w: Write[A]): Fragment =
     fr"VALUES" ++ comma(fs.toNonEmptyList.map(f => parentheses(values(f))))
 
   /** Returns `UPDATE tableName SET columnUpdate0, columnUpdate1, ...`. */
@@ -28,31 +27,31 @@ object fragments {
   }
 
   /** Returns `(f IN (fs0, fs1, ...))`. */
-  def in[A: util.Write](f: Fragment, fs0: A, fs1: A, fs: A*): Fragment =
+  def in[A: Write](f: Fragment, fs0: A, fs1: A, fs: A*): Fragment =
     in(f, NonEmptyList(fs0, fs1 :: fs.toList))
 
   /** Returns `(f NOT IN (fs0, fs1, ...))`. */
-  def notIn[A: util.Write](f: Fragment, fs0: A, fs1: A, fs: A*): Fragment =
+  def notIn[A: Write](f: Fragment, fs0: A, fs1: A, fs: A*): Fragment =
     notIn(f, NonEmptyList(fs0, fs1 :: fs.toList))
 
   @inline
-  private def mkRowFn[A](implicit A: util.Write[A]): A => Fragment =
+  private def mkRowFn[A](implicit A: Write[A]): A => Fragment =
     if (A.length == 1) // no need for extra parentheses
       a => values(a)
     else
       a => parentheses0(values(a))
 
   @inline
-  private def constSubqueryExpr[F[_]: Reducible, A: util.Write](fs: F[A]): Fragment = {
+  private def constSubqueryExpr[F[_]: Reducible, A: Write](fs: F[A]): Fragment = {
     val row = mkRowFn[A]
     parentheses0(fs.reduceLeftTo(row) { _ ++ fr"," ++ row(_) })
   }
 
   @inline
-  private def constSubqueryExprOpt[F[_]: Foldable, A: util.Write](fs: F[A]): Option[Fragment] = {
+  private def constSubqueryExprOpt[F[_]: Foldable, A: Write](fs: F[A]): Option[Fragment] = {
     val row = mkRowFn[A]
     fs.reduceLeftToOption(row) { _ ++ fr"," ++ row(_) }
-      .map(parentheses0)
+      .map(parentheses0(_))
   }
 
   /** Returns `f IN (fs0, fs1, ...)`.
@@ -64,7 +63,7 @@ object fragments {
     * @return
     *   the result `IN` expression.
     */
-  def in[F[_]: Reducible, A: util.Write](f: Fragment, fs: F[A]): Fragment =
+  def in[F[_]: Reducible, A: Write](f: Fragment, fs: F[A]): Fragment =
     parentheses(f ++ fr" IN" ++ constSubqueryExpr(fs))
 
   /** Returns `f IN (fs0, fs1, ...)`.
@@ -76,7 +75,7 @@ object fragments {
     * @return
     *   the result `IN` expression enclosed in `Some` or `None` if `fs` is empty.
     */
-  def inOpt[F[_]: Foldable, A: util.Write](f: Fragment, fs: F[A]): Option[Fragment] =
+  def inOpt[F[_]: Foldable, A: Write](f: Fragment, fs: F[A]): Option[Fragment] =
     constSubqueryExprOpt(fs).map(expr => parentheses(f ++ fr" IN" ++ expr))
 
   /** Returns `f NOT IN (fs0, fs1, ...)`.
@@ -88,7 +87,7 @@ object fragments {
     * @return
     *   the result `NOT IN` subquery expression.
     */
-  def notIn[F[_]: Reducible, A: util.Write](f: Fragment, fs: F[A]): Fragment =
+  def notIn[F[_]: Reducible, A: Write](f: Fragment, fs: F[A]): Fragment =
     parentheses(f ++ fr" NOT IN" ++ constSubqueryExpr(fs))
 
   /** Returns `f NOT IN (fs0, fs1, ...)`.
@@ -100,7 +99,7 @@ object fragments {
     * @return
     *   the result `NOT IN` subquery expression enclosed in `Some` or `None` if `fs` is empty.
     */
-  def notInOpt[F[_]: Foldable, A: util.Write](f: Fragment, fs: F[A]): Option[Fragment] =
+  def notInOpt[F[_]: Foldable, A: Write](f: Fragment, fs: F[A]): Option[Fragment] =
     constSubqueryExprOpt(fs).map(expr => parentheses(f ++ fr" NOT IN" ++ expr))
 
   /** Returns `(f1 AND f2 AND ... fn)`. */
@@ -219,7 +218,7 @@ object fragments {
   def parentheses0(f: Fragment): Fragment = fr0"(" ++ f ++ fr0")"
 
   /** Returns `?,?,...,?` for the values in `a`. */
-  def values[A](a: A)(implicit w: util.Write[A]): Fragment =
+  def values[A](a: A)(implicit w: Write[A]): Fragment =
     w.toFragment(a)
 
   /** Returns `f1, f2, ... fn`. */

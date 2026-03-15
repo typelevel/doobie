@@ -2,14 +2,14 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.util
+package org.typelevel.doobie.util
 
 import cats.ApplicativeError
 import cats.syntax.applicativeError.*
 import cats.syntax.apply.*
 import cats.syntax.either.*
 import cats.syntax.functor.*
-import doobie.enumerated.SqlState
+import org.typelevel.doobie.enumerated.SqlState
 import java.sql.SQLException
 
 /** Module of additional combinators for `ApplicativeError`, specific to `SQLException`.

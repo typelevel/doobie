@@ -2,8 +2,10 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.h2.circe
+package org.typelevel.doobie.h2.circe
+
+import org.typelevel.doobie.h2.circe.Instances.JsonInstances
 
 package object json {
-  object implicits extends doobie.h2.circe.Instances.JsonInstances
+  object implicits extends JsonInstances
 }

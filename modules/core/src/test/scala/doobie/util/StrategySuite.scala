@@ -2,16 +2,16 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.util
+package org.typelevel.doobie.util
 
 import cats.data.Kleisli
 import cats.effect.IO
 import cats.syntax.apply.*
 import cats.~>
-import doobie.*
-import doobie.free.{connection, preparedstatement, resultset}
-import doobie.implicits.*
-import doobie.util.transactor.Transactor.Aux
+import org.typelevel.doobie.*
+import org.typelevel.doobie.free.{connection, preparedstatement, resultset}
+import org.typelevel.doobie.implicits.*
+import org.typelevel.doobie.util.transactor.Transactor.Aux
 import munit.CatsEffectSuite
 
 import java.sql.{Connection, PreparedStatement, ResultSet}

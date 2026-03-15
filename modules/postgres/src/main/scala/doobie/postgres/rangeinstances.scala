@@ -2,10 +2,10 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.postgres
+package org.typelevel.doobie.postgres
 
-import doobie.util.meta.Meta
-import doobie.postgres.types.Range
+import org.typelevel.doobie.util.meta.Meta
+import org.typelevel.doobie.postgres.types.Range
 import org.postgresql.util.PGobject
 
 import java.time.format.{DateTimeFormatter, DateTimeFormatterBuilder}

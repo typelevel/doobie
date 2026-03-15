@@ -7,9 +7,9 @@ package example
 
 import cats.effect.*
 import cats.syntax.all.*
-import doobie.*
-import doobie.implicits.*
-import doobie.postgres.*
+import org.typelevel.doobie.*
+import org.typelevel.doobie.implicits.*
+import org.typelevel.doobie.postgres.*
 import org.postgresql.*
 import fs2.{Stream, Pipe}
 import fs2.Stream.*

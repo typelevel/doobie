@@ -2,10 +2,10 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.mysql
+package org.typelevel.doobie.mysql
 
 import cats.effect.IO
-import doobie.Transactor
+import org.typelevel.doobie.Transactor
 
 object MySQLTestTransactor {
 

@@ -7,11 +7,11 @@ package example
 import cats.effect.{IO, IOApp}
 import cats.effect.syntax.monadCancel.*
 import cats.syntax.all.*
-import doobie.*
-import doobie.enumerated.JdbcType.Other
-import doobie.free.connection.ConnectionIO
-import doobie.implicits.*
-import doobie.util.transactor.Transactor
+import org.typelevel.doobie.*
+import org.typelevel.doobie.enumerated.JdbcType.Other
+import org.typelevel.doobie.free.connection.ConnectionIO
+import org.typelevel.doobie.implicits.*
+import org.typelevel.doobie.util.transactor.Transactor
 
 object CallableStatementExample extends IOApp.Simple {
 

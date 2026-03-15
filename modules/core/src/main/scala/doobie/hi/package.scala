@@ -2,7 +2,9 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie
+package org.typelevel.doobie
+
+import org.typelevel.doobie
 
 /** High-level database API. The constructors here are defined in terms of those in `doobie.free.connection` but differ
   * in the following ways:

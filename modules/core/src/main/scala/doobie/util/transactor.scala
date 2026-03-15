@@ -2,16 +2,16 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.util
+package org.typelevel.doobie.util
 
-import doobie.WeakAsync
-import doobie.free.connection.{ConnectionIO, ConnectionOp, commit, rollback, setAutoCommit, unit}
-import doobie.free.KleisliInterpreter
-import doobie.implicits.*
-import doobie.util.lens.*
-import doobie.util.log.LogHandler
-import doobie.util.yolo.Yolo
-import doobie.free.connection as IFC
+import org.typelevel.doobie.WeakAsync
+import org.typelevel.doobie.free.connection.{ConnectionIO, ConnectionOp, commit, rollback, setAutoCommit, unit}
+import org.typelevel.doobie.free.KleisliInterpreter
+import org.typelevel.doobie.implicits.*
+import org.typelevel.doobie.util.lens.*
+import org.typelevel.doobie.util.log.LogHandler
+import org.typelevel.doobie.util.yolo.Yolo
+import org.typelevel.doobie.free.connection as IFC
 import cats.{Monad, ~>}
 import cats.data.Kleisli
 import cats.effect.kernel.{Async, MonadCancelThrow, Resource}

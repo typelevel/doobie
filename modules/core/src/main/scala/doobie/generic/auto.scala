@@ -2,9 +2,9 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.generic
+package org.typelevel.doobie.generic
 
-import doobie.util.{Read, Write}
+import org.typelevel.doobie.util.{Read, Write}
 
 trait AutoDerivation
     extends Read.Auto

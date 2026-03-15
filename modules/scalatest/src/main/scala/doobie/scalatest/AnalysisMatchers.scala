@@ -2,11 +2,11 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.scalatest
+package org.typelevel.doobie.scalatest
 
 import cats.effect.{Async, IO}
-import doobie.syntax.connectionio.*
-import doobie.util.testing.*
+import org.typelevel.doobie.syntax.connectionio.*
+import org.typelevel.doobie.util.testing.*
 import org.scalatest.matchers.{Matcher, MatchResult, LazyArg}
 import org.scalatest.matchers.dsl.MatcherFactory2
 import scala.reflect.ClassTag
