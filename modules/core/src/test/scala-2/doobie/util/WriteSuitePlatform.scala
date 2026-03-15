@@ -2,16 +2,16 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.util
+package org.typelevel.doobie.util
 
 import shapeless.*
 import shapeless.record.*
-import doobie.testutils.VoidExtensions
+import org.typelevel.doobie.testutils.VoidExtensions
 
 import scala.annotation.nowarn
 
 trait WriteSuitePlatform { self: munit.FunSuite =>
-  import doobie.generic.auto.*
+  import org.typelevel.doobie.generic.auto.*
 
   test("Write should exist for shapeless record types") {
     type DL = (Double, Long)

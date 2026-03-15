@@ -2,17 +2,17 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.util
+package org.typelevel.doobie.util
 
 import cats.{Functor, Show}
 import cats.data.NonEmptyList
 import cats.free.Coyoneda
-import doobie.enumerated.JdbcType
-import doobie.util.invariant.{InvalidObjectMapping, InvalidValue, NonNullableColumnRead}
+import org.typelevel.doobie.enumerated.JdbcType
+import org.typelevel.doobie.util.invariant.{InvalidObjectMapping, InvalidValue, NonNullableColumnRead}
 import java.sql.ResultSet
 import scala.reflect.ClassTag
 import org.tpolecat.typename.*
-import doobie.util.meta.Meta
+import org.typelevel.doobie.util.meta.Meta
 
 /** @param typeStack
   *   List of types which provides the lineage of this Get instance

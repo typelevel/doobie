@@ -2,15 +2,15 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.postgres
+package org.typelevel.doobie.postgres
 
 import util.Properties.versionString
 import cats.effect.IO
 import com.zaxxer.hikari.HikariDataSource
-import doobie.*
-import doobie.implicits.*
-import doobie.util.transactor.Strategy
-import doobie.util.fragment.Fragment
+import org.typelevel.doobie.*
+import org.typelevel.doobie.implicits.*
+import org.typelevel.doobie.util.transactor.Strategy
+import org.typelevel.doobie.util.fragment.Fragment
 import fs2.Stream
 
 import java.sql.SQLTransientConnectionException

@@ -2,17 +2,19 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.util
+package org.typelevel.doobie.util
 
 import cats.Show
 import cats.effect.IO
-import doobie.util.TestTypes.*
-import doobie.util.transactor.Transactor
-import doobie.testutils.VoidExtensions
-import doobie.syntax.all.*
-import doobie.{ConnectionIO, Query}
-import doobie.util.analysis.{Analysis, ColumnMisalignment, ColumnTypeError, ColumnTypeWarning, NullabilityMisalignment}
-import doobie.util.fragment.Fragment
+import org.typelevel.doobie.util.TestTypes.*
+import org.typelevel.doobie.util.transactor.Transactor
+import org.typelevel.doobie.testutils.VoidExtensions
+import org.typelevel.doobie.syntax.all.*
+import org.typelevel.doobie.{ConnectionIO, Query}
+import org.typelevel.doobie.util.analysis.{
+  Analysis, ColumnMisalignment, ColumnTypeError, ColumnTypeWarning, NullabilityMisalignment
+}
+import org.typelevel.doobie.util.fragment.Fragment
 import munit.Location
 
 import scala.annotation.nowarn
@@ -40,7 +42,7 @@ class ReadSuite extends munit.CatsEffectSuite with ReadSuitePlatform {
   }
 
   test("Read is still auto derived for tuples when import is present (no ambiguous implicits) ") {
-    import doobie.generic.auto.*
+    import org.typelevel.doobie.generic.auto.*
     Read[(Int, Int)].void
     Read[(Int, Int, String)].void
     Read[(Int, (Int, String))].void
@@ -89,7 +91,7 @@ class ReadSuite extends munit.CatsEffectSuite with ReadSuitePlatform {
   }
 
   test("Automatic derivation selects custom Read instances when available") {
-    import doobie.implicits.*
+    import org.typelevel.doobie.implicits.*
 
     insertTuple2AndCheckRead(("x", "y"), HasCustomReadWrite0(CustomReadWrite("x_R"), "y")) *>
       insertTuple2AndCheckRead(("x", "y"), HasCustomReadWrite1("x", CustomReadWrite("y_R"))) *>
@@ -98,7 +100,7 @@ class ReadSuite extends munit.CatsEffectSuite with ReadSuitePlatform {
   }
 
   test("Automatic derivation selects custom Get instances to use for Read when available") {
-    import doobie.implicits.*
+    import org.typelevel.doobie.implicits.*
     insertTuple2AndCheckRead(("x", "y"), HasCustomGetPut0(CustomGetPut("x_G"), "y")) *>
       insertTuple2AndCheckRead(("x", "y"), HasCustomGetPut1("x", CustomGetPut("y_G"))) *>
       insertTuple2AndCheckRead(("x", "y"), HasOptCustomGetPut0(Some(CustomGetPut("x_G")), "y")) *>
@@ -121,7 +123,7 @@ class ReadSuite extends munit.CatsEffectSuite with ReadSuitePlatform {
       case ScalaBinaryVersion.S3    => "Cannot derive"
     }
 
-    import doobie.implicits.*
+    import org.typelevel.doobie.implicits.*
     assert(compileErrors("Read[CaseObj.type]").contains(expectedErrorWithAutoDerivationEnabled))
     assert(compileErrors("Read[Option[CaseObj.type]]").contains(expectedErrorWithAutoDerivationEnabled))
     assert(compileErrors("Read[Option[ZeroFieldCaseClass]]").contains(expectedErrorWithAutoDerivationEnabled))
@@ -147,7 +149,7 @@ class ReadSuite extends munit.CatsEffectSuite with ReadSuitePlatform {
   }
 
   test(".map should correctly transform the value") {
-    import doobie.implicits.*
+    import org.typelevel.doobie.implicits.*
     implicit val r: Read[WrappedSimpleCaseClass] = Read[SimpleCaseClass].map(s =>
       WrappedSimpleCaseClass(
         s.copy(s = "custom")
@@ -157,7 +159,7 @@ class ReadSuite extends munit.CatsEffectSuite with ReadSuitePlatform {
   }
 
   test(".emap should correctly transform the value") {
-    import doobie.implicits.*
+    import org.typelevel.doobie.implicits.*
     implicit val s: Show[SimpleCaseClass] = _.toString
     implicit val r: Read[WrappedSimpleCaseClass] = Read[SimpleCaseClass].emap(s =>
       Right(WrappedSimpleCaseClass(
@@ -168,14 +170,14 @@ class ReadSuite extends munit.CatsEffectSuite with ReadSuitePlatform {
   }
 
   test(".emap should fail a transform") {
-    import doobie.implicits.*
+    import org.typelevel.doobie.implicits.*
     implicit val s: Show[SimpleCaseClass] = _.toString
     implicit val r: Read[WrappedSimpleCaseClass] = Read[SimpleCaseClass].emap(_ =>
       Left("Invalid transformation"))
 
     sql"SELECT 1,'a','b'".query[WrappedSimpleCaseClass].unique.transact(xa).attempt.assertEquals(
       Left(
-        doobie.util.invariant.InvalidValue[SimpleCaseClass, WrappedSimpleCaseClass](
+        org.typelevel.doobie.util.invariant.InvalidValue[SimpleCaseClass, WrappedSimpleCaseClass](
           SimpleCaseClass(Some(1), "a", Some("b")),
           "Invalid transformation")
       )
@@ -187,7 +189,7 @@ class ReadSuite extends munit.CatsEffectSuite with ReadSuitePlatform {
    */
 
   test("Read should read correct columns for instances with Option (None)") {
-    import doobie.implicits.*
+    import org.typelevel.doobie.implicits.*
 
     val frag = sql"SELECT 1, NULL, 3, NULL"
     val q1 = frag.query[Option[(Int, Option[Int], Int, Option[Int])]].to[List]
@@ -197,7 +199,7 @@ class ReadSuite extends munit.CatsEffectSuite with ReadSuitePlatform {
   }
 
   test("Read should read correct columns for instances with Option (None) with left join between two tables") {
-    import doobie.implicits.*
+    import org.typelevel.doobie.implicits.*
 
     case class Foo(foo_key: Int, b: String)
     case class Bar(bar_key: Int, d: Option[String])
@@ -228,7 +230,7 @@ class ReadSuite extends munit.CatsEffectSuite with ReadSuitePlatform {
   }
 
   test("Read should read correct columns for instances with Option (Some)") {
-    import doobie.implicits.*
+    import org.typelevel.doobie.implicits.*
 
     val frag = sql"SELECT 1, 2, 3, 4"
     val q1 = frag.query[Option[(Int, Option[Int], Int, Option[Int])]].to[List]
@@ -290,7 +292,7 @@ class ReadSuite extends munit.CatsEffectSuite with ReadSuitePlatform {
 
   test("Read should select correct columns when combined with `ap`") {
     import cats.syntax.all.*
-    import doobie.implicits.*
+    import org.typelevel.doobie.implicits.*
 
     val r = Read[Int]
     val c = (r, r, r, r, r).tupled
@@ -300,7 +302,7 @@ class ReadSuite extends munit.CatsEffectSuite with ReadSuitePlatform {
 
   test("Read should select correct columns when combined with `product`") {
     import cats.syntax.all.*
-    import doobie.implicits.*
+    import org.typelevel.doobie.implicits.*
 
     val r = Read[Int].product(Read[Int].product(Read[Int]))
     val q: ConnectionIO[List[(Int, (Int, Int))]] = sql"SELECT 1, 2, 3".query(using r).to[List]
@@ -372,12 +374,12 @@ class ReadSuite extends munit.CatsEffectSuite with ReadSuitePlatform {
     Read.derived[Big30CaseClass].void
 
     // Check "derived" still works in the presense of auto derivation
-    import doobie.implicits.*
+    import org.typelevel.doobie.implicits.*
     Read.derived[Big30CaseClass].void
   }: @nowarn("msg=.*(u|U)nused import.*")
 
   test("Auto-derivation for big case class works") {
-    import doobie.implicits.*
+    import org.typelevel.doobie.implicits.*
     Read[Big30CaseClass].void
   }: @nowarn("msg=.*(u|U)nused import.*")
 

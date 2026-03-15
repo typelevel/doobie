@@ -2,7 +2,7 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.postgres.circe
+package org.typelevel.doobie.postgres.circe
 
 import cats.Show
 import cats.data.NonEmptyList
@@ -10,7 +10,7 @@ import cats.syntax.all.*
 import io.circe.*
 import io.circe.jawn.*
 import io.circe.syntax.*
-import doobie.util.*
+import org.typelevel.doobie.util.*
 import org.postgresql.util.PGobject
 
 object Instances {

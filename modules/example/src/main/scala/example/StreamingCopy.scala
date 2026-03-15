@@ -10,8 +10,8 @@ import scala.util.control.NonFatal
 import cats.data.*
 import cats.effect.*
 import cats.syntax.all.*
-import doobie.*
-import doobie.implicits.*
+import org.typelevel.doobie.*
+import org.typelevel.doobie.implicits.*
 import fs2.Stream
 
 /** Example of resource-safe transactional database-to-database copy with fs2. If you induce failures on either side (by

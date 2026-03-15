@@ -8,8 +8,8 @@ import cats.Show
 import cats.effect.{IO, IOApp}
 import cats.syntax.all.*
 import fs2.Stream
-import doobie.*
-import doobie.implicits.*
+import org.typelevel.doobie.*
+import org.typelevel.doobie.implicits.*
 
 // JDBC program using the high-level API
 object HiUsage extends IOApp.Simple {

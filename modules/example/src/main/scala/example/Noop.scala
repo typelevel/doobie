@@ -6,8 +6,8 @@ package example
 
 import cats.*
 import cats.syntax.all.*
-import doobie.*
-import doobie.implicits.*
+import org.typelevel.doobie.*
+import org.typelevel.doobie.implicits.*
 
 /** Example interpreter that fails if it encounters any constructors. This lets you run `ConnectionIO` programs that
   * rely only on pure values, for example.

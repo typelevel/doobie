@@ -2,12 +2,12 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.specs2
+package org.typelevel.doobie.specs2
 
 import cats.effect.IO
-import doobie.syntax.string.*
-import doobie.testutils.VoidExtensions
-import doobie.util.transactor.Transactor
+import org.typelevel.doobie.syntax.string.*
+import org.typelevel.doobie.testutils.VoidExtensions
+import org.typelevel.doobie.util.transactor.Transactor
 import org.specs2.mutable.Specification
 
 trait MatcherChecks[M[_]] extends Specification
@@ -32,7 +32,7 @@ trait MatcherChecks[M[_]] extends Specification
 
   ("query with mismatched type should fail" >> {
     // explicit type on `typecheck` required for Scala 3
-    sql"select 'foo'".query[Int].must(not(typecheck[doobie.util.query.Query0[Int]]))
+    sql"select 'foo'".query[Int].must(not(typecheck[org.typelevel.doobie.util.query.Query0[Int]]))
   }).void
 }
 

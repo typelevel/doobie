@@ -2,7 +2,7 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie
+package org.typelevel.doobie
 
 /** Enumerated types for JDBC constants. enumerated values are provided by companion modules. */
 package object enumerated

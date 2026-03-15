@@ -2,11 +2,11 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.postgres
+package org.typelevel.doobie.postgres
 
-import doobie.enumerated.JdbcType
-import doobie.*
-import doobie.util.invariant.*
+import org.typelevel.doobie.enumerated.JdbcType
+import org.typelevel.doobie.*
+import org.typelevel.doobie.util.invariant.*
 
 import java.util.{UUID, Map as JMap}
 import java.net.InetAddress
@@ -234,7 +234,10 @@ trait Instances {
     */
   @SuppressWarnings(Array("org.wartremover.warts.Throw"))
   def pgEnumStringOpt[A: TypeName](name: String, f: String => Option[A], g: A => String): Meta[A] =
-    pgEnumString(name, { (s: String) => f(s).getOrElse(throw doobie.util.invariant.InvalidEnum[A](s)) }, g)
+    pgEnumString(
+      name,
+      { (s: String) => f(s).getOrElse(throw org.typelevel.doobie.util.invariant.InvalidEnum[A](s)) },
+      g)
 
   /** Construct a `Meta` for value members of the given `Enumeration`.
     */
@@ -268,6 +271,8 @@ trait Instances {
 
   /** HSTORE maps to a Map[String, String]. */
   implicit val hstoreMeta: Meta[Map[String, String]] =
-    hstoreMetaJava.timap[Map[String, String]](doobie.util.compat.mapToScala(_).toMap)(doobie.util.compat.scalaToMap(_))
+    hstoreMetaJava.timap[Map[
+      String,
+      String]](org.typelevel.doobie.util.compat.mapToScala(_).toMap)(org.typelevel.doobie.util.compat.scalaToMap(_))
 
 }

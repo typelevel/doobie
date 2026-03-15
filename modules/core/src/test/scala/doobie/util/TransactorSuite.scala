@@ -2,11 +2,11 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.util
+package org.typelevel.doobie.util
 
 import cats.effect.{Async, IO}
-import doobie.*
-import doobie.implicits.*
+import org.typelevel.doobie.*
+import org.typelevel.doobie.implicits.*
 
 class TransactorSuite extends munit.CatsEffectSuite {
 
@@ -28,7 +28,7 @@ class TransactorSuite extends munit.CatsEffectSuite {
     var connections = List.empty[java.sql.Connection]
 
     def track[F[_]](xa: Transactor[F]) = {
-      def withA(t: doobie.util.transactor.Transactor[F]): Transactor.Aux[F, t.A] = {
+      def withA(t: org.typelevel.doobie.util.transactor.Transactor[F]): Transactor.Aux[F, t.A] = {
         Transactor.connect.modify(
           t,
           f =>

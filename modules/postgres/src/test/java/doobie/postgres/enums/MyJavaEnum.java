@@ -4,7 +4,7 @@
  * For more information see LICENSE or https://opensource.org/licenses/MIT
  */
 
-package doobie.postgres.enums;
+package org.typelevel.doobie.postgres.enums;
 
 // create type myenum as enum ('foo', 'bar') <-- part of setup
 public enum MyJavaEnum {

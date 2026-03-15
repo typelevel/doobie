@@ -2,7 +2,7 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.util
+package org.typelevel.doobie.util
 
 import cats.data.NonEmptyList
 import cats.effect.kernel.Async
@@ -13,11 +13,11 @@ import cats.syntax.list.*
 import cats.syntax.applicativeError.*
 import cats.syntax.foldable.*
 import cats.syntax.show.*
-import doobie.*
-import doobie.implicits.*
-import doobie.util.analysis.*
-import doobie.util.pretty.*
-import doobie.util.pos.Pos
+import org.typelevel.doobie.*
+import org.typelevel.doobie.implicits.*
+import org.typelevel.doobie.util.analysis.*
+import org.typelevel.doobie.util.pretty.*
+import org.typelevel.doobie.util.pos.Pos
 import scala.Predef.augmentString
 import org.tpolecat.typename.*
 

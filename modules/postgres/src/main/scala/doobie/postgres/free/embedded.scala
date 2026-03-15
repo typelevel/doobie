@@ -4,7 +4,7 @@
 
 // format: off
 
-package doobie.postgres.free
+package org.typelevel.doobie.postgres.free
 
 import cats.free.Free
 

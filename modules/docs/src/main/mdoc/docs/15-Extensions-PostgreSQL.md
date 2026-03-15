@@ -28,8 +28,8 @@ Then, you will be able to import the implicits for dealing with JSON:
 @@@ vars
 
 ```scala
-import doobie.postgres.circe.json.implicits._
-import doobie.postgres.circe.jsonb.implicits._
+import org.typelevel.doobie.postgres.circe.json.implicits._
+import org.typelevel.doobie.postgres.circe.jsonb.implicits._
 
 ```
 
@@ -45,9 +45,9 @@ import cats._
 import cats.data._
 import cats.effect._
 import cats.implicits._
-import doobie._
-import doobie.implicits._
-import doobie.util.ExecutionContexts
+import org.typelevel.doobie._
+import org.typelevel.doobie.implicits._
+import org.typelevel.doobie.util.ExecutionContexts
 
 // This is just for testing. Consider using cats.effect.IOApp instead of calling
 // unsafe methods directly.
@@ -65,14 +65,14 @@ val xa = Transactor.fromDriverManager[IO](
 ```
 
 ```scala mdoc:invisible
-implicit val mdocColors: doobie.util.Colors = doobie.util.Colors.None
+implicit val mdocColors: org.typelevel.doobie.util.Colors = org.typelevel.doobie.util.Colors.None
 ```
 
 **doobie** adds support for a large number of extended types that are not supported directly by JDBC. All mappings (except postgis) are provided in the `pgtypes` module.
 
 ```scala mdoc:silent
-import doobie.postgres._
-import doobie.postgres.implicits._
+import org.typelevel.doobie.postgres._
+import org.typelevel.doobie.postgres.implicits._
 ```
 
 ### Java 8 Time Types (JSR310)
@@ -192,7 +192,7 @@ libraryDependencies += "net.postgis" % "postgis-jdbc" % "2.3.0"
 
 ```scala mdoc:silent
 // Not provided via doobie.postgres.imports._; you must import them explicitly.
-import doobie.postgres.pgisimplicits._
+import org.typelevel.doobie.postgres.pgisimplicits._
 ```
 
 - `PGgeometry`
@@ -215,7 +215,7 @@ In addition to the general types above, **doobie** provides mappings for the fol
 [Geographic types](http://postgis.net/workshops/postgis-intro/geography.html) mappings are defined in a different object (`pgisgeographyimplicits`), to allow geometric types using geodetic coordinates.
 
 ```scala
-import doobie.postgres.pgisgeographyimplicits._
+import org.typelevel.doobie.postgres.pgisgeographyimplicits._
 
 // or define the implicit conversion manually
 
@@ -266,7 +266,7 @@ object Edge {
 Note: the [range types](https://www.postgresql.org/docs/current/rangetypes.html#RANGETYPES) mappings are defined in a different object (`rangeimplicits`). To enable it you must import them explicitly:
 
 ```scala mdoc:silent
-import doobie.postgres.rangeimplicits._
+import org.typelevel.doobie.postgres.rangeimplicits._
 ```
 
 To create for example custom implementation of `Range[Byte]` you can use the public method which declared in the following package `doobie.postgres.rangeimplicits`:
@@ -277,8 +277,8 @@ def rangeMeta[T](sqlRangeType: String)(encode: T => String, decode: String => T)
 
 For a `Range[Byte]`, the meta and bounds encoder and decoder would appear as follows:
 ```scala mdoc:silent
-import doobie.postgres.rangeimplicits._
-import doobie.postgres.types.Range
+import org.typelevel.doobie.postgres.rangeimplicits._
+import org.typelevel.doobie.postgres.types.Range
 
 implicit val byteRangeMeta: Meta[Range[Byte]] = rangeMeta[Byte]("int4range")(_.toString, _.toByte)
 

@@ -2,11 +2,11 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.h2.circe
+package org.typelevel.doobie.h2.circe
 
 import cats.effect.IO
-import doobie.*
-import doobie.implicits.*
+import org.typelevel.doobie.*
+import org.typelevel.doobie.implicits.*
 import io.circe.{Decoder, Encoder, Json}
 import munit.CatsEffectSuite
 
@@ -39,26 +39,26 @@ class H2JsonSuite extends CatsEffectSuite {
   }
 
   {
-    import doobie.h2.circe.json.implicits.*
+    import org.typelevel.doobie.h2.circe.json.implicits.*
     testInOut("json", Json.obj("something" -> Json.fromString("Yellow")), xa)
   }
 
   // Explicit Type Checks
 
   test("json should check ok for read") {
-    import doobie.h2.circe.json.implicits.*
+    import org.typelevel.doobie.h2.circe.json.implicits.*
     sql"SELECT '{}' FORMAT JSON".query[Json].analysis.transact(xa).map(_.columnTypeErrors).assertEquals(Nil)
   }
 
   test("json should check ok for write") {
-    import doobie.h2.circe.json.implicits.*
+    import org.typelevel.doobie.h2.circe.json.implicits.*
     sql"SELECT ${Json.obj()} FORMAT JSON".query[Json].analysis.transact(xa).map(_.parameterTypeErrors).assertEquals(Nil)
   }
 
   // Encoder / Decoders
   private case class Foo(x: Json)
   private object Foo {
-    import doobie.h2.circe.json.implicits.*
+    import org.typelevel.doobie.h2.circe.json.implicits.*
     implicit val fooEncoder: Encoder[Foo] = Encoder[Json].contramap(_.x)
     implicit val fooDecoder: Decoder[Foo] = Decoder[Json].map(Foo(_))
     implicit val fooGet: Get[Foo] = h2DecoderGetT[Foo]

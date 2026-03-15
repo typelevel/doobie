@@ -2,7 +2,7 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.util.compat
+package org.typelevel.doobie.util.compat
 
 import scala.annotation.implicitNotFound
 import scala.collection.generic.CanBuildFrom

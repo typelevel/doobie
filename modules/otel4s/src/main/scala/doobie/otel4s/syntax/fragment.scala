@@ -2,16 +2,16 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.otel4s.syntax
+package org.typelevel.doobie.otel4s.syntax
 
-import doobie.Fragment
-import doobie.util.query.Query0
-import doobie.util.update.Update0
+import org.typelevel.doobie.Fragment
+import org.typelevel.doobie.util.query.Query0
+import org.typelevel.doobie.util.update.Update0
 import org.typelevel.otel4s.Attribute
 import io.circe.syntax.*
-import doobie.otel4s.AttributesCodec.*
-import doobie.otel4s.syntax.all.*
-import doobie.util.Read
+import org.typelevel.doobie.otel4s.AttributesCodec.*
+import org.typelevel.doobie.otel4s.syntax.all.*
+import org.typelevel.doobie.util.Read
 import org.typelevel.otel4s.semconv.attributes.DbAttributes
 
 import scala.collection.immutable

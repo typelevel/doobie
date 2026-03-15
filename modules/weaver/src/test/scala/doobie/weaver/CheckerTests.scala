@@ -2,12 +2,12 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.weaver
+package org.typelevel.doobie.weaver
 
 import cats.effect.IO
-import doobie.syntax.string.*
-import doobie.util.Read
-import doobie.util.transactor.Transactor
+import org.typelevel.doobie.syntax.string.*
+import org.typelevel.doobie.util.Read
+import org.typelevel.doobie.util.transactor.Transactor
 import weaver.*
 import cats.effect.kernel.Resource
 
@@ -36,14 +36,14 @@ object CheckerTests extends IOSuite with IOChecker {
   final case class Foo[F[_]](x: Int)
 
   test("trivial case-class") { implicit transactor =>
-    import doobie.generic.auto.*
+    import org.typelevel.doobie.generic.auto.*
 
     check(sql"select 1".query[Foo[cats.Id]])
   }
 
   test("Read should select correct columns when combined with `product`") { implicit transactor =>
     import cats.syntax.all.*
-    import doobie.implicits.*
+    import org.typelevel.doobie.implicits.*
 
     val ri = Read[Int]
     val rs = Read[String]

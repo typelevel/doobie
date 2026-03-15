@@ -2,13 +2,13 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.util.meta
+package org.typelevel.doobie.util.meta
 
 import java.sql.{PreparedStatement, ResultSet}
 import cats.{Invariant, Show}
 import cats.data.NonEmptyList
-import doobie.enumerated.JdbcType
-import doobie.util.{Get, Put}
+import org.typelevel.doobie.enumerated.JdbcType
+import org.typelevel.doobie.util.{Get, Put}
 
 import scala.reflect.ClassTag
 import org.tpolecat.typename.*
@@ -155,8 +155,8 @@ trait MetaConstructors {
 object MetaConstructors extends MetaConstructors
 
 trait MetaInstances {
-  import doobie.enumerated.JdbcType.{Boolean as JdbcBoolean, *}
-  import doobie.util.meta.MetaConstructors.Basic
+  import org.typelevel.doobie.enumerated.JdbcType.{Boolean as JdbcBoolean, *}
+  import org.typelevel.doobie.util.meta.MetaConstructors.Basic
 
   /** @group Instances */
   implicit val GetPutInvariant: Invariant[Meta] =

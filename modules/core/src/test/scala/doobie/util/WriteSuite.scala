@@ -2,14 +2,14 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.util
+package org.typelevel.doobie.util
 
-import doobie.{ConnectionIO, Query, Transactor, Update}
-import doobie.util.TestTypes.*
+import org.typelevel.doobie.{ConnectionIO, Query, Transactor, Update}
+import org.typelevel.doobie.util.TestTypes.*
 import cats.effect.IO
-import doobie.testutils.VoidExtensions
-import doobie.syntax.all.*
-import doobie.util.analysis.{Analysis, ParameterMisalignment, ParameterTypeError}
+import org.typelevel.doobie.testutils.VoidExtensions
+import org.typelevel.doobie.syntax.all.*
+import org.typelevel.doobie.util.analysis.{Analysis, ParameterMisalignment, ParameterTypeError}
 import munit.Location
 
 import scala.annotation.nowarn
@@ -37,7 +37,7 @@ class WriteSuite extends munit.CatsEffectSuite with WriteSuitePlatform {
   }
 
   test("Write is still auto derived for tuples when import is present (no ambiguous implicits) ") {
-    import doobie.implicits.*
+    import org.typelevel.doobie.implicits.*
     Write[(Int, Int)].void
     Write[(Int, Int, String)].void
     Write[(Int, (Int, String))].void
@@ -94,7 +94,7 @@ class WriteSuite extends munit.CatsEffectSuite with WriteSuitePlatform {
   }
 
   test("Automatic derivation selects custom Write instances when available") {
-    import doobie.implicits.*
+    import org.typelevel.doobie.implicits.*
 
     writeAndCheckTuple2(HasCustomReadWrite0(CustomReadWrite("x"), "y"), ("x_W", "y")) *>
       writeAndCheckTuple2(HasCustomReadWrite1("x", CustomReadWrite("y")), ("x", "y_W")) *>
@@ -103,7 +103,7 @@ class WriteSuite extends munit.CatsEffectSuite with WriteSuitePlatform {
   }
 
   test("Automatic derivation selects custom Put instances to use for Write when available") {
-    import doobie.implicits.*
+    import org.typelevel.doobie.implicits.*
     writeAndCheckTuple2(HasCustomGetPut0(CustomGetPut("x"), "y"), ("x_P", "y")) *>
       writeAndCheckTuple2(HasCustomGetPut1("x", CustomGetPut("y")), ("x", "y_P")) *>
       writeAndCheckTuple2(HasOptCustomGetPut0(Some(CustomGetPut("x")), "y"), ("x_P", "y")) *>
@@ -125,7 +125,7 @@ class WriteSuite extends munit.CatsEffectSuite with WriteSuitePlatform {
       case ScalaBinaryVersion.S2_13 => "Cannot find or construct"
       case ScalaBinaryVersion.S3    => "Cannot derive"
     }
-    import doobie.implicits.*
+    import org.typelevel.doobie.implicits.*
     assert(compileErrors("Write[CaseObj.type]").contains(expectedErrorWithAutoDerivationEnabled))
     assert(compileErrors("Write[Option[CaseObj.type]]").contains(expectedErrorWithAutoDerivationEnabled))
     assert(compileErrors("Write[Option[ZeroFieldCaseClass]]").contains(expectedErrorWithAutoDerivationEnabled))
@@ -142,7 +142,7 @@ class WriteSuite extends munit.CatsEffectSuite with WriteSuitePlatform {
   }
 
   test("Write should correctly set parameters for Option instances ") {
-    import doobie.implicits.*
+    import org.typelevel.doobie.implicits.*
     (for {
       _ <- sql"create temp table t1 (a int, b int)".update.run
       _ <- Update[Option[(Int, Int)]]("insert into t1 (a, b) values (?, ?)").run(Some((1, 2)))
@@ -179,7 +179,7 @@ class WriteSuite extends munit.CatsEffectSuite with WriteSuitePlatform {
   }
 
   test(".contramap correctly transformers the input value") {
-    import doobie.implicits.*
+    import org.typelevel.doobie.implicits.*
     implicit val w: Write[WrappedSimpleCaseClass] = Write[SimpleCaseClass].contramap(v =>
       v.sc.copy(
         s = "custom"
@@ -248,7 +248,7 @@ class WriteSuite extends munit.CatsEffectSuite with WriteSuitePlatform {
   test("Derivation for big case class works") {
     Write.derived[Big30CaseClass].void
 
-    import doobie.implicits.*
+    import org.typelevel.doobie.implicits.*
     Write[Big30CaseClass].void
   }
 
@@ -276,7 +276,7 @@ class WriteSuite extends munit.CatsEffectSuite with WriteSuitePlatform {
     Query[A, Tup]("SELECT ?, ?, ?").unique(in).transact(xa).assertEquals(expectedOut)
 
   private def testNullPut(input: (String, Option[String])): IO[Int] = {
-    import doobie.implicits.*
+    import org.typelevel.doobie.implicits.*
 
     (for {
       _ <- sql"create temp table t0 (a text, b text null)".update.run

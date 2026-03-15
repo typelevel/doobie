@@ -2,15 +2,15 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.hikari.issue
+package org.typelevel.doobie.hikari.issue
 
 import cats.effect.*
 import cats.syntax.all.*
 import com.zaxxer.hikari.HikariDataSource
-import doobie.*
-import doobie.hikari.*
-import doobie.implicits.*
-import doobie.util.ExecutionContexts
+import org.typelevel.doobie.*
+import org.typelevel.doobie.hikari.*
+import org.typelevel.doobie.implicits.*
+import org.typelevel.doobie.util.ExecutionContexts
 import scala.concurrent.duration.*
 import scala.util.Random
 import munit.CatsEffectSuite

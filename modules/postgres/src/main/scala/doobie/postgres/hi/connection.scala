@@ -2,16 +2,17 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.postgres.hi
+package org.typelevel.doobie.postgres.hi
 
 import cats.~>
 import cats.data.Kleisli
 import cats.free.Free
 import org.postgresql.{PGConnection, PGNotification}
-import doobie.*, doobie.implicits.*
-import doobie.postgres.free.{Embeddable, KleisliInterpreter}
-import doobie.postgres.free.pgconnection as IPFPC
-import doobie.postgres.hi.pgconnection as IPHPC
+import org.typelevel.doobie.*
+import org.typelevel.doobie.implicits.*
+import org.typelevel.doobie.postgres.free.{Embeddable, KleisliInterpreter}
+import org.typelevel.doobie.postgres.free.pgconnection as IPFPC
+import org.typelevel.doobie.postgres.hi.pgconnection as IPHPC
 
 /** Module of safe `PGConnectionIO` operations lifted into `ConnectionIO`. */
 object connection {

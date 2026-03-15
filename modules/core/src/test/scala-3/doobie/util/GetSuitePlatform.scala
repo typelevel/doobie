@@ -2,10 +2,10 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.util
+package org.typelevel.doobie.util
 
 import Predef.augmentString
-import doobie.util.invariant.InvalidValue
+import org.typelevel.doobie.util.invariant.InvalidValue
 
 enum EnumWithOnlySingletonCases {
   case One, Two, Three
@@ -41,7 +41,7 @@ trait GetSuitePlatform { self: munit.FunSuite =>
 }
 
 trait GetDBSuitePlatform { self: munit.CatsEffectSuite & TransactorProvider =>
-  import doobie.syntax.all.*
+  import org.typelevel.doobie.syntax.all.*
 
   given Get[EnumWithOnlySingletonCases] = Get.deriveEnumString
 

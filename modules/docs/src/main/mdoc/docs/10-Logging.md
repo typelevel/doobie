@@ -5,9 +5,9 @@ In this chapter we discuss how to log statement execution and timing.
 ### Setting Up
 
 ```scala mdoc:silent
-import doobie._
-import doobie.implicits._
-import doobie.util.log.LogEvent
+import org.typelevel.doobie._
+import org.typelevel.doobie.implicits._
+import org.typelevel.doobie.util.log.LogEvent
 import cats.effect._
 import cats.implicits._
 
@@ -66,7 +66,7 @@ CREATE TABLE country (
 ```
 
 ```scala mdoc:invisible
-implicit val mdocColors: doobie.util.Colors = doobie.util.Colors.None
+implicit val mdocColors: org.typelevel.doobie.util.Colors = org.typelevel.doobie.util.Colors.None
 ```
 
 ```scala mdoc:silent
@@ -113,7 +113,7 @@ You can use cats-effect's `IOLocal` to pass additional context to the LogHandler
 
 ```scala mdoc
 import cats.effect.{IOLocal, Ref}
-import doobie.util.log.Success
+import org.typelevel.doobie.util.log.Success
 
 def users = List.range(0, 4).map(n => s"user-$n")
 

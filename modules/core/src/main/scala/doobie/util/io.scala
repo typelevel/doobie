@@ -2,13 +2,13 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.util
+package org.typelevel.doobie.util
 
 import java.io.{Console as _, *}
 
 import cats.syntax.all.*
 import cats.effect.kernel.syntax.monadCancel.*
-import doobie.WeakAsync
+import org.typelevel.doobie.WeakAsync
 
 /** Module for a constructor of modules of IO operations for effectful monads. */
 object io {

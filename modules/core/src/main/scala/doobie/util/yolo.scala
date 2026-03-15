@@ -2,18 +2,18 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.util
+package org.typelevel.doobie.util
 
 import cats.effect.kernel.Async
 import cats.instances.int.*
 import cats.instances.string.*
 import cats.syntax.show.*
-import doobie.free.connection.{ConnectionIO, delay}
-import doobie.implicits.*
-import doobie.util.query.*
-import doobie.util.update.*
-import doobie.util.testing.*
-import doobie.util.transactor.*
+import org.typelevel.doobie.free.connection.{ConnectionIO, delay}
+import org.typelevel.doobie.implicits.*
+import org.typelevel.doobie.util.query.*
+import org.typelevel.doobie.util.update.*
+import org.typelevel.doobie.util.testing.*
+import org.typelevel.doobie.util.transactor.*
 import fs2.Stream
 import scala.Predef.*
 import org.tpolecat.typename.*

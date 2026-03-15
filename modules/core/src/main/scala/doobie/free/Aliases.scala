@@ -2,10 +2,10 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.free
+package org.typelevel.doobie.free
 
 import cats.{Monoid, Semigroup}
-import doobie.WeakAsync
+import org.typelevel.doobie.WeakAsync
 
 trait Types {
 

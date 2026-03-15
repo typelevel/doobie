@@ -2,11 +2,11 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.syntax
+package org.typelevel.doobie.syntax
 
 import cats.ApplicativeError
-import doobie.util.catchsql as C
-import doobie.enumerated.SqlState
+import org.typelevel.doobie.util.catchsql as C
+import org.typelevel.doobie.enumerated.SqlState
 import java.sql.SQLException
 
 class ApplicativeErrorOps[M[_], A](self: M[A])(implicit ev: ApplicativeError[M, Throwable]) {

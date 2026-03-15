@@ -2,12 +2,12 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.otel4s
+package org.typelevel.doobie.otel4s
 
 import cats.effect.{Async, LiftIO}
 import cats.syntax.functor.*
-import doobie.Transactor
-import doobie.util.log.LogHandler
+import org.typelevel.doobie.Transactor
+import org.typelevel.doobie.util.log.LogHandler
 import org.typelevel.otel4s.trace.TracerProvider
 
 object TracedTransactor {

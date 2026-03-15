@@ -2,10 +2,10 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.postgres.hi
+package org.typelevel.doobie.postgres.hi
 
 import org.postgresql.PGNotification
-import doobie.postgres.free.pgconnection as IPFPC
+import org.typelevel.doobie.postgres.free.pgconnection as IPFPC
 
 object pgconnection {
 

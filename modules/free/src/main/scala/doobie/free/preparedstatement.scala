@@ -4,16 +4,16 @@
 
 // format: off
 
-package doobie.free
+package org.typelevel.doobie.free
 
 import cats.{~>, Applicative, Semigroup, Monoid}
 import cats.effect.kernel.{ CancelScope, Poll, Sync }
 import cats.free.{ Free as FF } // alias because some algebras have an op called Free
-import doobie.util.log.LogEvent
-import doobie.WeakAsync
+import org.typelevel.doobie.util.log.LogEvent
+import org.typelevel.doobie.WeakAsync
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
-import doobie.util.trace.TraceEvent
+import org.typelevel.doobie.util.trace.TraceEvent
 import java.io.InputStream
 import java.io.Reader
 import java.lang.Class

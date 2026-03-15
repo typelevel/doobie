@@ -2,14 +2,14 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.util
+package org.typelevel.doobie.util
 
 import cats.effect.{IO, Ref}
 import cats.syntax.all.*
-import doobie.*
-import doobie.implicits.*
-import doobie.util.log.Parameters.NonBatch
-import doobie.util.log.*
+import org.typelevel.doobie.*
+import org.typelevel.doobie.implicits.*
+import org.typelevel.doobie.util.log.Parameters.NonBatch
+import org.typelevel.doobie.util.log.*
 
 import scala.annotation.nowarn
 

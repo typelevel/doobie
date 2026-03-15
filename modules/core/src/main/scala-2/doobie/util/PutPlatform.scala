@@ -2,13 +2,13 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.util
+package org.typelevel.doobie.util
 
 import shapeless.*
 import shapeless.ops.hlist.IsHCons
 
 trait PutPlatform {
-  import doobie.util.compat.=:=
+  import org.typelevel.doobie.util.compat.=:=
 
   /** @group Instances */
   def unaryProductPut[A, L <: HList, H, T <: HList](

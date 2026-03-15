@@ -2,11 +2,12 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.h2
+package org.typelevel.doobie.h2
 
-import doobie.enumerated.JdbcType.*
-import doobie.util.meta.Meta
-import doobie.util.meta.MetaConstructors.Basic
+import org.typelevel.doobie
+import org.typelevel.doobie.enumerated.JdbcType.*
+import org.typelevel.doobie.util.meta.Meta
+import org.typelevel.doobie.util.meta.MetaConstructors.Basic
 
 /** Instances for Java time classes that follow the JDBC specification.
   */

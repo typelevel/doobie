@@ -2,13 +2,13 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.otel4s
+package org.typelevel.doobie.otel4s
 
 import cats.effect.IO
-import doobie.Transactor
-import doobie.Update
-import doobie.otel4s.syntax.fragment.*
-import doobie.syntax.all.*
+import org.typelevel.doobie.Transactor
+import org.typelevel.doobie.Update
+import org.typelevel.doobie.otel4s.syntax.fragment.*
+import org.typelevel.doobie.syntax.all.*
 import io.opentelemetry.sdk.resources.Resource as OTelResource
 import munit.TestOptions
 import org.typelevel.otel4s.oteljava.testkit.{InstrumentationScopeExpectation, TelemetryResourceExpectation}
@@ -535,7 +535,8 @@ class TracedTransactorSuite extends munit.CatsEffectSuite {
       .client(name)
       .attributesExact(attributes)
       .resource(TelemetryResourceExpectation.exact(OTelResource.empty()))
-      .scope(InstrumentationScopeExpectation.name("doobie").version(doobie.buildinfo.version).attributesEmpty)
+      .scope(InstrumentationScopeExpectation.name(
+        "doobie").version(org.typelevel.doobie.buildinfo.version).attributesEmpty)
       .status(status)
       .eventCount(events.size)
       .linkCount(0)

@@ -2,12 +2,12 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.bench
+package org.typelevel.doobie.bench
 
 import cats.effect.IO
 import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
-import doobie.*
-import doobie.syntax.all.*
+import org.typelevel.doobie.*
+import org.typelevel.doobie.syntax.all.*
 import org.openjdk.jmh.annotations.*
 import org.openjdk.jmh.infra.Blackhole
 import scala.util.Using
@@ -102,14 +102,14 @@ class LargeRow {
 
   @Benchmark
   def autoDerivedComplex(bh: Blackhole): Unit = {
-    import doobie.implicits.*
+    import org.typelevel.doobie.implicits.*
     bh.consume(sql"""SELECT col1, col2, col3, col4, col5, col6, col7, col8 FROM data"""
       .query[Complex].to[List].transact(xa).unsafeRunSync())
   }
 
   @Benchmark
   def autoDerivedComplexOpt(bh: Blackhole): Unit = {
-    import doobie.implicits.*
+    import org.typelevel.doobie.implicits.*
     bh.consume(sql"""SELECT col1, col2, col3, col4, col5, col6, col7, col8 FROM data"""
       .query[Option[Complex]].to[List].transact(xa).unsafeRunSync())
   }

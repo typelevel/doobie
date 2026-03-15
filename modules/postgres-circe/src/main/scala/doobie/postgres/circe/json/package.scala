@@ -2,8 +2,8 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.postgres.circe
+package org.typelevel.doobie.postgres.circe
 
 package object json {
-  object implicits extends doobie.postgres.circe.Instances.JsonInstances
+  object implicits extends org.typelevel.doobie.postgres.circe.Instances.JsonInstances
 }

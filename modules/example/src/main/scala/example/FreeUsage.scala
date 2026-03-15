@@ -9,8 +9,8 @@ import java.io.File
 import cats.effect.{IO, IOApp}
 import cats.effect.syntax.monadCancel.*
 import cats.syntax.all.*
-import doobie.*
-import doobie.implicits.*
+import org.typelevel.doobie.*
+import org.typelevel.doobie.implicits.*
 
 // JDBC program using the low-level API
 object FreeUsage extends IOApp.Simple {

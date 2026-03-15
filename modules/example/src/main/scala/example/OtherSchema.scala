@@ -6,9 +6,9 @@ package example
 
 import cats.data.NonEmptyList
 import cats.effect.{IO, IOApp}
-import doobie.*
-import doobie.enumerated.JdbcType
-import doobie.implicits.*
+import org.typelevel.doobie.*
+import org.typelevel.doobie.enumerated.JdbcType
+import org.typelevel.doobie.implicits.*
 import org.postgresql.util.*
 
 /** The normal string mapping doesn't work for enums defined in another schema. Here we have

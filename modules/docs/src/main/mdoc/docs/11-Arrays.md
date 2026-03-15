@@ -7,11 +7,11 @@ This chapter shows how we can map Scala sequence types to SQL `ARRAY` types, for
 Again we set up a transactor and pull in YOLO mode. We also need an import to get PostgreSQL-specific type mappings.
 
 ```scala mdoc:silent
-import doobie._
-import doobie.implicits._
-import doobie.postgres._
-import doobie.postgres.implicits._
-import doobie.util.ExecutionContexts
+import org.typelevel.doobie._
+import org.typelevel.doobie.implicits._
+import org.typelevel.doobie.postgres._
+import org.typelevel.doobie.postgres.implicits._
+import org.typelevel.doobie.util.ExecutionContexts
 import cats._
 import cats.data._
 import cats.effect._
@@ -36,7 +36,7 @@ import y._
 ```
 
 ```scala mdoc:invisible
-implicit val mdocColors: doobie.util.Colors = doobie.util.Colors.None
+implicit val mdocColors: org.typelevel.doobie.util.Colors = org.typelevel.doobie.util.Colors.None
 ```
 
 ### Reading and Writing Arrays
@@ -100,7 +100,7 @@ For reading from and writing to a column that is an array of enum, you can use `
 to create a `Meta` instance for your enum type:
 
 ```scala mdoc
-import doobie.postgres.implicits.arrayOfEnum
+import org.typelevel.doobie.postgres.implicits.arrayOfEnum
 
 sealed trait MyEnum
 

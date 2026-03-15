@@ -4,8 +4,8 @@
 
 package example
 
-import doobie.*
-import doobie.implicits.*
+import org.typelevel.doobie.*
+import org.typelevel.doobie.implicits.*
 import cats.effect.{IO, IOApp}
 import cats.syntax.all.*
 

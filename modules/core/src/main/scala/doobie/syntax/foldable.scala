@@ -2,10 +2,10 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.syntax
+package org.typelevel.doobie.syntax
 
 import cats.*
-import doobie.util.foldable as F
+import org.typelevel.doobie.util.foldable as F
 
 class FoldableOps[F[_]: Foldable, A: Monoid](self: F[A]) {
   def foldSmash1(prefix: A, delim: A, suffix: A): A = F.foldSmash1(self)(prefix, delim, suffix)

@@ -2,9 +2,9 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.util
+package org.typelevel.doobie.util
 
-import doobie.testutils.VoidExtensions
+import org.typelevel.doobie.testutils.VoidExtensions
 
 class PutSuite extends munit.FunSuite with PutSuitePlatform {
   case class X(x: Int)
