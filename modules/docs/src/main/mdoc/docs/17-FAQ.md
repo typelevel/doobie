@@ -8,9 +8,9 @@ import cats.data._
 import cats.effect._
 import cats.effect.implicits._
 import cats.implicits._
-import doobie._
-import doobie.implicits._
-import doobie.util.ExecutionContexts
+import org.typelevel.doobie._
+import org.typelevel.doobie.implicits._
+import org.typelevel.doobie.util.ExecutionContexts
 import java.awt.geom.Point2D
 import java.util.UUID
 import shapeless._
@@ -31,7 +31,7 @@ val xa = Transactor.fromDriverManager[IO](
 ```
 
 ```scala mdoc:invisible
-implicit val mdocColors: doobie.util.Colors = doobie.util.Colors.None
+implicit val mdocColors: org.typelevel.doobie.util.Colors = org.typelevel.doobie.util.Colors.None
 ```
 
 ### How do I do an `IN` clause?
@@ -148,7 +148,7 @@ See [Chapter 10](10-Logging.html).
 There are a lot of ways to handle `SQLXML` so there is no pre-defined strategy, but here is one that maps `scala.xml.Elem` to `SQLXML` via streaming.
 
 ```scala mdoc:silent
-import doobie.enumerated.JdbcType.Other
+import org.typelevel.doobie.enumerated.JdbcType.Other
 import java.sql.SQLXML
 import scala.xml.{ XML, Elem }
 
@@ -178,8 +178,8 @@ Domains with check constraints will type check as DISTINCT. For Doobie later tha
 
 ```scala mdoc:silent
 import cats.data.NonEmptyList
-import doobie._
-import doobie.enumerated.JdbcType
+import org.typelevel.doobie._
+import org.typelevel.doobie.enumerated.JdbcType
 
 object distinct {
 
@@ -211,7 +211,7 @@ The following imports will provide `Meta` instances for common java.time.* types
 | MySQL (com.mysql.jdbc.Driver)    | `doobie.mysql.implicits.*`    |
 
 For other databases, if your JDBC driver supports the java.time types natively, 
-you can use `import doobie.implicits.javatimedrivernative._`.
+you can use `import org.typelevel.doobie.implicits.javatimedrivernative._`.
 
 References:
 

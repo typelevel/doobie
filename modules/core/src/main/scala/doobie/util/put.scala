@@ -2,15 +2,15 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.util
+package org.typelevel.doobie.util
 
 import cats.Contravariant
 import cats.free.ContravariantCoyoneda
 import cats.data.NonEmptyList
-import doobie.enumerated.JdbcType
+import org.typelevel.doobie.enumerated.JdbcType
 import java.sql.{PreparedStatement, ResultSet}
 import org.tpolecat.typename.*
-import doobie.util.meta.Meta
+import org.typelevel.doobie.util.meta.Meta
 import cats.syntax.foldable.*
 
 import scala.reflect.ClassTag

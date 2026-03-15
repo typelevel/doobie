@@ -2,13 +2,13 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.specs2
+package org.typelevel.doobie.specs2
 
 import cats.effect.{Async, IO}
-import doobie.{Update, Update0}
-import doobie.syntax.connectionio.*
-import doobie.util.query.{Query, Query0}
-import doobie.util.testing.*
+import org.typelevel.doobie.{Update, Update0}
+import org.typelevel.doobie.syntax.connectionio.*
+import org.typelevel.doobie.util.query.{Query, Query0}
+import org.typelevel.doobie.util.testing.*
 import org.specs2.mutable.Specification
 import org.specs2.specification.core.{Fragment, Fragments}
 import org.specs2.specification.create.FormattingFragments as Format

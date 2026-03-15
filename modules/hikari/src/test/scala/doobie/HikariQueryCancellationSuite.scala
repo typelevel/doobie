@@ -2,13 +2,13 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie
+package org.typelevel.doobie
 
 import cats.effect.*
 import com.zaxxer.hikari.HikariConfig
-import doobie.hikari.HikariTransactor
-import doobie.implicits.*
-import doobie.util.transactor
+import org.typelevel.doobie.hikari.HikariTransactor
+import org.typelevel.doobie.implicits.*
+import org.typelevel.doobie.util.transactor
 import fs2.Stream
 
 import scala.concurrent.duration.DurationInt

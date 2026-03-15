@@ -2,18 +2,18 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie
+package org.typelevel.doobie
 
 import cats.data.NonEmptyList
-import doobie.hikari.HikariTransactor
-import doobie.implicits.*
+import org.typelevel.doobie.hikari.HikariTransactor
+import org.typelevel.doobie.implicits.*
 import cats.syntax.all.*
 import cats.effect.IO
 import cats.effect.std.Random
 import com.zaxxer.hikari.HikariConfig
-import doobie.hi.{connection as IHC, resultset as IHRS}
-import doobie.free.{connection as IFC, preparedstatement as IFPS, resultset as IFRS}
-import doobie.util.log.{Parameters, LoggingInfo}
+import org.typelevel.doobie.hi.{connection as IHC, resultset as IHRS}
+import org.typelevel.doobie.free.{connection as IFC, preparedstatement as IFPS, resultset as IFRS}
+import org.typelevel.doobie.util.log.{Parameters, LoggingInfo}
 import org.postgresql.util.PSQLException
 import cats.effect.unsafe.implicits.global
 

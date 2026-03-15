@@ -6,7 +6,8 @@ package example
 
 import cats.effect.{IO, IOApp}
 import cats.syntax.all.*
-import doobie.*, doobie.implicits.*
+import org.typelevel.doobie.*
+import org.typelevel.doobie.implicits.*
 
 object FragmentExample extends IOApp.Simple {
 

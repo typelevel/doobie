@@ -2,14 +2,14 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.postgres
+package org.typelevel.doobie.postgres
 
 import java.util.concurrent.Executors
 
 import cats.effect.IO
 import com.zaxxer.hikari.HikariDataSource
-import doobie.*
-import doobie.implicits.*
+import org.typelevel.doobie.*
+import org.typelevel.doobie.implicits.*
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.*

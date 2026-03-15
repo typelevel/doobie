@@ -12,6 +12,7 @@ addSbtPlugin("org.typelevel" % "sbt-tpolecat" % "0.5.3")
 addSbtPlugin("org.scalameta" % "sbt-mdoc" % "2.8.2")
 addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.5.5")
 addSbtPlugin("com.eed3si9n" % "sbt-projectmatrix" % "0.11.0")
+addSbtPlugin("ch.epfl.scala" % "sbt-scalafix" % "0.14.6")
 addDependencyTreePlugin
 
 // Setting semanticdbVersion explicitly as the version is defaulting to 4.12.3

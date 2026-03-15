@@ -2,17 +2,17 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.postgres.syntax
+package org.typelevel.doobie.postgres.syntax
 
 import cats.Foldable
 import cats.effect.Ref
 import cats.effect.kernel.Resource
 import cats.syntax.all.*
-import doobie.*
-import doobie.implicits.*
-import doobie.postgres.*
-import doobie.postgres.hi.connection as IPHC
-import doobie.postgres.free.{copymanager as IPFCM, copyin as IPFCI}
+import org.typelevel.doobie.*
+import org.typelevel.doobie.implicits.*
+import org.typelevel.doobie.postgres.*
+import org.typelevel.doobie.postgres.hi.connection as IPHC
+import org.typelevel.doobie.postgres.free.{copymanager as IPFCM, copyin as IPFCI}
 import fs2.*
 
 import java.io.StringReader

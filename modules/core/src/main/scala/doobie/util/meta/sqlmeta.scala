@@ -2,9 +2,9 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.util.meta
+package org.typelevel.doobie.util.meta
 
-import doobie.enumerated.JdbcType.*
+import org.typelevel.doobie.enumerated.JdbcType.*
 import MetaConstructors.Basic
 
 trait SqlMetaInstances {

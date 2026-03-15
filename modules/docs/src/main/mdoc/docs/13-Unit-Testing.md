@@ -7,8 +7,8 @@ The YOLO-mode query checking feature demonstrated in an earlier chapter is also 
 As with earlier chapters we set up a `Transactor` and YOLO mode. We will also use the `doobie-specs2` and `doobie-scalatest` add-ons.
 
 ```scala mdoc:silent
-import doobie._
-import doobie.implicits._
+import org.typelevel.doobie._
+import org.typelevel.doobie.implicits._
 import cats._
 import cats.data._
 import cats.effect._
@@ -30,7 +30,7 @@ val xa = Transactor.fromDriverManager[IO](
 ```
 
 ```scala mdoc:invisible
-implicit val mdocColors: doobie.util.Colors = doobie.util.Colors.None
+implicit val mdocColors: org.typelevel.doobie.util.Colors = org.typelevel.doobie.util.Colors.None
 ```
 
 And again we are playing with the `country` table, given here for reference.
@@ -76,10 +76,11 @@ The `doobie-specs2` add-on provides a mix-in trait that we can add to a `Specifi
 
 Our unit test needs to extend `AnalysisSpec` and must define a `Transactor[IO]`. To construct a testcase for a query, pass it to the `check` method. Note that query arguments are never used, so they can be any values that typecheck.
 
-```scala mdoc:silent
+```scala mdoc:silent:nest
 import org.specs2.mutable.Specification
+import org.typelevel.doobie.specs2.IOChecker
 
-class AnalysisTestSpec extends Specification with doobie.specs2.IOChecker {
+class AnalysisTestSpec extends Specification with IOChecker {
 
   val transactor = Transactor.fromDriverManager[IO](
     driver = "org.postgresql.Driver", url = "jdbc:postgresql:world", user = "postgres", password = "password", logHandler = None
@@ -106,12 +107,13 @@ runTest(new AnalysisTestSpec)(Arguments(report = Report(_color = Some(false))))
 
 The `doobie-scalatest` add-on provides a mix-in trait that we can add to any `Assertions` implementation (like `AnyFunSuite`) much like the Specs2 package above.
 
-```scala mdoc:silent
+```scala mdoc:silent:nest
 import org.scalatest._
+import org.typelevel.doobie.scalatest.IOChecker
 
-class AnalysisTestScalaCheck extends funsuite.AnyFunSuite with matchers.must.Matchers with doobie.scalatest.IOChecker {
+class AnalysisTestScalaCheck extends funsuite.AnyFunSuite with matchers.must.Matchers with IOChecker {
 
-  override val colors = doobie.util.Colors.None // just for docs
+  override val colors = org.typelevel.doobie.util.Colors.None // just for docs
 
   val transactor = Transactor.fromDriverManager[IO](
     driver = "org.postgresql.Driver", url = "jdbc:postgresql:world", user = "postgres", password = "password", logHandler = None
@@ -135,12 +137,13 @@ Details are shown for failing tests.
 
 The `doobie-munit` add-on provides a mix-in trait that we can add to any `Assertions` implementation (like `FunSuite`) much like the ScalaTest package above.
 
-```scala mdoc:silent
+```scala mdoc:silent:nest
 import _root_.munit._
+import org.typelevel.doobie.munit.IOChecker
 
-class AnalysisTestSuite extends FunSuite with doobie.munit.IOChecker {
+class AnalysisTestSuite extends FunSuite with IOChecker {
 
-  override val colors = doobie.util.Colors.None // just for docs
+  override val colors = org.typelevel.doobie.util.Colors.None // just for docs
 
   val transactor = Transactor.fromDriverManager[IO](
     driver = "org.postgresql.Driver", url = "jdbc:postgresql:world", user = "postgres", password = "password", logHandler = None
@@ -159,9 +162,9 @@ The `doobie-weaver` add-on provides a mix-in trait what we can add to any effect
 The `check` function takes an implicit `Transactor[F]` parameter. Since Weaver has its own way 
 to manage shared resources, it is convenient to use that to allocate the transactor.
 
-```scala mdoc:silent
+```scala mdoc:silent:nest
 import _root_.weaver._
-import doobie.weaver._
+import org.typelevel.doobie.weaver.IOChecker
 
 object AnalysisTestSuite extends IOSuite with IOChecker {
 

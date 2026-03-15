@@ -2,15 +2,15 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.syntax
+package org.typelevel.doobie.syntax
 
 import cats.data.{EitherT, Kleisli, OptionT}
 import cats.effect.kernel.MonadCancelThrow
 import cats.syntax.functor.*
-import doobie.ConnectionIO
-import doobie.implicits.*
-import doobie.util.transactor.Transactor
-import doobie.hi.connection as IHC
+import org.typelevel.doobie.ConnectionIO
+import org.typelevel.doobie.implicits.*
+import org.typelevel.doobie.util.transactor.Transactor
+import org.typelevel.doobie.hi.connection as IHC
 
 class ConnectionIOOps[A](ma: ConnectionIO[A]) {
   def transact[M[_]: MonadCancelThrow](xa: Transactor[M]): M[A] = xa.trans.apply(ma)

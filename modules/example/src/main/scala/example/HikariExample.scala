@@ -5,9 +5,9 @@
 package example
 
 import cats.effect.*
-import doobie.*
-import doobie.hikari.*
-import doobie.implicits.*
+import org.typelevel.doobie.*
+import org.typelevel.doobie.hikari.*
+import org.typelevel.doobie.implicits.*
 import com.zaxxer.hikari.HikariConfig
 
 object HikariExample extends IOApp.Simple {

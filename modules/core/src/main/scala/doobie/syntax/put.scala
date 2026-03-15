@@ -2,12 +2,12 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.syntax
+package org.typelevel.doobie.syntax
 
-import doobie.util.Put
-import doobie.util.fragment.Fragment
-import doobie.util.fragment.Elem.{Arg, Opt}
-import doobie.util.pos.Pos
+import org.typelevel.doobie.util.Put
+import org.typelevel.doobie.util.fragment.Fragment
+import org.typelevel.doobie.util.fragment.Elem.{Arg, Opt}
+import org.typelevel.doobie.util.pos.Pos
 
 final class PutOps[A: Put](a: A) {
   def fr(implicit pos: Pos): Fragment = mkFragment("? ", pos)

@@ -2,19 +2,19 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.hi
+package org.typelevel.doobie.hi
 
 import cats.{Alternative, Monad}
 import cats.data.NonEmptyList
 import cats.syntax.all.*
 
-import doobie.enumerated.Holdability
-import doobie.enumerated.FetchDirection
-import doobie.util.{Read, Write}
-import doobie.util.compat.FactoryCompat
-import doobie.util.invariant.*
-import doobie.util.stream.repeatEvalChunks
-import doobie.free.resultset as IFRS
+import org.typelevel.doobie.enumerated.Holdability
+import org.typelevel.doobie.enumerated.FetchDirection
+import org.typelevel.doobie.util.{Read, Write}
+import org.typelevel.doobie.util.compat.FactoryCompat
+import org.typelevel.doobie.util.invariant.*
+import org.typelevel.doobie.util.stream.repeatEvalChunks
+import org.typelevel.doobie.free.resultset as IFRS
 
 import fs2.Stream
 

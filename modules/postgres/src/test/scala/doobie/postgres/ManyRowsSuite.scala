@@ -2,9 +2,9 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.postgres
+package org.typelevel.doobie.postgres
 
-import doobie.implicits.*
+import org.typelevel.doobie.implicits.*
 
 class ManyRowsSuite extends munit.FunSuite {
   import cats.effect.unsafe.implicits.global
