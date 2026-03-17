@@ -20,6 +20,7 @@ lazy val scalaCheckVersion = "1.15.4"
 lazy val scalatestVersion = "3.2.18"
 lazy val munitVersion = "1.2.4"
 lazy val otel4sVersion = "0.15.2"
+lazy val otelInstrumentationVersion = "2.26.0-alpha"
 lazy val shapelessVersion = "2.3.13"
 lazy val silencerVersion = "1.7.1"
 lazy val specs2Version = "4.23.0"
@@ -553,7 +554,7 @@ lazy val bench = projectMatrix
 
 lazy val docs = projectMatrix
   .in(file("modules/docs"))
-  .dependsOn(core, postgres, specs2, munit, hikari, h2, scalatest, weaver)
+  .dependsOn(core, postgres, specs2, munit, hikari, h2, scalatest, weaver, otel4s)
   .enablePlugins(NoPublishPlugin)
   .enablePlugins(ParadoxPlugin)
   .enablePlugins(ParadoxSitePlugin)
@@ -565,7 +566,8 @@ lazy val docs = projectMatrix
     libraryDependencies ++= Seq(
       "io.circe" %% "circe-core" % circeVersion,
       "io.circe" %% "circe-generic" % circeVersion,
-      "io.circe" %% "circe-parser" % circeVersion
+      "io.circe" %% "circe-parser" % circeVersion,
+      "io.opentelemetry.instrumentation" % "opentelemetry-jdbc" % otelInstrumentationVersion
     ),
     Test / fork := true,
 
