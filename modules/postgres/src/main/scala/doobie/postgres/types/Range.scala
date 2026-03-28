@@ -4,6 +4,7 @@
 
 package doobie.postgres.types
 
+import cats.Eq
 import cats.Monoid
 import cats.implicits.toBifunctorOps
 import doobie.postgres.types.Range.Edge
@@ -29,13 +30,15 @@ case object EmptyRange extends Range[Nothing]
 case class NonEmptyRange[T](lowerBound: Option[T], upperBound: Option[T], edge: Edge) extends Range[T]
 
 object Range {
-  sealed trait Edge
+  sealed abstract class Edge(val isLowerBoundInclusive: Boolean, val isUpperBoundInclusive: Boolean)
 
   object Edge {
-    case object ExclExcl extends Edge
-    case object ExclIncl extends Edge
-    case object InclExcl extends Edge
-    case object InclIncl extends Edge
+    case object ExclExcl extends Edge(false, false)
+    case object ExclIncl extends Edge(false, true)
+    case object InclExcl extends Edge(true, false)
+    case object InclIncl extends Edge(true, true)
+
+    implicit val EqEdge: Eq[Edge] = Eq.fromUniversalEquals
   }
 
   def empty[T]: Range[T] = EmptyRange
