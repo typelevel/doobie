@@ -240,7 +240,7 @@ lazy val free = projectMatrix
       scalaOrganization.value % "scala-reflect" % scalaVersion.value // required for macros
     ).filterNot(_ => tlIsScala3.value),
     freeGen2Dir := (Compile / scalaSource).value / "doobie" / "free",
-    freeGen2Package := "doobie.free",
+    freeGen2Package := "org.typelevel.doobie.free",
     freeGen2Classes := {
       List[Class[?]](
         classOf[java.sql.NClob],
@@ -308,7 +308,7 @@ lazy val core = projectMatrix
       val t = System.currentTimeMillis
       IO.write(
         outFile,
-        s"""|package doobie
+        s"""|package org.typelevel.doobie
             |
             |/** Auto-generated build information. */
             |object buildinfo {
@@ -379,7 +379,7 @@ lazy val postgres = projectMatrix
       "org.scala-lang.modules" %% "scala-collection-compat" % scalaCollectionCompatVersion % Test
     ),
     freeGen2Dir := (Compile / scalaSource).value / "doobie" / "postgres" / "free",
-    freeGen2Package := "doobie.postgres.free",
+    freeGen2Package := "org.typelevel.doobie.postgres.free",
     freeGen2Classes := {
       List[Class[?]](
         classOf[org.postgresql.copy.CopyIn],
@@ -406,8 +406,10 @@ lazy val postgres = projectMatrix
     initialCommands :=
       """
       import cats._, cats.data._, cats.implicits._, cats.effect._
-      import doobie._, doobie.implicits._
-      import doobie.postgres._, doobie.postgres.implicits._
+      import org.typelevel.doobie._
+      import org.typelevel.doobie.implicits._
+      import org.typelevel.doobie.postgres._, 
+      import org.typelevel.doobie.postgres.implicits._
       implicit val cs = IO.contextShift(scala.concurrent.ExecutionContext.global)
       val xa = Transactor.fromDriverManager[IO](driver = "org.postgresql.Driver", url = "jdbc:postgresql:world", user = "postgres", pass = "password", logHandler = None)
       val yolo = xa.yolo

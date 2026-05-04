@@ -9,7 +9,8 @@ import cats.Show
 import cats.syntax.all.*
 import cats.effect.{IO, IOApp}
 import fs2.Stream
-import doobie.*, doobie.implicits.*
+import org.typelevel.doobie.*
+import org.typelevel.doobie.implicits.*
 
 // Example lifted from slick
 object FirstExample extends IOApp.Simple {

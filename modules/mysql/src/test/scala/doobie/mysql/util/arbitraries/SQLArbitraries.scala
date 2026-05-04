@@ -2,7 +2,7 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.mysql.util.arbitraries
+package org.typelevel.doobie.mysql.util.arbitraries
 
 import java.sql.Date
 import java.sql.Time

@@ -2,13 +2,13 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.postgres
+package org.typelevel.doobie.postgres
 
 import cats.effect.IO
 import cats.syntax.all.*
-import doobie.*
-import doobie.implicits.*
-import doobie.postgres.implicits.*
+import org.typelevel.doobie.*
+import org.typelevel.doobie.implicits.*
+import org.typelevel.doobie.postgres.implicits.*
 import fs2.*
 import org.scalacheck.{Gen, Test}
 import org.scalacheck.Arbitrary.arbitrary

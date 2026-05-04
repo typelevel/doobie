@@ -25,7 +25,7 @@ Then, you will be able to import the implicits for dealing with JSON:
 @@@ vars
 
 ```scala
-import doobie.h2.circe.json.implicits
+import org.typelevel.doobie.h2.circe.json.implicits
 ```
 
 @@@
@@ -56,9 +56,9 @@ See the previous chapter on **SQL Arrays** for usage examples.
 ```scala mdoc:silent:reset
 import cats.effect._
 import cats.implicits._
-import doobie._
-import doobie.implicits._
-import doobie.h2._
+import org.typelevel.doobie._
+import org.typelevel.doobie.implicits._
+import org.typelevel.doobie.h2._
 
 object H2App extends IOApp {
 

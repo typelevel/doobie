@@ -2,14 +2,14 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.postgres
+package org.typelevel.doobie.postgres
 
 import cats.effect.IO
-import doobie.Transactor
-import doobie.postgres.enums.{MyEnum, OtherEnum}
-import doobie.postgres.implicits.*
-import doobie.syntax.all.*
-import doobie.util.analysis.{ColumnTypeError, ParameterTypeError}
+import org.typelevel.doobie.Transactor
+import org.typelevel.doobie.postgres.enums.{MyEnum, OtherEnum}
+import org.typelevel.doobie.postgres.implicits.*
+import org.typelevel.doobie.syntax.all.*
+import org.typelevel.doobie.util.analysis.{ColumnTypeError, ParameterTypeError}
 
 class PgArraySuite extends munit.CatsEffectSuite {
 

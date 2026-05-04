@@ -7,7 +7,8 @@ package example
 import cats.Show
 import cats.effect.{IO, IOApp, ExitCode}
 import cats.syntax.all.*
-import doobie.*, doobie.implicits.*
+import org.typelevel.doobie.*
+import org.typelevel.doobie.implicits.*
 import fs2.Stream
 import shapeless.*
 import shapeless.ops.record.*

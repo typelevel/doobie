@@ -2,14 +2,14 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.util
+package org.typelevel.doobie.util
 
 import cats.data.NonEmptyList
 import cats.effect.IO
 import cats.syntax.all.*
-import doobie.*
-import doobie.hi.resultset as IHRS
-import doobie.implicits.*
+import org.typelevel.doobie.*
+import org.typelevel.doobie.hi.resultset as IHRS
+import org.typelevel.doobie.implicits.*
 
 class QuerySuite extends munit.CatsEffectSuite {
 

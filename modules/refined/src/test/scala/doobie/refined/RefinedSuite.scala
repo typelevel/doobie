@@ -2,17 +2,18 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.refined
+package org.typelevel.doobie.refined
 
 import cats.Show
 import cats.effect.IO
 import cats.syntax.all.*
-import doobie.*, doobie.implicits.*
-import doobie.refined.implicits.*
+import org.typelevel.doobie.*
+import org.typelevel.doobie.implicits.*
+import org.typelevel.doobie.refined.implicits.*
 import eu.timepit.refined.api.{Refined, Validate}
 import eu.timepit.refined.numeric.Positive
 import eu.timepit.refined.*
-import doobie.util.invariant.*
+import org.typelevel.doobie.util.invariant.*
 
 class RefinedSuite extends munit.CatsEffectSuite {
 

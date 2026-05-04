@@ -4,16 +4,16 @@
 
 // format: off
 
-package doobie.free
+package org.typelevel.doobie.free
 
 // Library imports
 import cats.~>
 import cats.data.Kleisli
 import cats.effect.kernel.{ Poll, Sync }
 import cats.free.Free
-import doobie.WeakAsync
-import doobie.util.log.{LogEvent, LogHandler}
-import doobie.util.trace.TraceEvent
+import org.typelevel.doobie.WeakAsync
+import org.typelevel.doobie.util.log.{LogEvent, LogHandler}
+import org.typelevel.doobie.util.trace.TraceEvent
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 
@@ -58,20 +58,20 @@ import java.util.concurrent.Executor
 import java.util.logging.Logger
 
 // Algebras and free monads thereof referenced by our interpreter.
-import doobie.free.nclob.{ NClobIO, NClobOp }
-import doobie.free.blob.{ BlobIO, BlobOp }
-import doobie.free.clob.{ ClobIO, ClobOp }
-import doobie.free.databasemetadata.{ DatabaseMetaDataIO, DatabaseMetaDataOp }
-import doobie.free.driver.{ DriverIO, DriverOp }
-import doobie.free.ref.{ RefIO, RefOp }
-import doobie.free.sqldata.{ SQLDataIO, SQLDataOp }
-import doobie.free.sqlinput.{ SQLInputIO, SQLInputOp }
-import doobie.free.sqloutput.{ SQLOutputIO, SQLOutputOp }
-import doobie.free.connection.{ ConnectionIO, ConnectionOp }
-import doobie.free.statement.{ StatementIO, StatementOp }
-import doobie.free.preparedstatement.{ PreparedStatementIO, PreparedStatementOp }
-import doobie.free.callablestatement.{ CallableStatementIO, CallableStatementOp }
-import doobie.free.resultset.{ ResultSetIO, ResultSetOp }
+import org.typelevel.doobie.free.nclob.{ NClobIO, NClobOp }
+import org.typelevel.doobie.free.blob.{ BlobIO, BlobOp }
+import org.typelevel.doobie.free.clob.{ ClobIO, ClobOp }
+import org.typelevel.doobie.free.databasemetadata.{ DatabaseMetaDataIO, DatabaseMetaDataOp }
+import org.typelevel.doobie.free.driver.{ DriverIO, DriverOp }
+import org.typelevel.doobie.free.ref.{ RefIO, RefOp }
+import org.typelevel.doobie.free.sqldata.{ SQLDataIO, SQLDataOp }
+import org.typelevel.doobie.free.sqlinput.{ SQLInputIO, SQLInputOp }
+import org.typelevel.doobie.free.sqloutput.{ SQLOutputIO, SQLOutputOp }
+import org.typelevel.doobie.free.connection.{ ConnectionIO, ConnectionOp }
+import org.typelevel.doobie.free.statement.{ StatementIO, StatementOp }
+import org.typelevel.doobie.free.preparedstatement.{ PreparedStatementIO, PreparedStatementOp }
+import org.typelevel.doobie.free.callablestatement.{ CallableStatementIO, CallableStatementOp }
+import org.typelevel.doobie.free.resultset.{ ResultSetIO, ResultSetOp }
 
 object KleisliInterpreter {
   def apply[M[_]: WeakAsync](logHandler: LogHandler[M]): KleisliInterpreter[M] =
@@ -181,7 +181,7 @@ class KleisliInterpreter[M[_]](logHandler: LogHandler[M])(implicit val asyncM: W
     // for operations using NClobIO we must call ourself recursively
     override def handleErrorWith[A](fa: NClobIO[A])(f: Throwable => NClobIO[A]): Kleisli[M, NClob, A] = outer.handleErrorWith(this)(fa)(f)
     override def forceR[A, B](fa: NClobIO[A])(fb: NClobIO[B]): Kleisli[M, NClob, B] = outer.forceR(this)(fa)(fb)
-    override def uncancelable[A](body: Poll[NClobIO] => NClobIO[A]): Kleisli[M, NClob, A] = outer.uncancelable(this, doobie.free.nclob.capturePoll)(body)
+    override def uncancelable[A](body: Poll[NClobIO] => NClobIO[A]): Kleisli[M, NClob, A] = outer.uncancelable(this, org.typelevel.doobie.free.nclob.capturePoll)(body)
     override def poll[A](poll: Any, fa: NClobIO[A]): Kleisli[M, NClob, A] = outer.poll(this)(poll, fa)
     override def onCancel[A](fa: NClobIO[A], fin: NClobIO[Unit]): Kleisli[M, NClob, A] = outer.onCancel(this)(fa, fin)
     override def fromFuture[A](fut: NClobIO[Future[A]]): Kleisli[M, NClob, A] = outer.fromFuture(this)(fut)
@@ -223,7 +223,7 @@ class KleisliInterpreter[M[_]](logHandler: LogHandler[M])(implicit val asyncM: W
     // for operations using BlobIO we must call ourself recursively
     override def handleErrorWith[A](fa: BlobIO[A])(f: Throwable => BlobIO[A]): Kleisli[M, Blob, A] = outer.handleErrorWith(this)(fa)(f)
     override def forceR[A, B](fa: BlobIO[A])(fb: BlobIO[B]): Kleisli[M, Blob, B] = outer.forceR(this)(fa)(fb)
-    override def uncancelable[A](body: Poll[BlobIO] => BlobIO[A]): Kleisli[M, Blob, A] = outer.uncancelable(this, doobie.free.blob.capturePoll)(body)
+    override def uncancelable[A](body: Poll[BlobIO] => BlobIO[A]): Kleisli[M, Blob, A] = outer.uncancelable(this, org.typelevel.doobie.free.blob.capturePoll)(body)
     override def poll[A](poll: Any, fa: BlobIO[A]): Kleisli[M, Blob, A] = outer.poll(this)(poll, fa)
     override def onCancel[A](fa: BlobIO[A], fin: BlobIO[Unit]): Kleisli[M, Blob, A] = outer.onCancel(this)(fa, fin)
     override def fromFuture[A](fut: BlobIO[Future[A]]): Kleisli[M, Blob, A] = outer.fromFuture(this)(fut)
@@ -263,7 +263,7 @@ class KleisliInterpreter[M[_]](logHandler: LogHandler[M])(implicit val asyncM: W
     // for operations using ClobIO we must call ourself recursively
     override def handleErrorWith[A](fa: ClobIO[A])(f: Throwable => ClobIO[A]): Kleisli[M, Clob, A] = outer.handleErrorWith(this)(fa)(f)
     override def forceR[A, B](fa: ClobIO[A])(fb: ClobIO[B]): Kleisli[M, Clob, B] = outer.forceR(this)(fa)(fb)
-    override def uncancelable[A](body: Poll[ClobIO] => ClobIO[A]): Kleisli[M, Clob, A] = outer.uncancelable(this, doobie.free.clob.capturePoll)(body)
+    override def uncancelable[A](body: Poll[ClobIO] => ClobIO[A]): Kleisli[M, Clob, A] = outer.uncancelable(this, org.typelevel.doobie.free.clob.capturePoll)(body)
     override def poll[A](poll: Any, fa: ClobIO[A]): Kleisli[M, Clob, A] = outer.poll(this)(poll, fa)
     override def onCancel[A](fa: ClobIO[A], fin: ClobIO[Unit]): Kleisli[M, Clob, A] = outer.onCancel(this)(fa, fin)
     override def fromFuture[A](fut: ClobIO[Future[A]]): Kleisli[M, Clob, A] = outer.fromFuture(this)(fut)
@@ -305,7 +305,7 @@ class KleisliInterpreter[M[_]](logHandler: LogHandler[M])(implicit val asyncM: W
     // for operations using DatabaseMetaDataIO we must call ourself recursively
     override def handleErrorWith[A](fa: DatabaseMetaDataIO[A])(f: Throwable => DatabaseMetaDataIO[A]): Kleisli[M, DatabaseMetaData, A] = outer.handleErrorWith(this)(fa)(f)
     override def forceR[A, B](fa: DatabaseMetaDataIO[A])(fb: DatabaseMetaDataIO[B]): Kleisli[M, DatabaseMetaData, B] = outer.forceR(this)(fa)(fb)
-    override def uncancelable[A](body: Poll[DatabaseMetaDataIO] => DatabaseMetaDataIO[A]): Kleisli[M, DatabaseMetaData, A] = outer.uncancelable(this, doobie.free.databasemetadata.capturePoll)(body)
+    override def uncancelable[A](body: Poll[DatabaseMetaDataIO] => DatabaseMetaDataIO[A]): Kleisli[M, DatabaseMetaData, A] = outer.uncancelable(this, org.typelevel.doobie.free.databasemetadata.capturePoll)(body)
     override def poll[A](poll: Any, fa: DatabaseMetaDataIO[A]): Kleisli[M, DatabaseMetaData, A] = outer.poll(this)(poll, fa)
     override def onCancel[A](fa: DatabaseMetaDataIO[A], fin: DatabaseMetaDataIO[Unit]): Kleisli[M, DatabaseMetaData, A] = outer.onCancel(this)(fa, fin)
     override def fromFuture[A](fut: DatabaseMetaDataIO[Future[A]]): Kleisli[M, DatabaseMetaData, A] = outer.fromFuture(this)(fut)
@@ -513,7 +513,7 @@ class KleisliInterpreter[M[_]](logHandler: LogHandler[M])(implicit val asyncM: W
     // for operations using DriverIO we must call ourself recursively
     override def handleErrorWith[A](fa: DriverIO[A])(f: Throwable => DriverIO[A]): Kleisli[M, Driver, A] = outer.handleErrorWith(this)(fa)(f)
     override def forceR[A, B](fa: DriverIO[A])(fb: DriverIO[B]): Kleisli[M, Driver, B] = outer.forceR(this)(fa)(fb)
-    override def uncancelable[A](body: Poll[DriverIO] => DriverIO[A]): Kleisli[M, Driver, A] = outer.uncancelable(this, doobie.free.driver.capturePoll)(body)
+    override def uncancelable[A](body: Poll[DriverIO] => DriverIO[A]): Kleisli[M, Driver, A] = outer.uncancelable(this, org.typelevel.doobie.free.driver.capturePoll)(body)
     override def poll[A](poll: Any, fa: DriverIO[A]): Kleisli[M, Driver, A] = outer.poll(this)(poll, fa)
     override def onCancel[A](fa: DriverIO[A], fin: DriverIO[Unit]): Kleisli[M, Driver, A] = outer.onCancel(this)(fa, fin)
     override def fromFuture[A](fut: DriverIO[Future[A]]): Kleisli[M, Driver, A] = outer.fromFuture(this)(fut)
@@ -549,7 +549,7 @@ class KleisliInterpreter[M[_]](logHandler: LogHandler[M])(implicit val asyncM: W
     // for operations using RefIO we must call ourself recursively
     override def handleErrorWith[A](fa: RefIO[A])(f: Throwable => RefIO[A]): Kleisli[M, Ref, A] = outer.handleErrorWith(this)(fa)(f)
     override def forceR[A, B](fa: RefIO[A])(fb: RefIO[B]): Kleisli[M, Ref, B] = outer.forceR(this)(fa)(fb)
-    override def uncancelable[A](body: Poll[RefIO] => RefIO[A]): Kleisli[M, Ref, A] = outer.uncancelable(this, doobie.free.ref.capturePoll)(body)
+    override def uncancelable[A](body: Poll[RefIO] => RefIO[A]): Kleisli[M, Ref, A] = outer.uncancelable(this, org.typelevel.doobie.free.ref.capturePoll)(body)
     override def poll[A](poll: Any, fa: RefIO[A]): Kleisli[M, Ref, A] = outer.poll(this)(poll, fa)
     override def onCancel[A](fa: RefIO[A], fin: RefIO[Unit]): Kleisli[M, Ref, A] = outer.onCancel(this)(fa, fin)
     override def fromFuture[A](fut: RefIO[Future[A]]): Kleisli[M, Ref, A] = outer.fromFuture(this)(fut)
@@ -582,7 +582,7 @@ class KleisliInterpreter[M[_]](logHandler: LogHandler[M])(implicit val asyncM: W
     // for operations using SQLDataIO we must call ourself recursively
     override def handleErrorWith[A](fa: SQLDataIO[A])(f: Throwable => SQLDataIO[A]): Kleisli[M, SQLData, A] = outer.handleErrorWith(this)(fa)(f)
     override def forceR[A, B](fa: SQLDataIO[A])(fb: SQLDataIO[B]): Kleisli[M, SQLData, B] = outer.forceR(this)(fa)(fb)
-    override def uncancelable[A](body: Poll[SQLDataIO] => SQLDataIO[A]): Kleisli[M, SQLData, A] = outer.uncancelable(this, doobie.free.sqldata.capturePoll)(body)
+    override def uncancelable[A](body: Poll[SQLDataIO] => SQLDataIO[A]): Kleisli[M, SQLData, A] = outer.uncancelable(this, org.typelevel.doobie.free.sqldata.capturePoll)(body)
     override def poll[A](poll: Any, fa: SQLDataIO[A]): Kleisli[M, SQLData, A] = outer.poll(this)(poll, fa)
     override def onCancel[A](fa: SQLDataIO[A], fin: SQLDataIO[Unit]): Kleisli[M, SQLData, A] = outer.onCancel(this)(fa, fin)
     override def fromFuture[A](fut: SQLDataIO[Future[A]]): Kleisli[M, SQLData, A] = outer.fromFuture(this)(fut)
@@ -614,7 +614,7 @@ class KleisliInterpreter[M[_]](logHandler: LogHandler[M])(implicit val asyncM: W
     // for operations using SQLInputIO we must call ourself recursively
     override def handleErrorWith[A](fa: SQLInputIO[A])(f: Throwable => SQLInputIO[A]): Kleisli[M, SQLInput, A] = outer.handleErrorWith(this)(fa)(f)
     override def forceR[A, B](fa: SQLInputIO[A])(fb: SQLInputIO[B]): Kleisli[M, SQLInput, B] = outer.forceR(this)(fa)(fb)
-    override def uncancelable[A](body: Poll[SQLInputIO] => SQLInputIO[A]): Kleisli[M, SQLInput, A] = outer.uncancelable(this, doobie.free.sqlinput.capturePoll)(body)
+    override def uncancelable[A](body: Poll[SQLInputIO] => SQLInputIO[A]): Kleisli[M, SQLInput, A] = outer.uncancelable(this, org.typelevel.doobie.free.sqlinput.capturePoll)(body)
     override def poll[A](poll: Any, fa: SQLInputIO[A]): Kleisli[M, SQLInput, A] = outer.poll(this)(poll, fa)
     override def onCancel[A](fa: SQLInputIO[A], fin: SQLInputIO[Unit]): Kleisli[M, SQLInput, A] = outer.onCancel(this)(fa, fin)
     override def fromFuture[A](fut: SQLInputIO[Future[A]]): Kleisli[M, SQLInput, A] = outer.fromFuture(this)(fut)
@@ -671,7 +671,7 @@ class KleisliInterpreter[M[_]](logHandler: LogHandler[M])(implicit val asyncM: W
     // for operations using SQLOutputIO we must call ourself recursively
     override def handleErrorWith[A](fa: SQLOutputIO[A])(f: Throwable => SQLOutputIO[A]): Kleisli[M, SQLOutput, A] = outer.handleErrorWith(this)(fa)(f)
     override def forceR[A, B](fa: SQLOutputIO[A])(fb: SQLOutputIO[B]): Kleisli[M, SQLOutput, B] = outer.forceR(this)(fa)(fb)
-    override def uncancelable[A](body: Poll[SQLOutputIO] => SQLOutputIO[A]): Kleisli[M, SQLOutput, A] = outer.uncancelable(this, doobie.free.sqloutput.capturePoll)(body)
+    override def uncancelable[A](body: Poll[SQLOutputIO] => SQLOutputIO[A]): Kleisli[M, SQLOutput, A] = outer.uncancelable(this, org.typelevel.doobie.free.sqloutput.capturePoll)(body)
     override def poll[A](poll: Any, fa: SQLOutputIO[A]): Kleisli[M, SQLOutput, A] = outer.poll(this)(poll, fa)
     override def onCancel[A](fa: SQLOutputIO[A], fin: SQLOutputIO[Unit]): Kleisli[M, SQLOutput, A] = outer.onCancel(this)(fa, fin)
     override def fromFuture[A](fut: SQLOutputIO[Future[A]]): Kleisli[M, SQLOutput, A] = outer.fromFuture(this)(fut)
@@ -728,7 +728,7 @@ class KleisliInterpreter[M[_]](logHandler: LogHandler[M])(implicit val asyncM: W
     // for operations using ConnectionIO we must call ourself recursively
     override def handleErrorWith[A](fa: ConnectionIO[A])(f: Throwable => ConnectionIO[A]): Kleisli[M, Connection, A] = outer.handleErrorWith(this)(fa)(f)
     override def forceR[A, B](fa: ConnectionIO[A])(fb: ConnectionIO[B]): Kleisli[M, Connection, B] = outer.forceR(this)(fa)(fb)
-    override def uncancelable[A](body: Poll[ConnectionIO] => ConnectionIO[A]): Kleisli[M, Connection, A] = outer.uncancelable(this, doobie.free.connection.capturePoll)(body)
+    override def uncancelable[A](body: Poll[ConnectionIO] => ConnectionIO[A]): Kleisli[M, Connection, A] = outer.uncancelable(this, org.typelevel.doobie.free.connection.capturePoll)(body)
     override def poll[A](poll: Any, fa: ConnectionIO[A]): Kleisli[M, Connection, A] = outer.poll(this)(poll, fa)
     override def onCancel[A](fa: ConnectionIO[A], fin: ConnectionIO[Unit]): Kleisli[M, Connection, A] = outer.onCancel(this)(fa, fin)
     override def fromFuture[A](fut: ConnectionIO[Future[A]]): Kleisli[M, Connection, A] = outer.fromFuture(this)(fut)
@@ -817,7 +817,7 @@ class KleisliInterpreter[M[_]](logHandler: LogHandler[M])(implicit val asyncM: W
     // for operations using StatementIO we must call ourself recursively
     override def handleErrorWith[A](fa: StatementIO[A])(f: Throwable => StatementIO[A]): Kleisli[M, Statement, A] = outer.handleErrorWith(this)(fa)(f)
     override def forceR[A, B](fa: StatementIO[A])(fb: StatementIO[B]): Kleisli[M, Statement, B] = outer.forceR(this)(fa)(fb)
-    override def uncancelable[A](body: Poll[StatementIO] => StatementIO[A]): Kleisli[M, Statement, A] = outer.uncancelable(this, doobie.free.statement.capturePoll)(body)
+    override def uncancelable[A](body: Poll[StatementIO] => StatementIO[A]): Kleisli[M, Statement, A] = outer.uncancelable(this, org.typelevel.doobie.free.statement.capturePoll)(body)
     override def poll[A](poll: Any, fa: StatementIO[A]): Kleisli[M, Statement, A] = outer.poll(this)(poll, fa)
     override def onCancel[A](fa: StatementIO[A], fin: StatementIO[Unit]): Kleisli[M, Statement, A] = outer.onCancel(this)(fa, fin)
     override def fromFuture[A](fut: StatementIO[Future[A]]): Kleisli[M, Statement, A] = outer.fromFuture(this)(fut)
@@ -902,7 +902,7 @@ class KleisliInterpreter[M[_]](logHandler: LogHandler[M])(implicit val asyncM: W
     // for operations using PreparedStatementIO we must call ourself recursively
     override def handleErrorWith[A](fa: PreparedStatementIO[A])(f: Throwable => PreparedStatementIO[A]): Kleisli[M, PreparedStatement, A] = outer.handleErrorWith(this)(fa)(f)
     override def forceR[A, B](fa: PreparedStatementIO[A])(fb: PreparedStatementIO[B]): Kleisli[M, PreparedStatement, B] = outer.forceR(this)(fa)(fb)
-    override def uncancelable[A](body: Poll[PreparedStatementIO] => PreparedStatementIO[A]): Kleisli[M, PreparedStatement, A] = outer.uncancelable(this, doobie.free.preparedstatement.capturePoll)(body)
+    override def uncancelable[A](body: Poll[PreparedStatementIO] => PreparedStatementIO[A]): Kleisli[M, PreparedStatement, A] = outer.uncancelable(this, org.typelevel.doobie.free.preparedstatement.capturePoll)(body)
     override def poll[A](poll: Any, fa: PreparedStatementIO[A]): Kleisli[M, PreparedStatement, A] = outer.poll(this)(poll, fa)
     override def onCancel[A](fa: PreparedStatementIO[A], fin: PreparedStatementIO[Unit]): Kleisli[M, PreparedStatement, A] = outer.onCancel(this)(fa, fin)
     override def fromFuture[A](fut: PreparedStatementIO[Future[A]]): Kleisli[M, PreparedStatement, A] = outer.fromFuture(this)(fut)
@@ -1044,7 +1044,7 @@ class KleisliInterpreter[M[_]](logHandler: LogHandler[M])(implicit val asyncM: W
     // for operations using CallableStatementIO we must call ourself recursively
     override def handleErrorWith[A](fa: CallableStatementIO[A])(f: Throwable => CallableStatementIO[A]): Kleisli[M, CallableStatement, A] = outer.handleErrorWith(this)(fa)(f)
     override def forceR[A, B](fa: CallableStatementIO[A])(fb: CallableStatementIO[B]): Kleisli[M, CallableStatement, B] = outer.forceR(this)(fa)(fb)
-    override def uncancelable[A](body: Poll[CallableStatementIO] => CallableStatementIO[A]): Kleisli[M, CallableStatement, A] = outer.uncancelable(this, doobie.free.callablestatement.capturePoll)(body)
+    override def uncancelable[A](body: Poll[CallableStatementIO] => CallableStatementIO[A]): Kleisli[M, CallableStatement, A] = outer.uncancelable(this, org.typelevel.doobie.free.callablestatement.capturePoll)(body)
     override def poll[A](poll: Any, fa: CallableStatementIO[A]): Kleisli[M, CallableStatement, A] = outer.poll(this)(poll, fa)
     override def onCancel[A](fa: CallableStatementIO[A], fin: CallableStatementIO[Unit]): Kleisli[M, CallableStatement, A] = outer.onCancel(this)(fa, fin)
     override def fromFuture[A](fut: CallableStatementIO[Future[A]]): Kleisli[M, CallableStatement, A] = outer.fromFuture(this)(fut)
@@ -1306,7 +1306,7 @@ class KleisliInterpreter[M[_]](logHandler: LogHandler[M])(implicit val asyncM: W
     // for operations using ResultSetIO we must call ourself recursively
     override def handleErrorWith[A](fa: ResultSetIO[A])(f: Throwable => ResultSetIO[A]): Kleisli[M, ResultSet, A] = outer.handleErrorWith(this)(fa)(f)
     override def forceR[A, B](fa: ResultSetIO[A])(fb: ResultSetIO[B]): Kleisli[M, ResultSet, B] = outer.forceR(this)(fa)(fb)
-    override def uncancelable[A](body: Poll[ResultSetIO] => ResultSetIO[A]): Kleisli[M, ResultSet, A] = outer.uncancelable(this, doobie.free.resultset.capturePoll)(body)
+    override def uncancelable[A](body: Poll[ResultSetIO] => ResultSetIO[A]): Kleisli[M, ResultSet, A] = outer.uncancelable(this, org.typelevel.doobie.free.resultset.capturePoll)(body)
     override def poll[A](poll: Any, fa: ResultSetIO[A]): Kleisli[M, ResultSet, A] = outer.poll(this)(poll, fa)
     override def onCancel[A](fa: ResultSetIO[A], fin: ResultSetIO[Unit]): Kleisli[M, ResultSet, A] = outer.onCancel(this)(fa, fin)
     override def fromFuture[A](fut: ResultSetIO[Future[A]]): Kleisli[M, ResultSet, A] = outer.fromFuture(this)(fut)

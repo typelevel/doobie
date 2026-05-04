@@ -2,16 +2,16 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.h2
+package org.typelevel.doobie.h2
 
-import doobie.enumerated.JdbcType
-import doobie.util.invariant.*
+import org.typelevel.doobie.enumerated.JdbcType
+import org.typelevel.doobie.util.invariant.*
 import java.util.UUID
 
 import scala.Predef.*
 import scala.reflect.ClassTag
 import cats.data.NonEmptyList.of as NonEmptyListOf
-import doobie.util.meta.Meta
+import org.typelevel.doobie.util.meta.Meta
 
 trait Instances {
 

@@ -2,10 +2,10 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.util
+package org.typelevel.doobie.util
 
 import Predef.augmentString
-import doobie.testutils.*
+import org.typelevel.doobie.testutils.*
 
 trait ReadSuitePlatform { self: munit.FunSuite =>
 
@@ -15,7 +15,7 @@ trait ReadSuitePlatform { self: munit.FunSuite =>
   case class CaseClassWithFieldWithoutGetInstance(a: String, b: NoGetInstanceForThis)
 
   test("Read should exist for some fancy types") {
-    import doobie.generic.auto.*
+    import org.typelevel.doobie.generic.auto.*
 
     Read[Woozle].void
     Read[(Woozle, String)].void
@@ -23,7 +23,7 @@ trait ReadSuitePlatform { self: munit.FunSuite =>
   }
 
   test("Read should exist for option of some fancy types") {
-    import doobie.generic.auto.*
+    import org.typelevel.doobie.generic.auto.*
 
     Read[Option[Woozle]].void
     Read[Option[(Woozle, String)]].void

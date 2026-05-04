@@ -5,9 +5,9 @@ In this chapter we examine a set of combinators that allow us to construct progr
 ### Setting Up
 
 ```scala mdoc:silent
-import doobie._
-import doobie.implicits._
-import doobie.util.ExecutionContexts
+import org.typelevel.doobie._
+import org.typelevel.doobie.implicits._
+import org.typelevel.doobie.util.ExecutionContexts
 import cats._
 import cats.data._
 import cats.effect._
@@ -33,7 +33,7 @@ import y._
 ```
 
 ```scala mdoc:invisible
-implicit val mdocColors: doobie.util.Colors = doobie.util.Colors.None
+implicit val mdocColors: org.typelevel.doobie.util.Colors = org.typelevel.doobie.util.Colors.None
 ```
 
 ### About Exceptions
@@ -124,7 +124,7 @@ So let's change our method to return an `Either[String, Person]` by using the `a
 
 
 ```scala mdoc:silent
-import doobie.postgres._
+import org.typelevel.doobie.postgres._
 
 def safeInsert(s: String): ConnectionIO[Either[String, Person]] =
   insert(s).attemptSomeSqlState {

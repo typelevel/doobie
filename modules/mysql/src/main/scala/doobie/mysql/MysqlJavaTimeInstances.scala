@@ -2,11 +2,12 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.mysql
+package org.typelevel.doobie.mysql
 
-import doobie.Meta
-import doobie.enumerated.JdbcType
-import doobie.util.meta.MetaConstructors.Basic
+import org.typelevel.doobie
+import org.typelevel.doobie.Meta
+import org.typelevel.doobie.enumerated.JdbcType
+import org.typelevel.doobie.util.meta.MetaConstructors.Basic
 
 import java.time.Instant
 import java.time.LocalDate
