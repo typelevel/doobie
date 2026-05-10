@@ -9,6 +9,7 @@
 * [Fragments](08-Fragments.md)
 * [Error-Handling](09-Error-Handling.md)
 * [Logging](10-Logging.md)
+* [OpenTelemetry Tracing](20-Otel4s-Tracing.md)
 * [Arrays](11-Arrays.md)
 * [Custom-Mappings](12-Custom-Mappings.md)
 * [Custom-JDBC-Operations](19-Custom-JDBC-Operations.md)
