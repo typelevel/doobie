@@ -280,7 +280,7 @@ lazy val core = projectMatrix
     name := "doobie-core",
     description := "Pure functional JDBC layer for Scala.",
     libraryDependencies ++= Seq(
-      "org.tpolecat" %% "typename" % "1.1.0",
+      "org.tpolecat" %% "typename" % "1.1.2",
       "com.h2database" % "h2" % h2Version % "test",
       "org.postgresql" % "postgresql" % postgresVersion % "test"
     ),
