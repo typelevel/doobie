@@ -633,7 +633,8 @@ lazy val otel4s = projectMatrix
       "io.circe" %% "circe-parser" % circeVersion,
       "org.typelevel" %% "otel4s-oteljava-trace-testkit" % otel4sVersion % "test",
       "com.h2database" % "h2" % h2Version % "test"
-    )
+    ),
+    tlVersionIntroduced := Map("2.13" -> "1.0.0", "3" -> "1.0.0")
   )
   .jvmPlatform(scalaVersions = Seq(scala213Version, scala3Version))
 
