@@ -103,11 +103,11 @@ object fragments {
   def notInOpt[F[_]: Foldable, A: util.Write](f: Fragment, fs: F[A]): Option[Fragment] =
     constSubqueryExprOpt(fs).map(expr => parentheses(f ++ fr" NOT IN" ++ expr))
 
-  /** Returns `(f1 AND f2 AND ... fn)`. */
+  /** Returns `((f1) AND (f2) AND ... (fn))`. */
   def and(f1: Fragment, f2: Fragment, fs: Fragment*): Fragment =
     and(NonEmptyList(f1, f2 :: fs.toList))
 
-  /** Returns `(f1 AND f2 AND ... fn)` for a non-empty collection.
+  /** Returns `((f1) AND (f2) AND ... (fn))` for a non-empty collection.
     * @param withParen
     *   If this is false, does not wrap the resulting expression with parenthesis
     */
@@ -121,7 +121,10 @@ object fragments {
     andOpt((opt1 :: opt2 :: opts.toList).flatten)
   }
 
-  /** Returns `(f1 AND f2 AND ... fn)`, or None if the collection is empty. */
+  /** Returns `((f1) AND (f2) AND ... (fn))`, or None if the collection is empty.
+    * @param withParen
+    *   If this is false, does not wrap the resulting expression with parenthesis
+    */
   def andOpt[F[_]: Foldable](fs: F[Fragment], withParen: Boolean = true): Option[Fragment] = {
     NonEmptyList.fromFoldable(fs).map(nel => and(nel, withParen))
   }
@@ -131,11 +134,11 @@ object fragments {
     andOpt(fs).getOrElse(fr"TRUE")
   }
 
-  /** Returns `(f1 OR f2 OR ... fn)`. */
+  /** Returns `((f1) OR (f2) OR ... (fn))`. */
   def or(f1: Fragment, f2: Fragment, fs: Fragment*): Fragment =
     or(NonEmptyList(f1, f2 :: fs.toList))
 
-  /** Returns `(f1 OR f2 OR ... fn)` for a non-empty collection.
+  /** Returns `((f1) OR (f2) OR ... (fn))` for a non-empty collection.
     *
     * @param withParen
     *   If this is false, does not wrap the resulting expression with parenthesis
@@ -145,12 +148,13 @@ object fragments {
     if (withParen) parentheses(expr) else expr
   }
 
-  /** Returns `(f1 OR f2 OR ... fn)` for all defined fragments, returning None if there are no defined fragments */
+  /** Returns `((f1) OR (f2) OR ... (fn))` for all defined fragments, returning None if there are no defined fragments
+    */
   def orOpt(opt1: Option[Fragment], opt2: Option[Fragment], opts: Option[Fragment]*): Option[Fragment] = {
     orOpt((opt1 :: opt2 :: opts.toList).flatten)
   }
 
-  /** Returns `(f1 OR f2 OR ... fn)`, or None if the collection is empty. */
+  /** Returns `((f1) OR (f2) OR ... (fn))`, or None if the collection is empty. */
   def orOpt[F[_]: Foldable](fs: F[Fragment], withParen: Boolean = true): Option[Fragment] = {
     NonEmptyList.fromFoldable(fs).map(nel => or(nel, withParen))
   }
@@ -160,20 +164,21 @@ object fragments {
     orOpt(fs).getOrElse(fr"FALSE")
   }
 
-  /** Returns `WHERE f1 AND f2 AND ... fn`. */
+  /** Returns `WHERE (f1) AND (f2) AND ... (fn)`. */
   def whereAnd(f1: Fragment, fs: Fragment*): Fragment =
     whereAnd(NonEmptyList(f1, fs.toList))
 
-  /** Returns `WHERE f1 AND f2 AND ... fn` or the empty fragment if `fs` is empty. */
+  /** Returns `WHERE (f1) AND (f2) AND ... (fn)`. */
   def whereAnd[F[_]: Reducible](fs: F[Fragment]): Fragment =
     fr"WHERE" ++ and(fs, withParen = false)
 
-  /** Returns `WHERE f1 AND f2 AND ... fn` for defined `f`, if any, otherwise the empty fragment. */
+  /** Returns `WHERE (f1) AND (f2) AND ... (fn)` for defined `f`, if any, otherwise the empty fragment. */
   def whereAndOpt(f1: Option[Fragment], f2: Option[Fragment], fs: Option[Fragment]*): Fragment = {
     whereAndOpt((f1 :: f2 :: fs.toList).flatten)
   }
 
-  /** Returns `WHERE f1 AND f2 AND ... fn` if collection is not empty. If collection is empty returns an empty fragment.
+  /** Returns `WHERE (f1) AND (f2) AND ... (fn)` if collection is not empty. If collection is empty returns an empty
+    * fragment.
     */
   def whereAndOpt[F[_]: Foldable](fs: F[Fragment]): Fragment = {
     NonEmptyList.fromFoldable(fs) match {
@@ -182,20 +187,21 @@ object fragments {
     }
   }
 
-  /** Returns `WHERE f1 OR f2 OR ... fn`. */
+  /** Returns `WHERE (f1) OR (f2) OR ... (fn)`. */
   def whereOr(f1: Fragment, fs: Fragment*): Fragment =
     whereOr(NonEmptyList(f1, fs.toList))
 
-  /** Returns `WHERE f1 OR f2 OR ... fn` or the empty fragment if `fs` is empty. */
+  /** Returns `WHERE (f1) OR (f2) OR ... (fn)`. */
   def whereOr[F[_]: Reducible](fs: F[Fragment]): Fragment =
     fr"WHERE" ++ or(fs, withParen = false)
 
-  /** Returns `WHERE f1 OR f2 OR ... fn` for defined `f`, if any, otherwise the empty fragment. */
+  /** Returns `WHERE (f1) OR (f2) OR ... (fn)` for defined `f`, if any, otherwise the empty fragment. */
   def whereOrOpt(f1: Option[Fragment], f2: Option[Fragment], fs: Option[Fragment]*): Fragment = {
     whereOrOpt((f1 :: f2 :: fs.toList).flatten)
   }
 
-  /** Returns `WHERE f1 OR f2 OR ... fn` if collection is not empty. If collection is empty returns an empty fragment.
+  /** Returns `WHERE (f1) OR (f2) OR ... (fn)` if collection is not empty. If collection is empty returns an empty
+    * fragment.
     */
   def whereOrOpt[F[_]: Foldable](fs: F[Fragment]): Fragment = {
     NonEmptyList.fromFoldable(fs) match {
@@ -234,6 +240,7 @@ object fragments {
   def orderBy(f1: Fragment, fs: Fragment*): Fragment =
     orderBy(NonEmptyList(f1, fs.toList))
 
+  /** Returns `ORDER BY f1, f2, ... fn`. */
   def orderBy[F[_]: Reducible](fs: F[Fragment]): Fragment =
     fr"ORDER BY" ++ comma(fs)
 
