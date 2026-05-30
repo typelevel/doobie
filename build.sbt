@@ -114,9 +114,10 @@ lazy val compilerFlags = Seq(
   // Disable warning when @nowarn annotation isn't suppressing a warning
   // to simplify cross-building
   // because 2.12 @nowarn doesn't actually do anything.. https://github.com/scala/bug/issues/12313
-  scalacOptions ++= Seq(
-    "-Wconf:cat=unused-nowarn:s"
-  ),
+  scalacOptions ++= {
+    if (scalaBinaryVersion.value == "3") Nil
+    else Seq("-Wconf:cat=unused-nowarn:s")
+  },
   scalacOptions ++= {
     scalaBinaryVersion.value match {
       case "3" =>
