@@ -16,6 +16,7 @@ object MyEnum {
   def fromStringUnsafe(s: String): MyEnum = s match {
     case "foo" => Foo
     case "bar" => Bar
+    case _     => throw new IllegalArgumentException(s"Invalid MyEnum value: $s")
   }
 
   def asString(e: MyEnum): String = e match {

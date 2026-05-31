@@ -17,6 +17,7 @@ object OtherEnum {
   private def fromStrUnsafe(s: String): OtherEnum = s match {
     case "a" => A
     case "b" => B
+    case _   => throw new IllegalArgumentException(s"Invalid OtherEnum value: $s")
   }
 
   private val elementTypeNameUnqualified = "other_enum"
