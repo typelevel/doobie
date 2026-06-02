@@ -31,7 +31,7 @@ lazy val allScalaVersions = List(scala212Version, scala213Version, scala3Version
 // scala-steward:off
 lazy val slf4jVersion = "1.7.36"
 // scala-steward:on
-lazy val weaverVersion = "0.12.0"
+lazy val weaverVersion = "0.13.0"
 
 // Basic versioning and publishing stuff
 ThisBuild / tlBaseVersion := "1.0"
