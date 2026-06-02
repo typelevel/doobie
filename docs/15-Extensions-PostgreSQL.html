@@ -51,7 +51,6 @@
     <li><a href="../docs/08-Fragments.html" class="page">Statement Fragments</a></li>
     <li><a href="../docs/09-Error-Handling.html" class="page">Error Handling</a></li>
     <li><a href="../docs/10-Logging.html" class="page">Logging</a></li>
-    <li><a href="../docs/20-Otel4s-Tracing.html" class="page">Tracing with otel4s</a></li>
     <li><a href="../docs/11-Arrays.html" class="page">SQL Arrays</a></li>
     <li><a href="../docs/12-Custom-Mappings.html" class="page">Custom Mappings</a></li>
     <li><a href="../docs/19-Custom-JDBC-Operations.html" class="page">Custom JDBC Operations</a></li>
@@ -112,7 +111,6 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
     <li><a href="../docs/08-Fragments.html" class="page">Statement Fragments</a></li>
     <li><a href="../docs/09-Error-Handling.html" class="page">Error Handling</a></li>
     <li><a href="../docs/10-Logging.html" class="page">Logging</a></li>
-    <li><a href="../docs/20-Otel4s-Tracing.html" class="page">Tracing with otel4s</a></li>
     <li><a href="../docs/11-Arrays.html" class="page">SQL Arrays</a></li>
     <li><a href="../docs/12-Custom-Mappings.html" class="page">Custom Mappings</a></li>
     <li><a href="../docs/19-Custom-JDBC-Operations.html" class="page">Custom JDBC Operations</a></li>
@@ -397,7 +395,7 @@ p.onSyntaxError(&quot;caught!&quot;.pure[ConnectionIO]).transact(xa).unsafeRunSy
 <h3><a href="#large-objects" name="large-objects" class="anchor"><span class="anchor-link"></span></a>Large Objects</h3>
 <p>PostgreSQL provides a facility for storing very large objects (up to 4TB each) in a single uniform storage, identified by unique numeric ID and accessed via fast byte-block transfer. Note that &ldquo;normal&rdquo; large object columns types such as <code>bytea</code> and <code>text</code> can store values as large as 1GB each, so the large object API is rarely used. However there are cases where the size and/or efficiency of large objects justifies the use of this API.</p>
 <p><strong>doobie</strong> provides an algebra and free monads for the driver&rsquo;s <code>LargeObjectManager</code> and <code>LargeObject</code> types in the <code>doobie.postgres.free</code> package. There is also [the beginnings of] a high-level API that includes constructors for creating large objects from files and vice-versa. The <code>example</code> project contains a brief usage example.</p>
-<p>Please file an issue or ask questions on the <a href="https://discord.com/channels/632277896739946517/632727524434247691">Discord</a> channel if you need to use this API; it will evolve as use cases demand.</p>
+<p>Please file an issue or ask questions on the <a href="https://gitter.im/tpolecat/doobie">Gitter</a> channel if you need to use this API; it will evolve as use cases demand.</p>
 <h3><a href="#copy-manager" name="copy-manager" class="anchor"><span class="anchor-link"></span></a>Copy Manager</h3>
 <p>The PostgreSQL JDBC driver&rsquo;s <a href="https://jdbc.postgresql.org/documentation/publicapi/org/postgresql/copy/CopyManager.html">CopyManager</a> API provides a pass-through for the SQL <a href="http://www.postgresql.org/docs/9.3/static/sql-copy.html"><code>COPY</code></a> statement, allowing very fast data transfer via <code>java.io</code> streams. Here we construct a program that dumps a table to <code>Console.out</code> in CSV format, with quoted values.</p>
 <pre class="prettyprint"><code class="language-scala">val q = &quot;&quot;&quot;
@@ -463,13 +461,13 @@ val foods = List(
   .transact(xa)
   .unsafeRunSync()
   .foreach(println)
-// Seq Scan on country  (cost=0.00..7.39 rows=239 width=11) (actual time=0.006..0.026 rows=239 loops=1)
-// Planning Time: 0.114 ms
-// Execution Time: 0.080 ms
+// Seq Scan on country  (cost=0.00..7.39 rows=239 width=11) (actual time=0.007..0.033 rows=239 loops=1)
+// Planning Time: 0.164 ms
+// Execution Time: 0.073 ms
 </code></pre>
 <p><code>explain</code> and <code>explainAnalyze</code> both return a <code>ConnectinIO[List[String]]</code> result, where each member of the list is one row of the query planner&rsquo;s output.</p>
 <div class="source-github">
-The source code for this page can be found <a href="https://github.com/typelevel/doobie/tree/master/modules/docs/target/jvm-2.13/mdoc/docs/15-Extensions-PostgreSQL.md">here</a>.
+The source code for this page can be found <a href="https://github.com/typelevel/doobie/tree/v1.0.0-RC12/modules/docs/target/jvm-2.13/mdoc/docs/15-Extensions-PostgreSQL.md">here</a>.
 </div>
 
 <div class="nav-next">

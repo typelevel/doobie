@@ -51,7 +51,6 @@
     <li><a href="../docs/08-Fragments.html" class="page">Statement Fragments</a></li>
     <li><a href="../docs/09-Error-Handling.html" class="active page">Error Handling</a></li>
     <li><a href="../docs/10-Logging.html" class="page">Logging</a></li>
-    <li><a href="../docs/20-Otel4s-Tracing.html" class="page">Tracing with otel4s</a></li>
     <li><a href="../docs/11-Arrays.html" class="page">SQL Arrays</a></li>
     <li><a href="../docs/12-Custom-Mappings.html" class="page">Custom Mappings</a></li>
     <li><a href="../docs/19-Custom-JDBC-Operations.html" class="page">Custom JDBC Operations</a></li>
@@ -112,7 +111,6 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
     <li><a href="../docs/08-Fragments.html" class="page">Statement Fragments</a></li>
     <li><a href="../docs/09-Error-Handling.html" class="active page">Error Handling</a></li>
     <li><a href="../docs/10-Logging.html" class="page">Logging</a></li>
-    <li><a href="../docs/20-Otel4s-Tracing.html" class="page">Tracing with otel4s</a></li>
     <li><a href="../docs/11-Arrays.html" class="page">SQL Arrays</a></li>
     <li><a href="../docs/12-Custom-Mappings.html" class="page">Custom Mappings</a></li>
     <li><a href="../docs/19-Custom-JDBC-Operations.html" class="page">Custom JDBC Operations</a></li>
@@ -199,9 +197,9 @@ p.attempt
 //   a = HandleErrorWith(
 //     fa = FlatMapped(
 //       c = Pure(a = 42),
-//       f = cats.Monad$$Lambda$21580/0x0000000804ba2040@34fe9f30
+//       f = cats.Monad$$Lambda$35573/0x0000000807c25840@9bc5593
 //     ),
-//     f = cats.ApplicativeError$$Lambda$21772/0x0000000804c82040@6c829118
+//     f = cats.ApplicativeError$$Lambda$35754/0x0000000807cfa840@7ac1e38d
 //   )
 // )
 </code></pre>
@@ -268,7 +266,7 @@ def safeInsert(s: String): ConnectionIO[Either[String, Person]] =
 safeInsert(&quot;steve&quot;).quick.unsafeRunSync()
 </code></pre>
 <div class="source-github">
-The source code for this page can be found <a href="https://github.com/typelevel/doobie/tree/master/modules/docs/target/jvm-2.13/mdoc/docs/09-Error-Handling.md">here</a>.
+The source code for this page can be found <a href="https://github.com/typelevel/doobie/tree/v1.0.0-RC12/modules/docs/target/jvm-2.13/mdoc/docs/09-Error-Handling.md">here</a>.
 </div>
 
 <div class="nav-next">
