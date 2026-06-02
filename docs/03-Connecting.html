@@ -32,7 +32,7 @@
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-1.0.0-RC8
+1.0.0-RC12
 </div>
 </div>
 <div class="nav-toc">
@@ -51,6 +51,7 @@
     <li><a href="../docs/08-Fragments.html" class="page">Statement Fragments</a></li>
     <li><a href="../docs/09-Error-Handling.html" class="page">Error Handling</a></li>
     <li><a href="../docs/10-Logging.html" class="page">Logging</a></li>
+    <li><a href="../docs/20-Otel4s-Tracing.html" class="page">Tracing with otel4s</a></li>
     <li><a href="../docs/11-Arrays.html" class="page">SQL Arrays</a></li>
     <li><a href="../docs/12-Custom-Mappings.html" class="page">Custom Mappings</a></li>
     <li><a href="../docs/19-Custom-JDBC-Operations.html" class="page">Custom JDBC Operations</a></li>
@@ -92,7 +93,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-1.0.0-RC8
+1.0.0-RC12
 </div>
 </div>
 <div class="nav-toc">
@@ -111,6 +112,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
     <li><a href="../docs/08-Fragments.html" class="page">Statement Fragments</a></li>
     <li><a href="../docs/09-Error-Handling.html" class="page">Error Handling</a></li>
     <li><a href="../docs/10-Logging.html" class="page">Logging</a></li>
+    <li><a href="../docs/20-Otel4s-Tracing.html" class="page">Tracing with otel4s</a></li>
     <li><a href="../docs/11-Arrays.html" class="page">SQL Arrays</a></li>
     <li><a href="../docs/12-Custom-Mappings.html" class="page">Custom Mappings</a></li>
     <li><a href="../docs/19-Custom-JDBC-Operations.html" class="page">Custom JDBC Operations</a></li>
@@ -187,7 +189,7 @@ val xa = Transactor.fromDriverManager[IO](
 <p>And here we go.</p>
 <pre class="prettyprint"><code class="language-scala">val io = program1.transact(xa)
 // io: IO[Int] = Uncancelable(
-//   body = cats.effect.IO$$$Lambda$15096/0x00000008033405b0@32aae298,
+//   body = cats.effect.IO$$$Lambda$21596/0x0000000804bb4040@2f6553e5,
 //   event = cats.effect.tracing.TracingEvent$StackTrace
 // )
 io.unsafeRunSync()
@@ -203,12 +205,12 @@ io.unsafeRunSync()
 <pre class="prettyprint"><code class="language-scala">val program2 = sql&quot;select 42&quot;.query[Int].unique
 // program2: ConnectionIO[Int] = Suspend(
 //   a = Uncancelable(
-//     body = cats.effect.kernel.MonadCancel$$Lambda$15193/0x00000008033a5678@2e80cbfe
+//     body = cats.effect.kernel.MonadCancel$$Lambda$21690/0x0000000804c29040@3efddd7
 //   )
 // )
 val io2 = program2.transact(xa)
 // io2: IO[Int] = Uncancelable(
-//   body = cats.effect.IO$$$Lambda$15096/0x00000008033405b0@1a0969c4,
+//   body = cats.effect.IO$$$Lambda$21596/0x0000000804bb4040@3a82ac66,
 //   event = cats.effect.tracing.TracingEvent$StackTrace
 // )
 io2.unsafeRunSync()
@@ -225,7 +227,7 @@ io2.unsafeRunSync()
 </code></pre>
 <p>And behold!</p>
 <pre class="prettyprint"><code class="language-scala">program3.transact(xa).unsafeRunSync()
-// res2: (Int, Double) = (42, 0.1595068238881685)
+// res2: (Int, Double) = (42, 0.6577324277130496)
 </code></pre>
 <p>The astute among you will note that we don&rsquo;t actually need a monad to do this; an applicative functor is all we need here. So we could also write <code>program3</code> as:</p>
 <pre class="prettyprint"><code class="language-scala">val program3a = {
@@ -236,7 +238,7 @@ io2.unsafeRunSync()
 </code></pre>
 <p>And lo, it was good:</p>
 <pre class="prettyprint"><code class="language-scala">program3a.transact(xa).unsafeRunSync()
-// res3: (Int, Double) = (42, 0.45289709852810867)
+// res3: (Int, Double) = (42, 0.10273696240432617)
 </code></pre>
 <p>And of course this composition can continue indefinitely.</p>
 <pre class="prettyprint"><code class="language-scala">val valuesList = program3a.replicateA(5)
@@ -249,34 +251,34 @@ io2.unsafeRunSync()
 //             c = FlatMapped(
 //               c = Suspend(
 //                 a = Uncancelable(
-//                   body = cats.effect.kernel.MonadCancel$$Lambda$15193/0x00000008033a5678@182e6c4c
+//                   body = cats.effect.kernel.MonadCancel$$Lambda$21690/0x0000000804c29040@72b3ef71
 //                 )
 //               ),
-//               f = cats.FlatMap$$Lambda$15239/0x00000008033d0000@6a4c7189
+//               f = cats.FlatMap$$Lambda$21736/0x0000000804c62040@49d6e5aa
 //             ),
-//             f = cats.Monad$$Lambda$15080/0x0000000803338000@4f35b8d6
+//             f = cats.Monad$$Lambda$21580/0x0000000804ba2040@1819327c
 //           ),
-//           f = cats.Monad$$Lambda$15080/0x0000000803338000@175a2532
+//           f = cats.Monad$$Lambda$21580/0x0000000804ba2040@564cc224
 //         ),
-//         f = cats.FlatMap$$Lambda$15299/0x00000008033ee618@5ca8944a
+//         f = cats.FlatMap$$Lambda$21797/0x0000000804c9c840@a8ff58b
 //       ),
-//       f = cats.FlatMap$$Lambda$15299/0x00000008033ee618@44c7ceef
+//       f = cats.FlatMap$$Lambda$21797/0x0000000804c9c840@79f6b75d
 //     ),
-//     f = cats.FlatMap$$Lambda$15299/0x00000008033ee618@48f7291e
+//     f = cats.FlatMap$$Lambda$21797/0x0000000804c9c840@5993d6ef
 //   ),
-//   f = cats.Monad$$Lambda$15080/0x0000000803338000@e42f687
+//   f = cats.Monad$$Lambda$21580/0x0000000804ba2040@69fe721b
 // )
 val result = valuesList.transact(xa)
 // result: IO[List[(Int, Double)]] = Uncancelable(
-//   body = cats.effect.IO$$$Lambda$15096/0x00000008033405b0@165039c1,
+//   body = cats.effect.IO$$$Lambda$21596/0x0000000804bb4040@1ca8e102,
 //   event = cats.effect.tracing.TracingEvent$StackTrace
 // )
 result.unsafeRunSync().foreach(println)
-// (42,0.6881133226419216)
-// (42,0.7509270273362578)
-// (42,0.1339860677810989)
-// (42,0.5265586421410944)
-// (42,0.9907452849448384)
+// (42,0.7026235450702414)
+// (42,0.3453853564075995)
+// (42,0.9421299859565986)
+// (42,0.9375737646417317)
+// (42,0.24180891069418076)
 </code></pre>
 <h3><a href="#diving-deeper" name="diving-deeper" class="anchor"><span class="anchor-link"></span></a>Diving Deeper</h3>
 <p>All of the <strong>doobie</strong> monads are implemented via <code>Free</code> and have no operational semantics; we can only &ldquo;run&rdquo; a <strong>doobie</strong> program by transforming <code>FooIO</code> (for some carrier type <code>java.sql.Foo</code>) to a monad that actually has some meaning.</p>
@@ -287,10 +289,10 @@ import doobie.free.connection.ConnectionOp
 import java.sql.Connection
 
 val interpreter = KleisliInterpreter[IO](LogHandler.noop).ConnectionInterpreter
-// interpreter: ConnectionOp ~&gt; [γ$9$]Kleisli[IO, Connection, γ$9$] = doobie.free.KleisliInterpreter$$anon$10@4bb6de5
+// interpreter: ConnectionOp ~&gt; [γ$9$]Kleisli[IO, Connection, γ$9$] = doobie.free.KleisliInterpreter$$anon$10@dbfa789
 val kleisli = program1.foldMap(interpreter)
 // kleisli: Kleisli[IO, Connection, Int] = Kleisli(
-//   run = cats.data.KleisliFlatMap$$Lambda$15195/0x00000008033bb240@13b2c282
+//   run = cats.data.KleisliFlatMap$$Lambda$21692/0x0000000804c2e840@56c4e7cd
 // )
 val io3 = IO(null: java.sql.Connection) &gt;&gt;= kleisli.run
 // io3: IO[Int] = FlatMap(
@@ -298,7 +300,7 @@ val io3 = IO(null: java.sql.Connection) &gt;&gt;= kleisli.run
 //     thunk = &lt;function0&gt;,
 //     event = cats.effect.tracing.TracingEvent$StackTrace
 //   ),
-//   f = cats.data.KleisliFlatMap$$Lambda$15195/0x00000008033bb240@13b2c282,
+//   f = cats.data.KleisliFlatMap$$Lambda$21692/0x0000000804c2e840@56c4e7cd,
 //   event = cats.effect.tracing.TracingEvent$StackTrace
 // )
 io3.unsafeRunSync() // sneaky; program1 never looks at the connection
@@ -310,7 +312,7 @@ io3.unsafeRunSync() // sneaky; program1 never looks at the connection
 <h4><a href="#using-your-own-target-monad" name="using-your-own-target-monad" class="anchor"><span class="anchor-link"></span></a>Using Your Own Target Monad</h4>
 <p>As mentioned earlier, you can use any monad <code>M[_]</code> given <code>cats.effect.Async[M]</code>.</p>
 <div class="source-github">
-The source code for this page can be found <a href="https://github.com/typelevel/doobie/tree/master/modules/docs/target/mdoc/docs/03-Connecting.md">here</a>.
+The source code for this page can be found <a href="https://github.com/typelevel/doobie/tree/master/modules/docs/target/jvm-2.13/mdoc/docs/03-Connecting.md">here</a>.
 </div>
 
 <div class="nav-next">
@@ -371,7 +373,7 @@ The source code for this page can be found <a href="https://github.com/typelevel
 
 <!--
 <div class="copyright">
-<span class="text">&copy; 2025</span>
+<span class="text">&copy; 2026</span>
 <a href="https://www.example.com" class="logo">logo</a>
 </div>
 -->
@@ -396,7 +398,7 @@ The source code for this page can be found <a href="https://github.com/typelevel
 <script type="text/javascript" src="../lib/prettify/prettify.js"></script>
 <script type="text/javascript" src="../lib/prettify/lang-scala.js"></script>
 <script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
-<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.0.0-RC8', 'https://github.com/typelevel/doobie')});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.0.0-RC12', 'https://github.com/typelevel/doobie')});</script>
 
 
 </html>

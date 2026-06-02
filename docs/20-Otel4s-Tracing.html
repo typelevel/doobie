@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html class="no-js" lang="en">
+
+<head>
+<title>Tracing with otel4s · doobie</title>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="description" content='docs'/>
+<link rel="canonical" href="https://github.com/typelevel/doobiedocs/20-Otel4s-Tracing.html"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto:100normal,100italic,300normal,300italic,400normal,400italic,500normal,500italic,700normal,700italic,900normal,900italicc" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="../lib/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../js/page.js"></script>
+<script type="text/javascript" src="../js/warnOldVersion.js"></script>
+<script type="text/javascript" src="../js/groups.js"></script>
+<script type="text/javascript" src="../js/snippets.js"></script>
+<link rel="stylesheet" type="text/css" href="../lib/foundation/dist/foundation.min.css"/>
+<link rel="stylesheet" type="text/css" href="../css/page.css"/>
+
+<!--
+<link rel="shortcut icon" href="../images/favicon.ico" />
+-->
+</head>
+
+<body>
+<div class="off-canvas-wrapper">
+<div class="off-canvas-wrapper-inner" data-off-canvas-wrapper>
+
+<div class="off-canvas position-left" id="off-canvas-menu" data-off-canvas>
+<nav class="off-canvas-nav">
+<div class="nav-home">
+<a href="../index.html" >
+<span class="home-icon">⌂</span>doobie
+</a>
+<div class="version-number">
+1.0.0-RC12
+</div>
+</div>
+<div class="nav-toc">
+<ul>
+  <li><a href="../infographic.html" class="page">Infographic</a></li>
+  <li><a href="../migration.html" class="page">Migration Notes</a></li>
+  <li><a href="../docs/index.html" class="page">Book of Doobie</a>
+  <ul>
+    <li><a href="../docs/01-Introduction.html" class="page">Introduction</a></li>
+    <li><a href="../docs/02-Toolkit.html" class="page">Toolkit</a></li>
+    <li><a href="../docs/03-Connecting.html" class="page">Connecting to a Database</a></li>
+    <li><a href="../docs/04-Selecting.html" class="page">Selecting Data</a></li>
+    <li><a href="../docs/05-Parameterized.html" class="page">Parameterized Queries</a></li>
+    <li><a href="../docs/06-Checking.html" class="page">Typechecking Queries</a></li>
+    <li><a href="../docs/07-Updating.html" class="page">DDL, Inserting, and Updating</a></li>
+    <li><a href="../docs/08-Fragments.html" class="page">Statement Fragments</a></li>
+    <li><a href="../docs/09-Error-Handling.html" class="page">Error Handling</a></li>
+    <li><a href="../docs/10-Logging.html" class="page">Logging</a></li>
+    <li><a href="../docs/20-Otel4s-Tracing.html" class="active page">Tracing with otel4s</a></li>
+    <li><a href="../docs/11-Arrays.html" class="page">SQL Arrays</a></li>
+    <li><a href="../docs/12-Custom-Mappings.html" class="page">Custom Mappings</a></li>
+    <li><a href="../docs/19-Custom-JDBC-Operations.html" class="page">Custom JDBC Operations</a></li>
+    <li><a href="../docs/13-Unit-Testing.html" class="page">Unit Testing</a></li>
+    <li><a href="../docs/14-Managing-Connections.html" class="page">Managing Connections</a></li>
+    <li><a href="../docs/15-Extensions-PostgreSQL.html" class="page">Extensions for PostgreSQL</a></li>
+    <li><a href="../docs/16-Extensions-H2.html" class="page">Extensions for H2</a></li>
+    <li><a href="../docs/17-FAQ.html" class="page">Frequently-Asked Questions</a></li>
+    <li><a href="../docs/18-Related-Projects.html" class="page">Related Projects</a></li>
+  </ul></li>
+</ul>
+</div>
+
+</nav>
+</div>
+
+<div class="off-canvas-content" data-off-canvas-content>
+
+<header class="site-header expanded row">
+<div class="small-12 column">
+<a href="#" class="off-canvas-toggle hide-for-medium" data-toggle="off-canvas-menu"><svg class="svg-icon svg-icon-menu" version="1.1" id="Menu" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 20 20" enable-background="new 0 0 20 20" xml:space="preserve"> <path class="svg-icon-menu-path" fill="#53CDEC" d="M16.4,9H3.6C3.048,9,3,9.447,3,10c0,0.553,0.048,1,0.6,1H16.4c0.552,0,0.6-0.447,0.6-1C17,9.447,16.952,9,16.4,9z M16.4,13
+H3.6C3.048,13,3,13.447,3,14c0,0.553,0.048,1,0.6,1H16.4c0.552,0,0.6-0.447,0.6-1C17,13.447,16.952,13,16.4,13z M3.6,7H16.4
+C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.048,7,3.6,7z"/></svg>
+</a>
+<div class="title"><a href="../index.html">doobie</a></div>
+
+<!--
+<a href="https://www.example.com" class="logo show-for-medium">logo</a>
+-->
+</div>
+</header>
+
+<div class="expanded row">
+
+<div class="medium-3 large-2 show-for-medium column">
+<nav class="site-nav">
+<div class="nav-home">
+<a href="../index.html" >
+<span class="home-icon">⌂</span>doobie
+</a>
+<div class="version-number">
+1.0.0-RC12
+</div>
+</div>
+<div class="nav-toc">
+<ul>
+  <li><a href="../infographic.html" class="page">Infographic</a></li>
+  <li><a href="../migration.html" class="page">Migration Notes</a></li>
+  <li><a href="../docs/index.html" class="page">Book of Doobie</a>
+  <ul>
+    <li><a href="../docs/01-Introduction.html" class="page">Introduction</a></li>
+    <li><a href="../docs/02-Toolkit.html" class="page">Toolkit</a></li>
+    <li><a href="../docs/03-Connecting.html" class="page">Connecting to a Database</a></li>
+    <li><a href="../docs/04-Selecting.html" class="page">Selecting Data</a></li>
+    <li><a href="../docs/05-Parameterized.html" class="page">Parameterized Queries</a></li>
+    <li><a href="../docs/06-Checking.html" class="page">Typechecking Queries</a></li>
+    <li><a href="../docs/07-Updating.html" class="page">DDL, Inserting, and Updating</a></li>
+    <li><a href="../docs/08-Fragments.html" class="page">Statement Fragments</a></li>
+    <li><a href="../docs/09-Error-Handling.html" class="page">Error Handling</a></li>
+    <li><a href="../docs/10-Logging.html" class="page">Logging</a></li>
+    <li><a href="../docs/20-Otel4s-Tracing.html" class="active page">Tracing with otel4s</a></li>
+    <li><a href="../docs/11-Arrays.html" class="page">SQL Arrays</a></li>
+    <li><a href="../docs/12-Custom-Mappings.html" class="page">Custom Mappings</a></li>
+    <li><a href="../docs/19-Custom-JDBC-Operations.html" class="page">Custom JDBC Operations</a></li>
+    <li><a href="../docs/13-Unit-Testing.html" class="page">Unit Testing</a></li>
+    <li><a href="../docs/14-Managing-Connections.html" class="page">Managing Connections</a></li>
+    <li><a href="../docs/15-Extensions-PostgreSQL.html" class="page">Extensions for PostgreSQL</a></li>
+    <li><a href="../docs/16-Extensions-H2.html" class="page">Extensions for H2</a></li>
+    <li><a href="../docs/17-FAQ.html" class="page">Frequently-Asked Questions</a></li>
+    <li><a href="../docs/18-Related-Projects.html" class="page">Related Projects</a></li>
+  </ul></li>
+</ul>
+</div>
+
+</nav>
+</div>
+
+<div class="small-12 medium-9 large-10 column">
+<section class="site-content">
+
+<span id="version-warning"></span>
+
+<div class="page-header row">
+<div class="medium-12 show-for-medium column">
+<div class="nav-breadcrumbs">
+<ul>
+  <li><a href="../index.html">doobie</a></li>
+  <li><a href="../docs/index.html">Book of Doobie</a></li>
+  <li>Tracing with otel4s</li>
+</ul>
+</div>
+</div>
+</div>
+
+<div class="page-content row">
+<div class="small-12 large-9 column" id="docs">
+<h1><a href="#tracing-with-otel4s" name="tracing-with-otel4s" class="anchor"><span class="anchor-link"></span></a>Tracing with otel4s</h1>
+<p>In this chapter we discuss the <code>doobie-otel4s</code> module, which adds OpenTelemetry tracing to doobie through <a href="https://github.com/typelevel/otel4s">otel4s</a>.</p>
+<h2><a href="#adding-the-dependency" name="adding-the-dependency" class="anchor"><span class="anchor-link"></span></a>Adding the Dependency</h2>
+<pre class="prettyprint"><code class="language-scala">libraryDependencies += &quot;org.tpolecat&quot; %% &quot;doobie-otel4s&quot; % &quot;1.0.0-RC12&quot;
+</code></pre>
+<p>In addition to <code>doobie-otel4s</code> you will need:</p>
+<ul>
+  <li>an <code>otel4s</code> SDK setup in your application</li>
+  <li>a <code>TracerProvider[F]</code>, which <code>doobie-otel4s</code> uses to create spans</li>
+  <li>a <code>Transactor[F]</code> that you want to wrap</li>
+</ul>
+<h2><a href="#setting-up" name="setting-up" class="anchor"><span class="anchor-link"></span></a>Setting Up</h2>
+<p>Tracing is enabled by wrapping a normal doobie transactor with <code>TracedTransactor.create</code>.</p>
+<pre class="prettyprint"><code class="language-scala">import cats.effect.{Async, IO, LiftIO}
+import doobie._
+import doobie.implicits._
+import doobie.otel4s._
+import org.typelevel.otel4s.trace.TracerProvider
+import org.typelevel.otel4s.semconv.attributes.DbAttributes
+
+object Main {
+
+  def tracedTransactor[F[_] : Async : TracerProvider : LiftIO]: F[Transactor[F]] = {
+    val base =
+      Transactor.fromDriverManager[F](
+        driver = &quot;org.postgresql.Driver&quot;,
+        url = &quot;jdbc:postgresql:app&quot;,
+        user = &quot;postgres&quot;,
+        password = &quot;password&quot;,
+        logHandler = None
+      )
+
+    val config =
+      TracingConfig.recommended(
+        dbSystemName = DbAttributes.DbSystemNameValue.Postgresql,
+        dbNamespace = &quot;app&quot;
+      )
+
+    TracedTransactor.create(base, config, logHandler = None)
+  }
+
+  def program(implicit tp: TracerProvider[IO]): IO[Unit] =
+    tracedTransactor[IO].flatMap { xa =&gt;
+      sql&quot;select 42&quot;.query[Int].unique.transact(xa).void
+    }
+}
+</code></pre>
+<p>With <code>TracingConfig.recommended(...)</code>, spans include:</p>
+<ul>
+  <li><code>db.system.name</code></li>
+  <li><code>db.namespace</code></li>
+  <li><code>db.operation.name</code></li>
+  <li><code>db.query.text</code> only for parameterized statements</li>
+</ul>
+<p>By default, span names come from <code>db.query.summary</code> when it is present. Otherwise the interpreter uses JDBC operation names such as <code>executeQuery</code> or <code>executeUpdate</code>.</p>
+<h2><a href="#how-it-works" name="how-it-works" class="anchor"><span class="anchor-link"></span></a>How It Works</h2>
+<p>For each traced operation the interpreter builds span data in this order:</p>
+<ol>
+  <li>Start from <code>TracingConfig.constAttributes</code>.</li>
+  <li>Apply <code>TracingConfig.captureQuery</code> to decide whether to add:
+    <ul>
+      <li><code>db.query.text</code></li>
+      <li><code>db.query.parameter.*</code></li>
+      <li><code>db.operation.batch.size</code></li>
+    </ul>
+  </li>
+  <li>Read the doobie label, if there is one, and pass it to <code>TracingConfig.attributesExtractor</code>.</li>
+  <li>Analyze the raw SQL with <code>TracingConfig.queryAnalyzer</code>.</li>
+  <li>Compute an optional custom span name with <code>TracingConfig.spanNamer</code>.</li>
+  <li>If no custom name is produced, fall back to JDBC operation names.</li>
+</ol>
+<p>The main extension points are:</p>
+<ul>
+  <li><code>AttributesExtractor</code>, which reads doobie labels</li>
+  <li><code>QueryAnalyzer</code>, which reads SQL text</li>
+  <li><code>SpanNamer</code>, which chooses the final span name</li>
+</ul>
+<h2><a href="#recommended-configuration" name="recommended-configuration" class="anchor"><span class="anchor-link"></span></a>Recommended Configuration</h2>
+<p><code>TracingConfig.recommended(dbSystemName, dbNamespace)</code> provides a default configuration.</p>
+<p>It configures:</p>
+<ul>
+  <li><code>tracerScopeName = &quot;doobie&quot;</code></li>
+  <li><code>defaultSpanName = &quot;doobie:exec&quot;</code></li>
+  <li><code>constAttributes = db.system.name + db.namespace</code></li>
+  <li><code>captureQuery = QueryCaptureConfig.recommended</code></li>
+  <li><code>attributesExtractor = AttributesExtractor.json</code></li>
+  <li><code>queryAnalyzer = QueryAnalyzer.noop</code></li>
+  <li><code>spanNamer = SpanNamer.fromAttribute(DbAttributes.DbQuerySummary)</code></li>
+</ul>
+<p>In practice this means:</p>
+<ul>
+  <li>plain doobie queries are traced immediately</li>
+  <li>query text is only recorded for parameterized queries</li>
+  <li>parameters are not recorded</li>
+  <li>if you use the otel4s syntax helpers described below, the <code>db.query.summary</code> attribute becomes the span name</li>
+</ul>
+<h2><a href="#query-annotations" name="query-annotations" class="anchor"><span class="anchor-link"></span></a>Query Annotations</h2>
+<p>The module provides helpers on <code>Fragment</code> for attaching tracing metadata to queries and updates.</p>
+<pre class="prettyprint"><code class="language-scala">import doobie._
+import doobie.implicits._
+import doobie.otel4s.syntax.fragment._
+import org.typelevel.otel4s.Attribute
+import org.typelevel.otel4s.semconv.attributes.DbAttributes
+
+def byId(id: Int) =
+  sql&quot;select name from person where id = $id&quot;
+    .queryWithSummary[String](&quot;select person by id&quot;)
+
+def insertPerson(name: String, age: Int) =
+  sql&quot;insert into person(name, age) values ($name, $age)&quot;
+    .updateWithAttributes(
+      DbAttributes.DbQuerySummary(&quot;insert person&quot;),
+      Attribute(&quot;app.operation&quot;, &quot;create-person&quot;)
+    )
+</code></pre>
+<p>These helpers encode attributes into the doobie label. The default extractor, <code>AttributesExtractor.json</code>, decodes that label back into <code>Attributes</code> during tracing.</p>
+<p>The available helpers are:</p>
+<ul>
+  <li><code>queryWithSummary</code> - attaches <code>db.query.summary</code> attribute</li>
+  <li><code>updateWithSummary</code> - attaches <code>db.query.summary</code> attribute</li>
+  <li><code>queryWithAttributes</code> - attaches one or more tracing attributes</li>
+  <li><code>updateWithAttributes</code> - attaches one or more tracing attributes</li>
+</ul>
+<h2><a href="#attributesextractor-json" name="attributesextractor-json" class="anchor"><span class="anchor-link"></span></a><code>AttributesExtractor.json</code></h2>
+<p>The syntax helpers above rely on <code>AttributesExtractor.json</code>.</p>
+<p>If you replace the extractor with something incompatible, for example <code>AttributesExtractor.plain(...)</code>, the helpers still compile, but their encoded label payload is no longer decoded, so:</p>
+<ul>
+  <li><code>db.query.summary</code> is not recovered from the label</li>
+  <li><code>SpanNamer.fromAttribute(...)</code> will not find it</li>
+  <li>span naming falls back to whatever other strategy you configured</li>
+</ul>
+<p>This can be useful, but it should be explicit.</p>
+<h2><a href="#query-capture-policies" name="query-capture-policies" class="anchor"><span class="anchor-link"></span></a>Query Capture Policies</h2>
+<p>Query capture is controlled by <code>QueryCaptureConfig</code>.</p>
+<pre class="prettyprint"><code class="language-scala">import doobie.otel4s.QueryCaptureConfig
+import doobie.otel4s.QueryCaptureConfig.{QueryParametersPolicy, QueryTextPolicy}
+
+val captureNothing =
+  QueryCaptureConfig.disabled
+
+val captureRecommended =
+  QueryCaptureConfig.recommended
+
+val captureEverything =
+  QueryCaptureConfig(
+    queryTextPolicy = QueryTextPolicy.Always,
+    queryParametersPolicy = QueryParametersPolicy.All
+  )
+</code></pre>
+<p>The policies are:</p>
+<ul>
+  <li><code>QueryTextPolicy.None</code> - does not record <code>db.query.text</code></li>
+  <li><code>QueryTextPolicy.ParameterizedOnly</code> - records <code>db.query.text</code> only for statements with bound parameters</li>
+  <li><code>QueryTextPolicy.Always</code> - records <code>db.query.text</code> for all statements</li>
+  <li><code>QueryParametersPolicy.None</code> - does not record bound parameters</li>
+  <li><code>QueryParametersPolicy.NonBatchOnly</code> - records parameters only for non-batch operations</li>
+  <li><code>QueryParametersPolicy.All</code> - records parameters for both non-batch and batch operations</li>
+</ul>
+<h3><a href="#notes" name="notes" class="anchor"><span class="anchor-link"></span></a>Notes</h3>
+<ul>
+  <li><code>recommended</code> captures query text only for parameterized statements and does not record parameters</li>
+  <li><code>QueryTextPolicy.Always</code> for <code>db.query.text</code> is only appropriate if raw SQL is acceptable from a privacy and  cardinality perspective</li>
+  <li>parameter capture is usually only appropriate in controlled environments, because values often contain sensitive  information or high-cardinality data</li>
+  <li><code>QueryParametersPolicy.All</code> should be used with care, especially for batch operations</li>
+</ul>
+<h2><a href="#span-naming" name="span-naming" class="anchor"><span class="anchor-link"></span></a>Span Naming</h2>
+<p><code>SpanNamer</code> controls how a traced operation gets its final name.</p>
+<p>The built-in strategies are:</p>
+<ul>
+  <li><code>SpanNamer.noop</code> - does not provide a custom span name</li>
+  <li><code>SpanNamer.fromQueryLabel</code> - uses the raw doobie label as the span name</li>
+  <li><code>SpanNamer.fromAttribute(key)</code> - uses the value of the given extracted attribute as the span name</li>
+  <li><code>SpanNamer.fromQueryMetadata</code> - builds the span name from <a href="#sql-analysis-with-queryanalyzer">QueryAnalyzer.QueryMetadata</a></li>
+</ul>
+<h3><a href="#spannamer-fromattribute" name="spannamer-fromattribute" class="anchor"><span class="anchor-link"></span></a><code>SpanNamer.fromAttribute</code></h3>
+<p>This is the default strategy used by <code>TracingConfig.recommended(...)</code>.</p>
+<pre class="prettyprint"><code class="language-scala">import doobie.otel4s.SpanNamer
+import org.typelevel.otel4s.semconv.attributes.DbAttributes
+
+val namer = SpanNamer.fromAttribute(DbAttributes.DbQuerySummary)
+</code></pre>
+<p>It checks extracted attributes for the given key.</p>
+<ul>
+  <li>if the attribute exists, its value becomes the span name</li>
+  <li>if it does not exist, it returns <code>None</code></li>
+  <li>if attribute extraction failed, it also returns <code>None</code></li>
+</ul>
+<p>When it returns <code>None</code>, the interpreter falls back to JDBC operation names.</p>
+<h3><a href="#spannamer-fromquerymetadata" name="spannamer-fromquerymetadata" class="anchor"><span class="anchor-link"></span></a><code>SpanNamer.fromQueryMetadata</code></h3>
+<p>This strategy builds names from <a href="#sql-analysis-with-queryanalyzer">QueryAnalyzer.QueryMetadata</a>.</p>
+<p>Its precedence is:</p>
+<ol>
+  <li><code>querySummary</code></li>
+  <li><code>operationName + collectionName</code></li>
+  <li><code>operationName + storedProcedureName</code></li>
+  <li><code>operationName</code></li>
+  <li><code>collectionName</code> or <code>storedProcedureName</code></li>
+</ol>
+<p>Use this when span names should come from SQL analysis rather than from doobie labels.</p>
+<h3><a href="#composing-naming-strategies" name="composing-naming-strategies" class="anchor"><span class="anchor-link"></span></a>Composing Naming Strategies</h3>
+<p><code>SpanNamer</code> instances compose with <code>orElse</code>.</p>
+<pre class="prettyprint"><code class="language-scala">import doobie.otel4s.SpanNamer
+import org.typelevel.otel4s.AttributeKey
+import org.typelevel.otel4s.semconv.attributes.DbAttributes
+
+val legacyLabelKey = AttributeKey[String](&quot;db.query.legacy_label&quot;)
+
+val namer =
+  SpanNamer
+    .fromAttribute(DbAttributes.DbQuerySummary)
+    .orElse(SpanNamer.fromQueryMetadata)
+    .orElse(SpanNamer.fromAttribute(legacyLabelKey))
+    .orElse(SpanNamer.fromQueryLabel)
+</code></pre>
+<p>This lets you define naming precedence explicitly.</p>
+<h2><a href="#customizing-the-extractor" name="customizing-the-extractor" class="anchor"><span class="anchor-link"></span></a>Customizing the Extractor</h2>
+<p><code>AttributesExtractor</code> turns the raw doobie label into typed attributes.</p>
+<p>The built-ins are:</p>
+<ul>
+  <li><code>AttributesExtractor.json</code></li>
+  <li><code>AttributesExtractor.plain(key)</code></li>
+</ul>
+<p><code>plain(key)</code> stores the label as a single string attribute:</p>
+<pre class="prettyprint"><code class="language-scala">import doobie.otel4s.AttributesExtractor
+import org.typelevel.otel4s.AttributeKey
+
+val extractor =
+  AttributesExtractor.plain(AttributeKey[String](&quot;db.query.label&quot;))
+</code></pre>
+<p>This is useful when:</p>
+<ul>
+  <li>you already use human-readable labels</li>
+  <li>you want labels preserved as attributes</li>
+  <li>you do not use the JSON-encoded helper syntax</li>
+</ul>
+<p>Like <code>SpanNamer</code>, extractors compose with <code>orElse</code>.</p>
+<pre class="prettyprint"><code class="language-scala">import doobie.otel4s.AttributesExtractor
+import org.typelevel.otel4s.AttributeKey
+
+val legacyLabelKey = AttributeKey[String](&quot;db.query.legacy_label&quot;)
+
+val extractor =
+  AttributesExtractor
+    .json
+    .orElse(AttributesExtractor.plain(legacyLabelKey))
+</code></pre>
+<p>This means:</p>
+<ul>
+  <li>first try to decode a helper-produced JSON payload</li>
+  <li>if that fails, keep the raw label as a fallback attribute</li>
+</ul>
+<h2><a href="#customizing-tracingconfig" name="customizing-tracingconfig" class="anchor"><span class="anchor-link"></span></a>Customizing <code>TracingConfig</code></h2>
+<p>All behavior is configured through <code>TracingConfig</code>.</p>
+<pre class="prettyprint"><code class="language-scala">import doobie.otel4s._
+import org.typelevel.otel4s.{Attribute, Attributes}
+import org.typelevel.otel4s.semconv.attributes.DbAttributes
+
+val config =
+  TracingConfig
+    .recommended(
+      dbSystemName = DbAttributes.DbSystemNameValue.Postgresql,
+      dbNamespace = &quot;app&quot;
+    )
+    .withTracerScopeName(&quot;com.example.doobie&quot;)
+    .withDefaultSpanName(&quot;db.exec&quot;)
+    .withCaptureQuery(QueryCaptureConfig.disabled)
+    .withAttributesExtractor(AttributesExtractor.json)
+    .withQueryAnalyzer(QueryAnalyzer.noop)
+    .withSpanNamer(SpanNamer.fromAttribute(DbAttributes.DbQuerySummary))
+    .addConstAttributes(Attributes(Attribute(&quot;system.module&quot;, &quot;payments&quot;)))
+</code></pre>
+<p>The main customization points are:</p>
+<ul>
+  <li><code>withTracerScopeName</code> - changes the tracer scope name used for spans created by doobie</li>
+  <li><code>withDefaultSpanName</code> - changes the initial span name used before JDBC operation naming is applied</li>
+  <li><code>withConstAttributes</code> - replaces the set of attributes added to every span</li>
+  <li><code>addConstAttributes</code> - appends more attributes to the existing constant attributes</li>
+  <li><code>withCaptureQuery</code> - changes how SQL text and parameters are recorded</li>
+  <li><code>withAttributesExtractor</code> - changes how doobie labels are decoded into attributes</li>
+  <li><code>withQueryAnalyzer</code> - changes how SQL text is analyzed into query metadata</li>
+  <li><code>withSpanNamer</code> - changes how the final span name is chosen</li>
+</ul>
+<h2><a href="#new-syntax-and-legacy-labels-together" name="new-syntax-and-legacy-labels-together" class="anchor"><span class="anchor-link"></span></a>New Syntax and Legacy Labels Together</h2>
+<p>When migrating existing code it is common to have both of these:</p>
+<ul>
+  <li>new code using <code>queryWithSummary</code> or <code>queryWithAttributes</code></li>
+  <li>old code using raw doobie labels such as <code>queryWithLabel(&quot;find-user&quot;)</code></li>
+</ul>
+<p>In this case, use a composed extractor and a composed namer.</p>
+<pre class="prettyprint"><code class="language-scala">import doobie.otel4s._
+import org.typelevel.otel4s.AttributeKey
+import org.typelevel.otel4s.semconv.attributes.DbAttributes
+
+val legacyLabelKey = AttributeKey[String](&quot;db.query.legacy_label&quot;)
+
+val config =
+  TracingConfig
+    .recommended(
+      dbSystemName = DbAttributes.DbSystemNameValue.Postgresql,
+      dbNamespace = &quot;app&quot;
+    )
+    .withAttributesExtractor(
+      AttributesExtractor
+        .json
+        .orElse(AttributesExtractor.plain(legacyLabelKey))
+    )
+    .withSpanNamer(
+      SpanNamer
+        .fromAttribute(DbAttributes.DbQuerySummary)
+        .orElse(SpanNamer.fromAttribute(legacyLabelKey))
+    )
+</code></pre>
+<p>With this setup:</p>
+<ul>
+  <li>helper-generated summaries still win</li>
+  <li>raw legacy labels remain visible</li>
+  <li>unlabeled queries still fall back to JDBC operation names</li>
+</ul>
+<h2><a href="#sql-analysis-with-queryanalyzer" name="sql-analysis-with-queryanalyzer" class="anchor"><span class="anchor-link"></span></a>SQL Analysis with <code>QueryAnalyzer</code></h2>
+<p><code>QueryAnalyzer</code> is a separate extension point for deriving structured metadata from SQL text.</p>
+<p>It returns <code>QueryAnalyzer.QueryMetadata</code>, which may contain:</p>
+<ul>
+  <li><code>queryText</code></li>
+  <li><code>operationName</code></li>
+  <li><code>collectionName</code></li>
+  <li><code>storedProcedureName</code></li>
+  <li><code>querySummary</code></li>
+</ul>
+<p>Unlike <code>AttributesExtractor</code>, which works from labels, <code>QueryAnalyzer</code> works from the SQL statement itself.</p>
+<pre class="prettyprint"><code class="language-scala">import doobie.otel4s.QueryAnalyzer
+
+val simpleAnalyzer =
+  new QueryAnalyzer {
+    def analyze(sql: String): Option[QueryAnalyzer.QueryMetadata] =
+      if (sql.trim.toLowerCase.startsWith(&quot;select&quot;))
+        Some(
+          QueryAnalyzer.QueryMetadata(
+            queryText = Some(sql),
+            operationName = Some(&quot;SELECT&quot;),
+            collectionName = None,
+            storedProcedureName = None,
+            querySummary = Some(&quot;SELECT&quot;)
+          )
+        )
+      else None
+  }
+</code></pre>
+<p>Analyzers also compose with <code>orElse</code>, so you can define a fallback chain.</p>
+<blockquote>
+  <p>The default analyzer is <code>QueryAnalyzer.noop</code>, which does not produce any metadata. If you want SQL analysis, a common choice is <a href="#opentelemetry-java-instrumentation">SqlQueryAnalyzer</a> from OpenTelemetry Java Instrumentation.</p>
+</blockquote>
+<h2><a href="#using-queryanalyzer-for-span-naming" name="using-queryanalyzer-for-span-naming" class="anchor"><span class="anchor-link"></span></a>Using <code>QueryAnalyzer</code> for Span Naming</h2>
+<p>To use SQL analysis for naming, pair the analyzer with <code>SpanNamer.fromQueryMetadata</code>.</p>
+<pre class="prettyprint"><code class="language-scala">import doobie.otel4s._
+import org.typelevel.otel4s.semconv.attributes.DbAttributes
+
+val config =
+  TracingConfig
+    .recommended(
+      dbSystemName = DbAttributes.DbSystemNameValue.Postgresql,
+      dbNamespace = &quot;app&quot;
+    )
+    .withQueryAnalyzer(simpleAnalyzer)
+    .withSpanNamer(
+      SpanNamer
+        .fromQueryMetadata
+        .orElse(SpanNamer.fromAttribute(DbAttributes.DbQuerySummary))
+    )
+</code></pre>
+<p>With this configuration:</p>
+<ul>
+  <li>SQL-derived metadata is used first</li>
+  <li>then label-derived <code>db.query.summary</code></li>
+  <li>finally JDBC operation names</li>
+</ul>
+<h2><a href="#opentelemetry-java-instrumentation" name="opentelemetry-java-instrumentation" class="anchor"><span class="anchor-link"></span></a>OpenTelemetry Java Instrumentation</h2>
+<p>If your application already depends on OpenTelemetry Java instrumentation, the <code>SqlQueryAnalyzer</code> can be adapted to doobie&rsquo;s <code>QueryAnalyzer</code>.</p>
+<p>This is useful when:</p>
+<ul>
+  <li>you already use OpenTelemetry Java agent or instrumentation libraries elsewhere</li>
+  <li>you want query summaries to match the logic used by OpenTelemetry Java instrumentation</li>
+  <li>you want <code>db.query.summary</code>-based naming without hard-coding summaries on every query</li>
+</ul>
+<p>Wrap the Java analyzer and convert <code>null</code> values into <code>Option</code>.</p>
+<pre class="prettyprint"><code class="language-scala">import doobie.otel4s._
+import io.opentelemetry.instrumentation.api.incubator.semconv.db.{SqlDialect, SqlQuery, SqlQueryAnalyzer}
+import org.typelevel.otel4s.semconv.attributes.DbAttributes
+
+def fromOtelJava(delegate: SqlQueryAnalyzer): QueryAnalyzer =
+  new QueryAnalyzer {
+    private val dialect = SqlDialect.DOUBLE_QUOTES_ARE_STRING_LITERALS
+
+    def analyze(sql: String): Option[QueryAnalyzer.QueryMetadata] =
+      Option(delegate.analyzeWithSummary(sql, dialect)).map { q: SqlQuery =&gt;
+        QueryAnalyzer.QueryMetadata(
+          queryText = Option(q.getQueryText),
+          operationName = Option(q.getOperationName),
+          collectionName = Option(q.getCollectionName),
+          storedProcedureName = Option(q.getStoredProcedureName),
+          querySummary = Option(q.getQuerySummary)
+        )
+      }
+  }
+
+val sqlQueryAnalyzer: SqlQueryAnalyzer = SqlQueryAnalyzer.create(true)
+
+val config: TracingConfig =
+  TracingConfig
+    .recommended(
+      dbSystemName = DbAttributes.DbSystemNameValue.Postgresql,
+      dbNamespace = &quot;app&quot;
+    )
+    .withQueryAnalyzer(fromOtelJava(sqlQueryAnalyzer))
+    .withSpanNamer(
+      SpanNamer
+        .fromQueryMetadata
+        .orElse(SpanNamer.fromAttribute(DbAttributes.DbQuerySummary))
+    )
+</code></pre>
+<h3><a href="#naming-order" name="naming-order" class="anchor"><span class="anchor-link"></span></a>Naming Order</h3>
+<p>A common ordering is:</p>
+<pre class="prettyprint"><code class="language-scala">SpanNamer
+  .fromQueryMetadata
+  .orElse(SpanNamer.fromAttribute(DbAttributes.DbQuerySummary))
+</code></pre>
+<p>This means:</p>
+<ul>
+  <li>use the analyzer-derived summary first</li>
+  <li>if the analyzer does not recognize the query, fall back to explicit query summaries attached via doobie syntax helpers</li>
+</ul>
+<p>If you want manual summaries to override analyzer results, reverse the order.</p>
+<h2><a href="#caveats" name="caveats" class="anchor"><span class="anchor-link"></span></a>Caveats</h2>
+<ul>
+  <li>unlabeled queries are still traced; they just rely on SQL analysis or JDBC fallback naming</li>
+  <li><code>AttributesExtractor.json</code> only works for labels encoded as JSON attributes</li>
+  <li><code>QueryAnalyzer</code> does not currently add analyzed fields as span attributes by itself; it feeds naming through  <code>SpanNamer</code></li>
+  <li>capturing parameters can expose secrets, tokens, emails, IDs, or other sensitive values</li>
+  <li>high-cardinality span names are usually a bad idea; prefer summaries such as <code>SELECT users</code> over raw SQL</li>
+</ul>
+<div class="source-github">
+The source code for this page can be found <a href="https://github.com/typelevel/doobie/tree/master/modules/docs/target/jvm-2.13/mdoc/docs/20-Otel4s-Tracing.md">here</a>.
+</div>
+
+<div class="nav-next">
+<p><strong>Next:</strong> <a href="../docs/11-Arrays.html">SQL Arrays</a></p>
+</div>
+</div>
+<div class="large-3 show-for-large column" data-sticky-container>
+<nav class="sidebar sticky" data-sticky data-anchor="docs" data-sticky-on="large">
+<div class="page-nav">
+<div class="nav-title">On this page:</div>
+<div class="nav-toc">
+<ul>
+  <li><a href="../docs/20-Otel4s-Tracing.html#tracing-with-otel4s" class="header">Tracing with otel4s</a>
+  <ul>
+    <li><a href="../docs/20-Otel4s-Tracing.html#adding-the-dependency" class="header">Adding the Dependency</a></li>
+    <li><a href="../docs/20-Otel4s-Tracing.html#setting-up" class="header">Setting Up</a></li>
+    <li><a href="../docs/20-Otel4s-Tracing.html#how-it-works" class="header">How It Works</a></li>
+    <li><a href="../docs/20-Otel4s-Tracing.html#recommended-configuration" class="header">Recommended Configuration</a></li>
+    <li><a href="../docs/20-Otel4s-Tracing.html#query-annotations" class="header">Query Annotations</a></li>
+    <li><a href="../docs/20-Otel4s-Tracing.html#attributesextractor-json" class="header"><code>AttributesExtractor.json</code></a></li>
+    <li><a href="../docs/20-Otel4s-Tracing.html#query-capture-policies" class="header">Query Capture Policies</a></li>
+    <li><a href="../docs/20-Otel4s-Tracing.html#span-naming" class="header">Span Naming</a></li>
+    <li><a href="../docs/20-Otel4s-Tracing.html#customizing-the-extractor" class="header">Customizing the Extractor</a></li>
+    <li><a href="../docs/20-Otel4s-Tracing.html#customizing-tracingconfig" class="header">Customizing <code>TracingConfig</code></a></li>
+    <li><a href="../docs/20-Otel4s-Tracing.html#new-syntax-and-legacy-labels-together" class="header">New Syntax and Legacy Labels Together</a></li>
+    <li><a href="../docs/20-Otel4s-Tracing.html#sql-analysis-with-queryanalyzer" class="header">SQL Analysis with <code>QueryAnalyzer</code></a></li>
+    <li><a href="../docs/20-Otel4s-Tracing.html#using-queryanalyzer-for-span-naming" class="header">Using <code>QueryAnalyzer</code> for Span Naming</a></li>
+    <li><a href="../docs/20-Otel4s-Tracing.html#opentelemetry-java-instrumentation" class="header">OpenTelemetry Java Instrumentation</a></li>
+    <li><a href="../docs/20-Otel4s-Tracing.html#caveats" class="header">Caveats</a></li>
+  </ul></li>
+</ul>
+</div>
+</div>
+</nav>
+</div>
+</div>
+
+</section>
+</div>
+
+</div>
+
+<footer class="site-footer">
+
+<section class="site-footer-nav">
+<div class="expanded row">
+<div class="small-12 large-offset-2 large-10 column">
+<div class="row site-footer-content">
+
+<div class="small-12 medium-4 large-3 text-center column">
+<div class="nav-links">
+<ul>
+<!-- <li><a href="https://www.example.com/products/">Products</a> -->
+</ul>
+</div>
+</div>
+
+</div>
+</div>
+</div>
+</section>
+
+<section class="site-footer-base">
+<div class="expanded row">
+<div class="small-12 large-offset-2 large-10 column">
+<div class="row site-footer-content">
+
+<div class="small-12 text-center large-9 column">
+
+<!--
+<div class="copyright">
+<span class="text">&copy; 2026</span>
+<a href="https://www.example.com" class="logo">logo</a>
+</div>
+-->
+</div>
+
+</div>
+</div>
+</div>
+</section>
+</footer>
+
+</div>
+</div>
+</div>
+</body>
+
+<script type="text/javascript" src="../lib/foundation/dist/foundation.min.js"></script>
+<script type="text/javascript">jQuery(document).foundation();</script>
+<script type="text/javascript" src="../js/magellan.js"></script>
+
+<style type="text/css">@import "../lib/prettify/prettify.css";</style>
+<script type="text/javascript" src="../lib/prettify/prettify.js"></script>
+<script type="text/javascript" src="../lib/prettify/lang-scala.js"></script>
+<script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.0.0-RC12', 'https://github.com/typelevel/doobie')});</script>
+
+
+</html>
