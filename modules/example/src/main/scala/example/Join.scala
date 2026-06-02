@@ -5,8 +5,8 @@
 package example
 
 import cats.syntax.all.*
-import doobie.*
-import doobie.implicits.*
+import org.typelevel.doobie.*
+import org.typelevel.doobie.implicits.*
 
 object Join {
 

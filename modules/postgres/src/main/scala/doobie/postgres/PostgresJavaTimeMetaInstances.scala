@@ -2,11 +2,11 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.postgres
+package org.typelevel.doobie.postgres
 
-import doobie.enumerated.JdbcType.*
-import doobie.util.meta.Meta
-import doobie.util.meta.MetaConstructors.Basic
+import org.typelevel.doobie.enumerated.JdbcType.*
+import org.typelevel.doobie.util.meta.Meta
+import org.typelevel.doobie.util.meta.MetaConstructors.Basic
 
 /** Instances for Java time classes that follow the JDBC specification.
   */

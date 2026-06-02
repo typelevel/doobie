@@ -6,12 +6,12 @@ package example
 
 import cats.effect.{IO, IOApp, ExitCode}
 import cats.syntax.all.*
-import doobie.*
-import doobie.implicits.*
+import org.typelevel.doobie.*
+import org.typelevel.doobie.implicits.*
 import fs2.Stream
 import fs2.Stream.{eval, bracket}
 import java.sql.{PreparedStatement, ResultSet}
-import doobie.util.stream.repeatEvalChunks
+import org.typelevel.doobie.util.stream.repeatEvalChunks
 
 /** From a user question on Gitter, how can we have an equivalent to `Stream[A]` that constructs a stream of untyped
   * maps.

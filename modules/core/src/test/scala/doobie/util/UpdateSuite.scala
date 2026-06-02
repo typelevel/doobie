@@ -2,13 +2,13 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.util
+package org.typelevel.doobie.util
 
-import doobie.implicits.*
+import org.typelevel.doobie.implicits.*
 import cats.syntax.all.*
 import cats.effect.IO
-import doobie.{Transactor, Update}
-import doobie.free.preparedstatement as IFPS
+import org.typelevel.doobie.{Transactor, Update}
+import org.typelevel.doobie.free.preparedstatement as IFPS
 import munit.CatsEffectSuite
 
 class UpdateSuite extends CatsEffectSuite {

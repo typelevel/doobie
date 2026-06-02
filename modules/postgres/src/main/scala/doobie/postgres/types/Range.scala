@@ -2,14 +2,14 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.postgres.types
+package org.typelevel.doobie.postgres.types
 
 import cats.Eq
 import cats.Monoid
 import cats.implicits.toBifunctorOps
-import doobie.postgres.types.Range.Edge
-import doobie.postgres.types.Range.Edge.*
-import doobie.util.invariant.InvalidValue
+import org.typelevel.doobie.postgres.types.Range.Edge
+import org.typelevel.doobie.postgres.types.Range.Edge.*
+import org.typelevel.doobie.util.invariant.InvalidValue
 
 import scala.util.Try
 

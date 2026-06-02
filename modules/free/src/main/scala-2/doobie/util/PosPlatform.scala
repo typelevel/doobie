@@ -2,9 +2,9 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.util
+package org.typelevel.doobie.util
 
-import doobie.util.pos.Pos
+import org.typelevel.doobie.util.pos.Pos
 import scala.reflect.macros.blackbox
 
 trait PosPlatform {
@@ -22,7 +22,7 @@ object PosPlatform {
     def instance_impl: Tree = {
       val file = c.enclosingPosition.source.path
       val line = c.enclosingPosition.line
-      q"_root_.doobie.util.pos.Pos($file, $line)"
+      q"_root_.org.typelevel.doobie.util.pos.Pos($file, $line)"
     }
   }
 

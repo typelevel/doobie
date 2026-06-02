@@ -7,9 +7,9 @@ In this chapter we will write some some programs to read from the database, mapp
 First let's get our imports out of the way and set up a `Transactor` as we did before. You can skip this step if you still have your REPL running from last chapter.
 
 ```scala mdoc:silent
-import doobie._
-import doobie.implicits._
-import doobie.util.ExecutionContexts
+import org.typelevel.doobie._
+import org.typelevel.doobie.implicits._
+import org.typelevel.doobie.util.ExecutionContexts
 import cats._
 import cats.data._
 import cats.effect._
@@ -32,7 +32,7 @@ val xa = Transactor.fromDriverManager[IO](
 ```
 
 ```scala mdoc:invisible
-implicit val mdocColors: doobie.util.Colors = doobie.util.Colors.None
+implicit val mdocColors: org.typelevel.doobie.util.Colors = org.typelevel.doobie.util.Colors.None
 ```
 
 We will be playing with the `country` table, shown here for reference. If you don't have the `world` database set up, go back to the [Introduction](01-Introduction.html) for instructions.
@@ -222,9 +222,9 @@ p.take(5).compile.toVector.unsafeRunSync().foreach(println)
 The `sql` interpolator is sugar for constructors defined in the `doobie.hi.connection` module, aliased as `HC` if you use the standard imports. Using these constructors directly, the above program would look like this:
 
 ```scala mdoc
-import doobie.hi.HC
-import doobie.free.{FC, FPS}
-import doobie.util.log.{LoggingInfo, Parameters}
+import org.typelevel.doobie.hi.HC
+import org.typelevel.doobie.free.{FC, FPS}
+import org.typelevel.doobie.util.log.{LoggingInfo, Parameters}
 
 val sql = "select code, name, population, gnp from country"
 val proc = HC.stream[(Code, Country2)](

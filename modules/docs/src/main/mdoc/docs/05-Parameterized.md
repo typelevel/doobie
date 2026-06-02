@@ -7,9 +7,9 @@ In this chapter we learn how to construct parameterized queries, and introduce t
 Same as last chapter, so if you're still set up you can skip this section. Otherwise let's set up a `Transactor` and YOLO mode.
 
 ```scala mdoc:silent
-import doobie._
-import doobie.implicits._
-import doobie.util.ExecutionContexts
+import org.typelevel.doobie._
+import org.typelevel.doobie.implicits._
+import org.typelevel.doobie.util.ExecutionContexts
 import cats._
 import cats.data._
 import cats.effect._
@@ -34,7 +34,7 @@ import y._
 ```
 
 ```scala mdoc:invisible
-implicit val mdocColors: doobie.util.Colors = doobie.util.Colors.None
+implicit val mdocColors: org.typelevel.doobie.util.Colors = org.typelevel.doobie.util.Colors.None
 ```
 
 We're still playing with the `country` table, shown here for reference.
@@ -141,9 +141,9 @@ populationIn(100_000_000 to 300_000_000, NonEmptyList.of("USA", "BRA", "PAK", "G
 In the previous chapter's *Diving Deeper* we saw how a query constructed with the `sql` interpolator is just sugar for the `stream` constructor defined in the `doobie.hi.connection` module (aliased as `HC`). Here we see that the second parameter, a `PreparedStatementIO` program, is used to set the query parameters. The third parameter specifies a chunking factor; rows are buffered in chunks of the specified size.
 
 ```scala mdoc:silent
-import doobie.hi.{HC, HPS}
-import doobie.free.{FC, FPS}
-import doobie.util.log.{LoggingInfo, Parameters}
+import org.typelevel.doobie.hi.{HC, HPS}
+import org.typelevel.doobie.free.{FC, FPS}
+import org.typelevel.doobie.util.log.{LoggingInfo, Parameters}
 import fs2.Stream
 
 val q =

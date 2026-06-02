@@ -2,11 +2,11 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.mysql.util.arbitraries
+package org.typelevel.doobie.mysql.util.arbitraries
 
 import java.time.*
 
-import doobie.util.arbitraries.GenHelpers
+import org.typelevel.doobie.util.arbitraries.GenHelpers
 import org.scalacheck.Arbitrary
 import org.scalacheck.Gen
 

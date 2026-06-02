@@ -2,7 +2,9 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-import doobie.util.meta.{LegacyMeta, TimeMetaInstances}
+package org.typelevel
+
+import org.typelevel.doobie.util.meta.{LegacyMeta, TimeMetaInstances}
 // Copyright (c) 2013-2020 Rob Norris and Contributors
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
@@ -11,7 +13,8 @@ import doobie.util.meta.{LegacyMeta, TimeMetaInstances}
   * typical starting set of imports would be something like this.
   * {{{
   * import cats.implicits._
-  * import doobie._, doobie.implicits._
+  * import org.typelevel.doobie._
+  * import org.typelevel.doobie.implicits._
   * }}}
   * @see
   *   The [[http://tpolecat.github.io/doobie/ doobie microsite]] for much more information.

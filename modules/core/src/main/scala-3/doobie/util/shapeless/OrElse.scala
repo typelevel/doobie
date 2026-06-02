@@ -2,7 +2,7 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.util.shapeless
+package org.typelevel.doobie.util.shapeless
 
 // from https://github.com/milessabin/shapeless/blob/v2.3.9/core/src/main/scala/shapeless/orelse.scala
 // for use from Scala 3

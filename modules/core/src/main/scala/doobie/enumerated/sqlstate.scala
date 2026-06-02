@@ -2,7 +2,7 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.enumerated
+package org.typelevel.doobie.enumerated
 
 /** A simple newtype wrapper around JDBC SqlState values, which are always vendor-specific. Vendor modules like
   * '''doobie-postgres''' can provide modules of defined values.

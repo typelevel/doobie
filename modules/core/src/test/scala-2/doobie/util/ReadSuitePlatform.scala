@@ -2,16 +2,16 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.util
+package org.typelevel.doobie.util
 
-import doobie.testutils.VoidExtensions
+import org.typelevel.doobie.testutils.VoidExtensions
 import shapeless.*
 import shapeless.record.*
 
 import scala.annotation.nowarn
 
 trait ReadSuitePlatform { self: munit.FunSuite =>
-  import doobie.generic.auto.*
+  import org.typelevel.doobie.generic.auto.*
 
   test("Read should exist for shapeless record types") {
     type DL = (Double, Long) // used below

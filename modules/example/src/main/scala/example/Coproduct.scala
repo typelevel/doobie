@@ -11,9 +11,9 @@ import cats.effect.{IO, IOApp}
 import cats.free.Free
 import cats.syntax.all.*
 import cats.{InjectK, ~>}
-import doobie.*
-import doobie.free.connection.ConnectionOp
-import doobie.implicits.*
+import org.typelevel.doobie.*
+import org.typelevel.doobie.free.connection.ConnectionOp
+import org.typelevel.doobie.implicits.*
 import scala.io.StdIn
 
 object Coproduct extends IOApp.Simple {

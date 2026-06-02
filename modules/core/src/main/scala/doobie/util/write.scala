@@ -2,17 +2,17 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.util
+package org.typelevel.doobie.util
 
 import cats.ContravariantSemigroupal
-import doobie.enumerated.Nullability
-import doobie.enumerated.Nullability.*
-import doobie.free.{PreparedStatementIO, ResultSetIO}
+import org.typelevel.doobie.enumerated.Nullability
+import org.typelevel.doobie.enumerated.Nullability.*
+import org.typelevel.doobie.free.{PreparedStatementIO, ResultSetIO}
 
 import java.sql.{PreparedStatement, ResultSet}
-import doobie.util.fragment.Fragment
-import doobie.util.fragment.Elem
-import doobie.free.{preparedstatement as IFPS, resultset as IFRS}
+import org.typelevel.doobie.util.fragment.Fragment
+import org.typelevel.doobie.util.fragment.Elem
+import org.typelevel.doobie.free.{preparedstatement as IFPS, resultset as IFRS}
 
 import scala.annotation.implicitNotFound
 

@@ -2,7 +2,9 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie
+package org.typelevel.doobie
+
+import org.typelevel.doobie
 
 /** Mixin containing aliases for the most commonly used types and modules from doobie-core. */
 trait Aliases extends Types with Modules

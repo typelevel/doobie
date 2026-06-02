@@ -22,7 +22,6 @@ object FreeGen2 {
   lazy val freeGen2Settings = Seq(
     freeGen2Classes := Nil,
     freeGen2Dir := (Compile / sourceManaged).value,
-    freeGen2Package := "doobie.free",
     freeGen2Renames := Map(classOf[java.sql.Array] -> "SqlArray"),
     freeGen2KleisliInterpreterImportExcludes := Set.empty,
     freeGen2AllImportExcludes := Set.empty,
@@ -110,7 +109,7 @@ class FreeGen2(
 
   val extras: Map[String, Extra] = Map(
     "PreparedStatement" -> Extra(
-      imports = "import doobie.util.trace.TraceEvent",
+      imports = "import org.typelevel.doobie.util.trace.TraceEvent",
       visitorMethod = "def trace[A](event: TraceEvent, fa: PreparedStatementIO[A]): F[A]",
       visitorCaseClass =
         """case class Trace[A](event: TraceEvent, fa: PreparedStatementIO[A]) extends PreparedStatementOp[A] {
@@ -277,8 +276,8 @@ class FreeGen2(
     |import cats.{~>, Applicative, Semigroup, Monoid}
     |import cats.effect.kernel.{ CancelScope, Poll, Sync }
     |import cats.free.{ Free as FF } // alias because some algebras have an op called Free
-    |import doobie.util.log.LogEvent
-    |import doobie.WeakAsync
+    |import org.typelevel.doobie.util.log.LogEvent
+    |import org.typelevel.doobie.WeakAsync
     |import scala.concurrent.Future
     |import scala.concurrent.duration.FiniteDuration
     |${extra.map(_.imports).mkString("\n")}
@@ -566,9 +565,9 @@ class FreeGen2(
        |import cats.data.Kleisli
        |import cats.effect.kernel.{ Poll, Sync }
        |import cats.free.Free
-       |import doobie.WeakAsync
-       |import doobie.util.log.{LogEvent, LogHandler}
-       |import doobie.util.trace.TraceEvent
+       |import org.typelevel.doobie.WeakAsync
+       |import org.typelevel.doobie.util.log.{LogEvent, LogHandler}
+       |import org.typelevel.doobie.util.trace.TraceEvent
        |import scala.concurrent.Future
        |import scala.concurrent.duration.FiniteDuration
        |

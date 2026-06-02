@@ -2,10 +2,10 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.postgres
+package org.typelevel.doobie.postgres
 
-import doobie.*
-import doobie.util.invariant.*
+import org.typelevel.doobie.*
+import org.typelevel.doobie.util.invariant.*
 import net.postgis.jdbc.PGgeography
 import net.postgis.jdbc.geometry.*
 

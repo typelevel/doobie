@@ -25,9 +25,9 @@ Tracing is enabled by wrapping a normal doobie transactor with `TracedTransactor
 
 ```scala mdoc:silent
 import cats.effect.{Async, IO, LiftIO}
-import doobie._
-import doobie.implicits._
-import doobie.otel4s._
+import org.typelevel.doobie._
+import org.typelevel.doobie.implicits._
+import org.typelevel.doobie.otel4s._
 import org.typelevel.otel4s.trace.TracerProvider
 import org.typelevel.otel4s.semconv.attributes.DbAttributes
 
@@ -115,9 +115,9 @@ In practice this means:
 The module provides helpers on `Fragment` for attaching tracing metadata to queries and updates.
 
 ```scala mdoc:silent
-import doobie._
-import doobie.implicits._
-import doobie.otel4s.syntax.fragment._
+import org.typelevel.doobie._
+import org.typelevel.doobie.implicits._
+import org.typelevel.doobie.otel4s.syntax.fragment._
 import org.typelevel.otel4s.Attribute
 import org.typelevel.otel4s.semconv.attributes.DbAttributes
 
@@ -161,8 +161,8 @@ This can be useful, but it should be explicit.
 Query capture is controlled by `QueryCaptureConfig`.
 
 ```scala mdoc:silent
-import doobie.otel4s.QueryCaptureConfig
-import doobie.otel4s.QueryCaptureConfig.{QueryParametersPolicy, QueryTextPolicy}
+import org.typelevel.doobie.otel4s.QueryCaptureConfig
+import org.typelevel.doobie.otel4s.QueryCaptureConfig.{QueryParametersPolicy, QueryTextPolicy}
 
 val captureNothing =
   QueryCaptureConfig.disabled
@@ -211,7 +211,7 @@ The built-in strategies are:
 This is the default strategy used by `TracingConfig.recommended(...)`.
 
 ```scala mdoc:silent
-import doobie.otel4s.SpanNamer
+import org.typelevel.doobie.otel4s.SpanNamer
 import org.typelevel.otel4s.semconv.attributes.DbAttributes
 
 val namer = SpanNamer.fromAttribute(DbAttributes.DbQuerySummary)
@@ -244,7 +244,7 @@ Use this when span names should come from SQL analysis rather than from doobie l
 `SpanNamer` instances compose with `orElse`.
 
 ```scala mdoc:silent:reset
-import doobie.otel4s.SpanNamer
+import org.typelevel.doobie.otel4s.SpanNamer
 import org.typelevel.otel4s.AttributeKey
 import org.typelevel.otel4s.semconv.attributes.DbAttributes
 
@@ -272,7 +272,7 @@ The built-ins are:
 `plain(key)` stores the label as a single string attribute:
 
 ```scala mdoc:silent
-import doobie.otel4s.AttributesExtractor
+import org.typelevel.doobie.otel4s.AttributesExtractor
 import org.typelevel.otel4s.AttributeKey
 
 val extractor =
@@ -288,7 +288,7 @@ This is useful when:
 Like `SpanNamer`, extractors compose with `orElse`.
 
 ```scala mdoc:silent:reset
-import doobie.otel4s.AttributesExtractor
+import org.typelevel.doobie.otel4s.AttributesExtractor
 import org.typelevel.otel4s.AttributeKey
 
 val legacyLabelKey = AttributeKey[String]("db.query.legacy_label")
@@ -309,7 +309,7 @@ This means:
 All behavior is configured through `TracingConfig`.
 
 ```scala mdoc:silent
-import doobie.otel4s._
+import org.typelevel.doobie.otel4s._
 import org.typelevel.otel4s.{Attribute, Attributes}
 import org.typelevel.otel4s.semconv.attributes.DbAttributes
 
@@ -349,7 +349,7 @@ When migrating existing code it is common to have both of these:
 In this case, use a composed extractor and a composed namer.
 
 ```scala mdoc:silent:reset
-import doobie.otel4s._
+import org.typelevel.doobie.otel4s._
 import org.typelevel.otel4s.AttributeKey
 import org.typelevel.otel4s.semconv.attributes.DbAttributes
 
@@ -394,7 +394,7 @@ It returns `QueryAnalyzer.QueryMetadata`, which may contain:
 Unlike `AttributesExtractor`, which works from labels, `QueryAnalyzer` works from the SQL statement itself.
 
 ```scala mdoc:silent:reset
-import doobie.otel4s.QueryAnalyzer
+import org.typelevel.doobie.otel4s.QueryAnalyzer
 
 val simpleAnalyzer =
   new QueryAnalyzer {
@@ -423,7 +423,7 @@ Analyzers also compose with `orElse`, so you can define a fallback chain.
 To use SQL analysis for naming, pair the analyzer with `SpanNamer.fromQueryMetadata`.
 
 ```scala mdoc:silent
-import doobie.otel4s._
+import org.typelevel.doobie.otel4s._
 import org.typelevel.otel4s.semconv.attributes.DbAttributes
 
 val config =
@@ -460,7 +460,7 @@ This is useful when:
 Wrap the Java analyzer and convert `null` values into `Option`.
 
 ```scala mdoc:silent:reset
-import doobie.otel4s._
+import org.typelevel.doobie.otel4s._
 import io.opentelemetry.instrumentation.api.incubator.semconv.db.{SqlDialect, SqlQuery, SqlQueryAnalyzer}
 import org.typelevel.otel4s.semconv.attributes.DbAttributes
 

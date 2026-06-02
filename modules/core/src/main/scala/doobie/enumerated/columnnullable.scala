@@ -2,9 +2,9 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.enumerated
+package org.typelevel.doobie.enumerated
 
-import doobie.util.invariant.*
+import org.typelevel.doobie.util.invariant.*
 
 import java.sql.ResultSetMetaData.*
 

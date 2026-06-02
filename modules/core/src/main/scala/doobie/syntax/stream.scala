@@ -2,11 +2,11 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.syntax
+package org.typelevel.doobie.syntax
 
-import doobie.util.compat.=:=
-import doobie.util.transactor.Transactor
-import doobie.free.connection.ConnectionIO
+import org.typelevel.doobie.util.compat.=:=
+import org.typelevel.doobie.util.transactor.Transactor
+import org.typelevel.doobie.free.connection.ConnectionIO
 import cats.data.Kleisli
 import cats.effect.Concurrent
 import cats.effect.kernel.{Async, MonadCancelThrow}

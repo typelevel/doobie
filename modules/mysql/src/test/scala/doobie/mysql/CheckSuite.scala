@@ -2,14 +2,14 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.mysql
+package org.typelevel.doobie.mysql
 
 import java.time.{LocalDate, LocalDateTime, LocalTime, OffsetDateTime}
 
-import doobie.*
-import doobie.implicits.*
-import doobie.mysql.implicits.*
-import doobie.util.analysis.ColumnTypeError
+import org.typelevel.doobie.*
+import org.typelevel.doobie.implicits.*
+import org.typelevel.doobie.mysql.implicits.*
+import org.typelevel.doobie.util.analysis.ColumnTypeError
 
 class CheckSuite extends munit.FunSuite {
   import cats.effect.unsafe.implicits.global

@@ -5,10 +5,10 @@
 package example
 
 import cats.effect.{IO, IOApp}
-import doobie.*
-import doobie.implicits.*
-import doobie.postgres.rangeimplicits.*
-import doobie.postgres.types.Range
+import org.typelevel.doobie.*
+import org.typelevel.doobie.implicits.*
+import org.typelevel.doobie.postgres.rangeimplicits.*
+import org.typelevel.doobie.postgres.types.Range
 
 import java.time.{LocalDate, LocalDateTime, OffsetDateTime}
 

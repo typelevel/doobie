@@ -2,14 +2,14 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.specs2
+package org.typelevel.doobie.specs2
 
 import cats.effect.{Async, IO}
 import cats.instances.list.*
 import cats.syntax.foldable.*
-import doobie.syntax.connectionio.*
-import doobie.util.pretty.*
-import doobie.util.testing.{AnalysisReport, Analyzable, analyze, CheckerBase, UnsafeRun}
+import org.typelevel.doobie.syntax.connectionio.*
+import org.typelevel.doobie.util.pretty.*
+import org.typelevel.doobie.util.testing.{AnalysisReport, Analyzable, analyze, CheckerBase, UnsafeRun}
 import org.specs2.matcher.{Expectable, Matcher, MatchResult}
 
 object analysismatchers {

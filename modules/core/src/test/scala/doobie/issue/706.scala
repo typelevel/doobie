@@ -2,12 +2,13 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.issue
+package org.typelevel.doobie.issue
 
 import cats.*
 import cats.syntax.all.*
 import cats.effect.IO
-import doobie.*, doobie.implicits.*
+import org.typelevel.doobie.*
+import org.typelevel.doobie.implicits.*
 import org.scalacheck.Prop.forAll
 import scala.Predef.*
 

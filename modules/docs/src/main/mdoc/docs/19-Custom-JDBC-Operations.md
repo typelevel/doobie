@@ -28,7 +28,7 @@ doobie's low-level API to ensure resources like Connections and PreparedStatemen
 Provides access to the underlying JDBC object.
 
 ```scala mdoc
-import doobie.FRS // alias for doobie.free.resultset
+import org.typelevel.doobie.FRS // alias for doobie.free.resultset
 
 FRS.raw { resultSet: java.sql.ResultSet =>
   // ... do something with the ResultSet
@@ -45,10 +45,10 @@ chain into a "higher-level" one.
 In the example below, we embed a `ResultSetIO` into a `PreparedStatementIO`, which is itself then embedded into a `ConnectionIO`
 
 ```scala mdoc:silent
-import doobie.{FPS, FC}
-import doobie.{ResultSetIO, ConnectionIO}
+import org.typelevel.doobie.{FPS, FC}
+import org.typelevel.doobie.{ResultSetIO, ConnectionIO}
 import cats.effect.syntax.all._
-import doobie.syntax.all._
+import org.typelevel.doobie.syntax.all._
 
 val readFirstRowCol1: ResultSetIO[String] = FRS.next.flatMap(_ => FRS.getString(1))
 
@@ -85,7 +85,7 @@ because it's handled by `HC.executeWithResultSet` already.
 ```scala mdoc:silent
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global // To allow .unsafeRunSync
-import doobie.Transactor
+import org.typelevel.doobie.Transactor
 
 // Create the transactor
 val xa: Transactor[IO] = Transactor.fromDriverManager[IO](
@@ -98,11 +98,12 @@ val xa: Transactor[IO] = Transactor.fromDriverManager[IO](
 ```
 
 ```scala mdoc:silent
-import doobie.HC  // High-level API over java.sql.Connection
-import doobie.HRS  // High-level API over java.sql.ResultSet
-import doobie.ConnectionIO
-import doobie.util.log.{LoggingInfo, Parameters}
+import org.typelevel.doobie.HC  // High-level API over java.sql.Connection
+import org.typelevel.doobie.HRS  // High-level API over java.sql.ResultSet
+import org.typelevel.doobie.ConnectionIO
+import org.typelevel.doobie.util.log.{LoggingInfo, Parameters}
 import cats.effect.unsafe.implicits.global
+import org.typelevel.doobie.util.unlabeled
 
 val sql = "SELECT * FROM (VALUES (1, '1'), (2, '2'))"
 val program: ConnectionIO[List[(Int, String)]] = HC.executeWithResultSet(
@@ -110,7 +111,7 @@ val program: ConnectionIO[List[(Int, String)]] = HC.executeWithResultSet(
   prep = FPS.unit,
   exec = FPS.executeQuery,
   process = HRS.list[(Int, String)],
-  loggingInfo = LoggingInfo(sql, Parameters.NonBatch(List.empty), label = doobie.util.unlabeled)
+  loggingInfo = LoggingInfo(sql, Parameters.NonBatch(List.empty), label = unlabeled)
 )
 ```
 
@@ -132,7 +133,7 @@ you can use methods like `toAlteringExecution`/`toMapAlteringExecution` to custo
 
 ```scala mdoc
 import cats.syntax.all._
-import doobie.hi.connection.PreparedExecution
+import org.typelevel.doobie.hi.connection.PreparedExecution
 
 fr"select name from country order by code limit 10"
     .query[String]

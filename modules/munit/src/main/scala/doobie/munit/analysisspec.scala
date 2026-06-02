@@ -2,13 +2,13 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.munit
+package org.typelevel.doobie.munit
 
 import cats.effect.{IO, Async}
-import doobie.munit.analysisspec.Checker.ErrorItems
-import doobie.syntax.connectionio.*
-import doobie.util.query.{Query0, Query}
-import doobie.util.testing.*
+import org.typelevel.doobie.munit.analysisspec.Checker.ErrorItems
+import org.typelevel.doobie.syntax.connectionio.*
+import org.typelevel.doobie.util.query.{Query0, Query}
+import org.typelevel.doobie.util.testing.*
 import org.tpolecat.typename.*
 import munit.{Assertions, Location}
 

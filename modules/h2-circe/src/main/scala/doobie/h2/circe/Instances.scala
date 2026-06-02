@@ -2,15 +2,15 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.h2.circe
+package org.typelevel.doobie.h2.circe
 
 import cats.Show
 import cats.syntax.all.*
-import doobie.enumerated.JdbcType
+import org.typelevel.doobie.enumerated.JdbcType
 import io.circe.*
 import io.circe.jawn.*
 import io.circe.syntax.*
-import doobie.util.*
+import org.typelevel.doobie.util.*
 
 import java.nio.charset.StandardCharsets.UTF_8
 

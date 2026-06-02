@@ -2,15 +2,15 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.postgres.syntax
+package org.typelevel.doobie.postgres.syntax
 
 import cats.*
 import cats.syntax.all.*
-import doobie.implicits.*
-import doobie.postgres.sqlstate.*
-import doobie.*
-import doobie.util.catchsql.exceptSomeSqlState
-import doobie.util.query.{Query, Query0}
+import org.typelevel.doobie.implicits.*
+import org.typelevel.doobie.postgres.sqlstate.*
+import org.typelevel.doobie.*
+import org.typelevel.doobie.util.catchsql.exceptSomeSqlState
+import org.typelevel.doobie.util.query.{Query, Query0}
 
 class PostgresMonadErrorOps[M[_], A](ma: M[A])(
     implicit ev: MonadError[M, Throwable]

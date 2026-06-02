@@ -2,11 +2,11 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie
+package org.typelevel.doobie
 package util
 
 import cats.effect.IO
-import doobie.util.stream.repeatEvalChunks
+import org.typelevel.doobie.util.stream.repeatEvalChunks
 import munit.CatsEffectAssertions.MUnitCatsAssertionsForIOOps
 import org.scalacheck.effect.PropF
 

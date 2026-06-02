@@ -7,8 +7,8 @@ In this chapter we start from the beginning. First we write a program that conne
 Before we can use **doobie** we need to import some symbols. We will use package imports here as a convenience; this will give us the most commonly-used symbols when working with the high-level API.
 
 ```scala mdoc:silent
-import doobie._
-import doobie.implicits._
+import org.typelevel.doobie._
+import org.typelevel.doobie.implicits._
 ```
 
 Let's also bring in Cats.
@@ -30,7 +30,7 @@ val program1 = 42.pure[ConnectionIO]
 This is a perfectly respectable **doobie** program, but we can't run it as-is; we need a `Connection` first. There are several ways to do this, but here let's use a `Transactor`.
 
 ```scala mdoc:silent
-import doobie.util.ExecutionContexts
+import org.typelevel.doobie.util.ExecutionContexts
 
 // This is just for testing. Consider using cats.effect.IOApp instead of calling
 // unsafe methods directly.
@@ -50,7 +50,7 @@ val xa = Transactor.fromDriverManager[IO](
 Please consult your JDBC driver's documentation for the driver class name and connection URL.
 
 ```scala mdoc:invisible
-implicit val mdocColors: doobie.util.Colors = doobie.util.Colors.None
+implicit val mdocColors: org.typelevel.doobie.util.Colors = org.typelevel.doobie.util.Colors.None
 ```
 
 A `Transactor` is a data type that knows how to connect to a database, hand out connections, and clean them up; and with this knowledge it can transform `ConnectionIO ~> IO`, which gives us a program we can run. Specifically it gives us an `IO` that, when run, will connect to the database and execute single transaction.
@@ -135,7 +135,7 @@ Out of the box **doobie** provides an interpreter from its free monads to `Kleis
 ```scala mdoc
 import cats.~>
 import cats.data.Kleisli
-import doobie.free.connection.ConnectionOp
+import org.typelevel.doobie.free.connection.ConnectionOp
 import java.sql.Connection
 
 val interpreter = KleisliInterpreter[IO](LogHandler.noop).ConnectionInterpreter

@@ -2,16 +2,16 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.weaver
+package org.typelevel.doobie.weaver
 
 import weaver.*
 import weaver.Expectations.Helpers.*
-import doobie.util.testing.*
-import doobie.syntax.connectionio.*
+import org.typelevel.doobie.util.testing.*
+import org.typelevel.doobie.syntax.connectionio.*
 import cats.effect.kernel.Sync
 import cats.syntax.all.*
-import doobie.util.Colors
-import doobie.*
+import org.typelevel.doobie.util.Colors
+import org.typelevel.doobie.*
 import org.tpolecat.typename.*
 
 /** Module with a mix-in trait for specifications that enables checking of doobie `Query` and `Update` values.

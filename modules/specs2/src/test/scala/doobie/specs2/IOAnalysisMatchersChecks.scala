@@ -2,12 +2,12 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.specs2
+package org.typelevel.doobie.specs2
 
 import cats.effect.IO
 import org.specs2.mutable.Specification
-import doobie.Transactor
-import doobie.testutils.VoidExtensions
+import org.typelevel.doobie.Transactor
+import org.typelevel.doobie.testutils.VoidExtensions
 
 class IOAnalysisMatchersChecks extends Specification with IOAnalysisMatchers {
 

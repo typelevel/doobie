@@ -2,12 +2,12 @@
 // This software is licensed under the MIT License (MIT).
 // For more information see LICENSE or https://opensource.org/licenses/MIT
 
-package doobie.util
+package org.typelevel.doobie.util
 
 import cats.effect.IO
-import doobie.enumerated.JdbcType
-import doobie.testutils.VoidExtensions
-import doobie.util.transactor.Transactor
+import org.typelevel.doobie.enumerated.JdbcType
+import org.typelevel.doobie.testutils.VoidExtensions
+import org.typelevel.doobie.util.transactor.Transactor
 
 trait TransactorProvider {
   lazy val xa = Transactor.fromDriverManager[IO](
@@ -38,7 +38,7 @@ final case class Foo(s: String)
 final case class Bar(n: Int)
 
 class GetDBSuite extends munit.CatsEffectSuite with TransactorProvider with GetDBSuitePlatform {
-  import doobie.syntax.all.*
+  import org.typelevel.doobie.syntax.all.*
 
   // Both of these will fail at runtime if called with a null value, we check that this is
   // avoided below.
@@ -55,11 +55,12 @@ class GetDBSuite extends munit.CatsEffectSuite with TransactorProvider with GetD
 
   test("Get should error when reading a NULL into an unlifted Scala type (AnyRef)") {
     sql"select null".query[Foo].unique.transact(xa).attempt.assertEquals(Left(
-      doobie.util.invariant.NonNullableColumnRead(1, JdbcType.Char)))
+      org.typelevel.doobie.util.invariant.NonNullableColumnRead(1, JdbcType.Char)))
   }
 
   test("Get should error when reading an incorrect value") {
-    sql"select 0".query[Bar].unique.transact(xa).attempt.assertEquals(Left(doobie.util.invariant.InvalidValue[Int, Bar](
+    sql"select 0".query[Bar].unique.transact(
+      xa).attempt.assertEquals(Left(org.typelevel.doobie.util.invariant.InvalidValue[Int, Bar](
       0,
       "cannot be 0")))
   }
