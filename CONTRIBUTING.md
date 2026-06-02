@@ -53,9 +53,11 @@ After the version is set correctly:
 ```
 # Make the git worktree where gh-page branch will be checked out and docs copied over
 git fetch && git worktree add doc_worktree gh-pages
-sbtn 'set ThisBuild / version := "<latest released version>" '
-sbtn makeSite ghpagesSynchLocal 
-# Check doc changes are expected, then
+sbtn 'set ThisBuild / version := "<latest released version>"'
+sbtn 'makeSite ; ghpagesSynchLocal' 
+cd doc_worktree
+# IMPORTANT: Check the site changes to be published!
+cd ..
 sbtn ghpagesPushSite
 git worktree remove doc_worktree
 ```
