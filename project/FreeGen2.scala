@@ -227,6 +227,7 @@ class FreeGen2(
   def methods(c: Class[?]): List[Method] =
     closure(c).flatMap(_.getDeclaredMethods.toList).distinct
       .filterNot(_.isStatic)
+      .filter(m => Modifier.isPublic(m.getModifiers))
       .filter(_.getAnnotation(classOf[Deprecated]) == null)
 
   // Ctor values for all methods in of A plus superclasses, interfaces, etc.
