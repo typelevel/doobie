@@ -26,7 +26,7 @@ lazy val silencerVersion = "1.7.1"
 lazy val specs2Version = "4.23.0"
 lazy val scala212Version = "2.12.21"
 lazy val scala213Version = "2.13.18"
-lazy val scala3Version = "3.3.7"
+lazy val scala3Version = "3.3.8"
 lazy val allScalaVersions = List(scala212Version, scala213Version, scala3Version)
 // scala-steward:off
 lazy val slf4jVersion = "1.7.36"
