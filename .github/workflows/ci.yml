@@ -14,6 +14,20 @@ on:
     branches: ['**', '!update/**', '!pr/**']
     tags: [v*]
 
+permissions:
+  actions: none
+  checks: none
+  contents: write
+  deployments: none
+  id-token: none
+  issues: none
+  packages: read
+  pages: none
+  pull-requests: none
+  repository-projects: none
+  security-events: none
+  statuses: none
+
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -163,6 +177,22 @@ jobs:
           SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
           SONATYPE_CREDENTIAL_HOST: ${{ secrets.SONATYPE_CREDENTIAL_HOST }}
         run: sbt tlCiRelease
+
+      - name: Start up Postgres for docs publish
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: docker compose up -d
+
+      - name: Configure git for docs publish
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Publish Doc Site
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          SBT_GHPAGES_COMMIT_MESSAGE: Update docs for ${{ github.ref_name }}
+        run: sbt docs/makeSite docs/ghpagesPushSite
 
   dependency-submission:
     name: Submit Dependencies
