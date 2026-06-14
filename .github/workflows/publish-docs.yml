@@ -1,0 +1,64 @@
+name: Publish Docs
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to use in the generated docs, without a leading v
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+jobs:
+  publish-docs:
+    name: Publish Docs
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    steps:
+      - name: Checkout current branch (full)
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup sbt
+        uses: sbt/setup-sbt@v1
+
+      - name: Setup Java (temurin@11)
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 11
+          cache: sbt
+
+      - name: Validate docs version
+        env:
+          DOC_VERSION: ${{ inputs.version }}
+        run: |
+          if [[ ! "$DOC_VERSION" =~ ^[0-9]+(\.[0-9]+){1,2}(-[0-9A-Za-z][0-9A-Za-z.-]*)?$ ]]; then
+            echo "Version must look like 1.0.0 or 1.0.0-RC1, without a leading v."
+            exit 1
+          fi
+
+      - name: Start up Postgres
+        run: docker compose up -d
+
+      - name: Prepare gh-pages worktree
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin gh-pages:gh-pages
+          git worktree add doc_worktree gh-pages
+
+      - name: Publish docs
+        env:
+          DOC_VERSION: ${{ inputs.version }}
+        run: sbt --client "set ThisBuild / version := \"$DOC_VERSION\" ; set LocalProject(\"docs\") / git.remoteRepo := \"$GITHUB_SERVER_URL/$GITHUB_REPOSITORY.git\" ; docs/makeSite ; docs/ghpagesPushSite"
