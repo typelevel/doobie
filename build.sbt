@@ -1,5 +1,6 @@
 import FreeGen2._
 import scala.sys.process._
+import org.typelevel.sbt.gha.{PermissionValue, Permissions}
 import org.typelevel.sbt.tpolecat.{DevMode, CiMode}
 
 // Library versions all in one place, for convenience and sanity.
@@ -28,6 +29,18 @@ lazy val scala212Version = "2.12.21"
 lazy val scala213Version = "2.13.18"
 lazy val scala3Version = "3.3.8"
 lazy val allScalaVersions = List(scala212Version, scala213Version, scala3Version)
+lazy val doobieGitRemote =
+  if (sys.env.get("GITHUB_ACTIONS").contains("true"))
+    sys.env
+      .get("GITHUB_TOKEN")
+      .filter(_.nonEmpty)
+      .map(token => s"https://x-access-token:$token@github.com/typelevel/doobie.git")
+      .getOrElse("https://github.com/typelevel/doobie.git")
+  else
+    "git@github.com:typelevel/doobie.git"
+lazy val doobieGithubWorkflowPermissions =
+  Permissions.Specify.defaultRestrictive
+    .withContents(PermissionValue.Write)
 // scala-steward:off
 lazy val slf4jVersion = "1.7.36"
 // scala-steward:on
@@ -44,6 +57,8 @@ ThisBuild / developers += tlGitHubDev("tpolecat", "Rob Norris")
 ThisBuild / tpolecatDefaultOptionsMode :=
   (if (sys.env.contains("CI")) CiMode else DevMode)
 ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("11"))
+useReadableConsoleGit
+ThisBuild / githubWorkflowPermissions := Some(doobieGithubWorkflowPermissions)
 ThisBuild / githubWorkflowBuildPreamble ++= Seq(
   WorkflowStep.Run(
     commands = List("docker compose up -d"),
@@ -86,6 +101,27 @@ ThisBuild / githubWorkflowJobSetup ~= { steps =>
     case s => s
   }
 }
+ThisBuild / githubWorkflowPublishPostamble ++= Seq(
+  WorkflowStep.Run(
+    commands = List("docker compose up -d"),
+    name = Some("Start up Postgres for docs publish"),
+    cond = Some("startsWith(github.ref, 'refs/tags/v')")
+  ),
+  WorkflowStep.Run(
+    commands = List(
+      "git config --global user.name \"github-actions[bot]\"",
+      "git config --global user.email \"41898282+github-actions[bot]@users.noreply.github.com\""
+    ),
+    name = Some("Configure git for docs publish"),
+    cond = Some("startsWith(github.ref, 'refs/tags/v')")
+  ),
+  WorkflowStep.Sbt(
+    commands = List("docs/makeSite", "docs/ghpagesPushSite"),
+    name = Some("Publish Doc Site"),
+    cond = Some("startsWith(github.ref, 'refs/tags/v')"),
+    env = Map("SBT_GHPAGES_COMMIT_MESSAGE" -> "Update docs for ${{ github.ref_name }}")
+  )
+)
 
 ThisBuild / mergifyPrRules += MergifyPrRule(
   name = "merge-when-ci-pass",
@@ -576,7 +612,7 @@ lazy val docs = projectMatrix
 
     // postgis is `provided` dependency for users, and section from book of doobie needs it
     libraryDependencies += postgisDep,
-    git.remoteRepo := "git@github.com:typelevel/doobie.git",
+    git.remoteRepo := doobieGitRemote,
     ghpagesNoJekyll := true,
     publish / skip := true,
     paradoxTheme := Some(builtinParadoxTheme("generic")),
