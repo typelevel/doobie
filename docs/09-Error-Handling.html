@@ -32,7 +32,7 @@
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-1.0.0-RC12
+1.0.0-RC13
 </div>
 </div>
 <div class="nav-toc">
@@ -51,6 +51,7 @@
     <li><a href="../docs/08-Fragments.html" class="page">Statement Fragments</a></li>
     <li><a href="../docs/09-Error-Handling.html" class="active page">Error Handling</a></li>
     <li><a href="../docs/10-Logging.html" class="page">Logging</a></li>
+    <li><a href="../docs/20-Otel4s-Tracing.html" class="page">Tracing with otel4s</a></li>
     <li><a href="../docs/11-Arrays.html" class="page">SQL Arrays</a></li>
     <li><a href="../docs/12-Custom-Mappings.html" class="page">Custom Mappings</a></li>
     <li><a href="../docs/19-Custom-JDBC-Operations.html" class="page">Custom JDBC Operations</a></li>
@@ -92,7 +93,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-1.0.0-RC12
+1.0.0-RC13
 </div>
 </div>
 <div class="nav-toc">
@@ -111,6 +112,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
     <li><a href="../docs/08-Fragments.html" class="page">Statement Fragments</a></li>
     <li><a href="../docs/09-Error-Handling.html" class="active page">Error Handling</a></li>
     <li><a href="../docs/10-Logging.html" class="page">Logging</a></li>
+    <li><a href="../docs/20-Otel4s-Tracing.html" class="page">Tracing with otel4s</a></li>
     <li><a href="../docs/11-Arrays.html" class="page">SQL Arrays</a></li>
     <li><a href="../docs/12-Custom-Mappings.html" class="page">Custom Mappings</a></li>
     <li><a href="../docs/19-Custom-JDBC-Operations.html" class="page">Custom JDBC Operations</a></li>
@@ -149,9 +151,9 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <h2><a href="#error-handling" name="error-handling" class="anchor"><span class="anchor-link"></span></a>Error Handling</h2>
 <p>In this chapter we examine a set of combinators that allow us to construct programs that trap and handle exceptions.</p>
 <h3><a href="#setting-up" name="setting-up" class="anchor"><span class="anchor-link"></span></a>Setting Up</h3>
-<pre class="prettyprint"><code class="language-scala">import doobie._
-import doobie.implicits._
-import doobie.util.ExecutionContexts
+<pre class="prettyprint"><code class="language-scala">import org.typelevel.doobie._
+import org.typelevel.doobie.implicits._
+import org.typelevel.doobie.util.ExecutionContexts
 import cats._
 import cats.data._
 import cats.effect._
@@ -197,9 +199,9 @@ p.attempt
 //   a = HandleErrorWith(
 //     fa = FlatMapped(
 //       c = Pure(a = 42),
-//       f = cats.Monad$$Lambda$35573/0x0000000807c25840@9bc5593
+//       f = cats.Monad$$Lambda$14238/0x0000000803b6d840@77887270
 //     ),
-//     f = cats.ApplicativeError$$Lambda$35754/0x0000000807cfa840@7ac1e38d
+//     f = cats.ApplicativeError$$Lambda$14435/0x0000000803c78840@5b5f3e9d
 //   )
 // )
 </code></pre>
@@ -253,7 +255,7 @@ def insert(s: String): ConnectionIO[Person] = {
 // 23505
 </code></pre>
 <p>So let&rsquo;s change our method to return an <code>Either[String, Person]</code> by using the <code>attemptSomeSql</code> combinator. This allows us to specify the <code>SQLState</code> value that we want to trap. In this case the culprit <code>&quot;23505&quot;</code> (yes, it&rsquo;s a string) is provided as a constant in the <code>doobie-postgres</code> add-on.</p>
-<pre class="prettyprint"><code class="language-scala">import doobie.postgres._
+<pre class="prettyprint"><code class="language-scala">import org.typelevel.doobie.postgres._
 
 def safeInsert(s: String): ConnectionIO[Either[String, Person]] =
   insert(s).attemptSomeSqlState {
@@ -266,7 +268,7 @@ def safeInsert(s: String): ConnectionIO[Either[String, Person]] =
 safeInsert(&quot;steve&quot;).quick.unsafeRunSync()
 </code></pre>
 <div class="source-github">
-The source code for this page can be found <a href="https://github.com/typelevel/doobie/tree/v1.0.0-RC12/modules/docs/target/jvm-2.13/mdoc/docs/09-Error-Handling.md">here</a>.
+The source code for this page can be found <a href="https://github.com/typelevel/doobie/tree/master/modules/docs/target/jvm-2.13/mdoc/docs/09-Error-Handling.md">here</a>.
 </div>
 
 <div class="nav-next">
@@ -352,7 +354,7 @@ The source code for this page can be found <a href="https://github.com/typelevel
 <script type="text/javascript" src="../lib/prettify/prettify.js"></script>
 <script type="text/javascript" src="../lib/prettify/lang-scala.js"></script>
 <script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
-<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.0.0-RC12', 'https://github.com/typelevel/doobie')});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.0.0-RC13', 'https://github.com/typelevel/doobie')});</script>
 
 
 </html>

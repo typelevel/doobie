@@ -32,7 +32,7 @@
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-1.0.0-RC12
+1.0.0-RC13
 </div>
 </div>
 <div class="nav-toc">
@@ -51,6 +51,7 @@
     <li><a href="../docs/08-Fragments.html" class="page">Statement Fragments</a></li>
     <li><a href="../docs/09-Error-Handling.html" class="page">Error Handling</a></li>
     <li><a href="../docs/10-Logging.html" class="page">Logging</a></li>
+    <li><a href="../docs/20-Otel4s-Tracing.html" class="page">Tracing with otel4s</a></li>
     <li><a href="../docs/11-Arrays.html" class="page">SQL Arrays</a></li>
     <li><a href="../docs/12-Custom-Mappings.html" class="page">Custom Mappings</a></li>
     <li><a href="../docs/19-Custom-JDBC-Operations.html" class="page">Custom JDBC Operations</a></li>
@@ -92,7 +93,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-1.0.0-RC12
+1.0.0-RC13
 </div>
 </div>
 <div class="nav-toc">
@@ -111,6 +112,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
     <li><a href="../docs/08-Fragments.html" class="page">Statement Fragments</a></li>
     <li><a href="../docs/09-Error-Handling.html" class="page">Error Handling</a></li>
     <li><a href="../docs/10-Logging.html" class="page">Logging</a></li>
+    <li><a href="../docs/20-Otel4s-Tracing.html" class="page">Tracing with otel4s</a></li>
     <li><a href="../docs/11-Arrays.html" class="page">SQL Arrays</a></li>
     <li><a href="../docs/12-Custom-Mappings.html" class="page">Custom Mappings</a></li>
     <li><a href="../docs/19-Custom-JDBC-Operations.html" class="page">Custom JDBC Operations</a></li>
@@ -152,8 +154,8 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 import cats.data._
 import cats.effect._
 import cats.implicits._
-import doobie._
-import doobie.implicits._
+import org.typelevel.doobie._
+import org.typelevel.doobie.implicits._
 </code></pre>
 <h3><a href="#about-transactors" name="about-transactors" class="anchor"><span class="anchor-link"></span></a>About Transactors</h3>
 <p>Most <strong>doobie</strong> programs are values of type <code>ConnectionIO[A]</code> or <code>Stream[ConnectionIO, A]</code> that describe computations requiring a database connection. By providing a means of acquiring a JDBC connection we can transform these programs into computations that can actually be executed. The most common way of performing this transformation is via a <code>Transactor</code>.</p>
@@ -187,9 +189,9 @@ import doobie.implicits._
 <p>The <code>doobie-hikari</code> add-on provides a <code>Transactor</code> implementation backed by a <a href="https://github.com/brettwooldridge/HikariCP">HikariCP</a> connection pool. The connection pool is a lifetime-managed object that must be shut down cleanly, so it is managed as a <code>Resource</code>. A program that uses <code>HikariTransactor</code> will typically use <code>IOApp</code>.</p>
 <pre class="prettyprint"><code class="language-scala">import cats.effect._
 import cats.implicits._
-import doobie._
-import doobie.implicits._
-import doobie.hikari._
+import org.typelevel.doobie._
+import org.typelevel.doobie.implicits._
+import org.typelevel.doobie.hikari._
 import com.zaxxer.hikari.HikariConfig
 
 object HikariApp extends IOApp {
@@ -231,7 +233,7 @@ object HikariApp extends IOApp {
 <h3><a href="#using-the-jdbc-drivermanager" name="using-the-jdbc-drivermanager" class="anchor"><span class="anchor-link"></span></a>Using the JDBC DriverManager</h3>
 <p>JDBC provides a bare-bones connection provider via <code>DriverManager.getConnection</code>, which has the advantage of being extremely simple: there is no connection pooling and thus no configuration required. The disadvantage is that it is quite a bit slower than pooling connection managers, and provides no upper bound on the number of concurrent connections. It executes blocking operations on a similar unbounded pool of daemon threads.</p>
 <p>However, for test and for experimentation as described in this book (and for situations where you really do want to ensure that you get a truly fresh connection right away) the <code>DriverManager</code> is fine. Support in <strong>doobie</strong> is via <code>DriverManagerTransactor</code>. To construct one you must pass the name of the driver class and a connect URL. Normally you will also pass a user/password (the API provides several variants matching the <code>DriverManager</code> static API).</p>
-<pre class="prettyprint"><code class="language-scala">import doobie.util.ExecutionContexts
+<pre class="prettyprint"><code class="language-scala">import org.typelevel.doobie.util.ExecutionContexts
 
 // This is just for testing. Consider using cats.effect.IOApp instead of calling
 // unsafe methods directly.
@@ -271,12 +273,12 @@ def transactor(c: Connection): Transactor[IO] =
 <pre class="prettyprint"><code class="language-scala">val testXa = Transactor.after.set(xa, HC.rollback)
 </code></pre>
 <p>As another example, Hive&rsquo;s JDBC driver doesn&rsquo;t support transaction commit or rollback, you can create your own <code>Transactor</code> to accommodate that, like:</p>
-<pre class="prettyprint"><code class="language-scala">import doobie.free.connection.unit
+<pre class="prettyprint"><code class="language-scala">import org.typelevel.doobie.free.connection.unit
 
 val hiveXa = Transactor.strategy.set(xa, Strategy.default.copy(after = unit, oops = unit))
 </code></pre>
 <div class="source-github">
-The source code for this page can be found <a href="https://github.com/typelevel/doobie/tree/v1.0.0-RC12/modules/docs/target/jvm-2.13/mdoc/docs/14-Managing-Connections.md">here</a>.
+The source code for this page can be found <a href="https://github.com/typelevel/doobie/tree/master/modules/docs/target/jvm-2.13/mdoc/docs/14-Managing-Connections.md">here</a>.
 </div>
 
 <div class="nav-next">
@@ -365,7 +367,7 @@ The source code for this page can be found <a href="https://github.com/typelevel
 <script type="text/javascript" src="../lib/prettify/prettify.js"></script>
 <script type="text/javascript" src="../lib/prettify/lang-scala.js"></script>
 <script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
-<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.0.0-RC12', 'https://github.com/typelevel/doobie')});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.0.0-RC13', 'https://github.com/typelevel/doobie')});</script>
 
 
 </html>

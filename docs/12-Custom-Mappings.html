@@ -32,7 +32,7 @@
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-1.0.0-RC12
+1.0.0-RC13
 </div>
 </div>
 <div class="nav-toc">
@@ -51,6 +51,7 @@
     <li><a href="../docs/08-Fragments.html" class="page">Statement Fragments</a></li>
     <li><a href="../docs/09-Error-Handling.html" class="page">Error Handling</a></li>
     <li><a href="../docs/10-Logging.html" class="page">Logging</a></li>
+    <li><a href="../docs/20-Otel4s-Tracing.html" class="page">Tracing with otel4s</a></li>
     <li><a href="../docs/11-Arrays.html" class="page">SQL Arrays</a></li>
     <li><a href="../docs/12-Custom-Mappings.html" class="active page">Custom Mappings</a></li>
     <li><a href="../docs/19-Custom-JDBC-Operations.html" class="page">Custom JDBC Operations</a></li>
@@ -92,7 +93,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-1.0.0-RC12
+1.0.0-RC13
 </div>
 </div>
 <div class="nav-toc">
@@ -111,6 +112,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
     <li><a href="../docs/08-Fragments.html" class="page">Statement Fragments</a></li>
     <li><a href="../docs/09-Error-Handling.html" class="page">Error Handling</a></li>
     <li><a href="../docs/10-Logging.html" class="page">Logging</a></li>
+    <li><a href="../docs/20-Otel4s-Tracing.html" class="page">Tracing with otel4s</a></li>
     <li><a href="../docs/11-Arrays.html" class="page">SQL Arrays</a></li>
     <li><a href="../docs/12-Custom-Mappings.html" class="active page">Custom Mappings</a></li>
     <li><a href="../docs/19-Custom-JDBC-Operations.html" class="page">Custom JDBC Operations</a></li>
@@ -152,7 +154,8 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <h2><a href="#setup" name="setup" class="anchor"><span class="anchor-link"></span></a>Setup</h2>
 <p>In this chapter we&rsquo;re importing the essentials from Cats and <strong>doobie</strong>, as well as some other odds and ends we&rsquo;ll discuss below.</p>
 <pre class="prettyprint"><code class="language-scala">import cats._, cats.data._, cats.implicits._
-import doobie._, doobie.implicits._
+import org.typelevel.doobie._
+import org.typelevel.doobie.implicits._
 import io.circe._, io.circe.jawn._, io.circe.syntax._
 import java.awt.Point
 import org.postgresql.util.PGobject
@@ -163,7 +166,7 @@ import org.postgresql.util.PGobject
   sql&quot;INSERT INTO log (message, detail) VALUES ($msg, $ex)&quot;.update.run
 // error: type mismatch;
 //  found   : Exception
-//  required: doobie.syntax.SqlInterpolator.SingleFragment[_]; incompatible interpolation method sql
+//  required: org.typelevel.doobie.syntax.SqlInterpolator.SingleFragment[_]; incompatible interpolation method sql
 //   sql&quot;INSERT INTO log (message, detail) VALUES ($msg, $ex)&quot;.update.run
 //   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 </code></pre>
@@ -315,15 +318,15 @@ fr&quot;SELECT &#39;Red&#39;&quot;.query[Color].unique
 <p>Consider the <code>Point</code> class from Java AWT, which is logically a pair of <code>Int</code>s but is not a case class and is thus not eligible for automatic derivation of <code>Read</code> and <code>Write</code> instances. We can define these by hand by mapping to and from the Scala type <code>(Int, Int)</code> which <em>does</em> have automatically-derived instances.</p>
 <pre class="prettyprint"><code class="language-scala">implicit val pointRead: Read[Point] =
   Read[(Int, Int)].map { case (x, y) =&gt; new Point(x, y) }
-// pointRead: Read[Point] = doobie.util.Read$Transform@30ad369e
+// pointRead: Read[Point] = org.typelevel.doobie.util.Read$Transform@4f8fde03
 
 implicit val pointWrite: Write[Point] =
   Write[(Int, Int)].contramap(p =&gt; (p.x, p.y))
-// pointWrite: Write[Point] = doobie.util.Write$Composite@635d3307
+// pointWrite: Write[Point] = org.typelevel.doobie.util.Write$Composite@17289f7a
 </code></pre>
 <p>There is no equivalent to <code>Meta</code> for bidirectional column vector mappings.</p>
 <div class="source-github">
-The source code for this page can be found <a href="https://github.com/typelevel/doobie/tree/v1.0.0-RC12/modules/docs/target/jvm-2.13/mdoc/docs/12-Custom-Mappings.md">here</a>.
+The source code for this page can be found <a href="https://github.com/typelevel/doobie/tree/master/modules/docs/target/jvm-2.13/mdoc/docs/12-Custom-Mappings.md">here</a>.
 </div>
 
 <div class="nav-next">
@@ -410,7 +413,7 @@ The source code for this page can be found <a href="https://github.com/typelevel
 <script type="text/javascript" src="../lib/prettify/prettify.js"></script>
 <script type="text/javascript" src="../lib/prettify/lang-scala.js"></script>
 <script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
-<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.0.0-RC12', 'https://github.com/typelevel/doobie')});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.0.0-RC13', 'https://github.com/typelevel/doobie')});</script>
 
 
 </html>

@@ -32,7 +32,7 @@
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-1.0.0-RC12
+1.0.0-RC13
 </div>
 </div>
 <div class="nav-toc">
@@ -51,6 +51,7 @@
     <li><a href="../docs/08-Fragments.html" class="page">Statement Fragments</a></li>
     <li><a href="../docs/09-Error-Handling.html" class="page">Error Handling</a></li>
     <li><a href="../docs/10-Logging.html" class="page">Logging</a></li>
+    <li><a href="../docs/20-Otel4s-Tracing.html" class="page">Tracing with otel4s</a></li>
     <li><a href="../docs/11-Arrays.html" class="active page">SQL Arrays</a></li>
     <li><a href="../docs/12-Custom-Mappings.html" class="page">Custom Mappings</a></li>
     <li><a href="../docs/19-Custom-JDBC-Operations.html" class="page">Custom JDBC Operations</a></li>
@@ -92,7 +93,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-1.0.0-RC12
+1.0.0-RC13
 </div>
 </div>
 <div class="nav-toc">
@@ -111,6 +112,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
     <li><a href="../docs/08-Fragments.html" class="page">Statement Fragments</a></li>
     <li><a href="../docs/09-Error-Handling.html" class="page">Error Handling</a></li>
     <li><a href="../docs/10-Logging.html" class="page">Logging</a></li>
+    <li><a href="../docs/20-Otel4s-Tracing.html" class="page">Tracing with otel4s</a></li>
     <li><a href="../docs/11-Arrays.html" class="active page">SQL Arrays</a></li>
     <li><a href="../docs/12-Custom-Mappings.html" class="page">Custom Mappings</a></li>
     <li><a href="../docs/19-Custom-JDBC-Operations.html" class="page">Custom JDBC Operations</a></li>
@@ -150,11 +152,11 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <p>This chapter shows how we can map Scala sequence types to SQL <code>ARRAY</code> types, for vendors that support it. Note that although SQL array mappings are part of the JDBC specification, their behavior is vendor-specific and requires an add-on library; the code in this chapter requires <code>doobie-postgres</code>.</p>
 <h3><a href="#setting-up" name="setting-up" class="anchor"><span class="anchor-link"></span></a>Setting Up</h3>
 <p>Again we set up a transactor and pull in YOLO mode. We also need an import to get PostgreSQL-specific type mappings.</p>
-<pre class="prettyprint"><code class="language-scala">import doobie._
-import doobie.implicits._
-import doobie.postgres._
-import doobie.postgres.implicits._
-import doobie.util.ExecutionContexts
+<pre class="prettyprint"><code class="language-scala">import org.typelevel.doobie._
+import org.typelevel.doobie.implicits._
+import org.typelevel.doobie.postgres._
+import org.typelevel.doobie.postgres.implicits._
+import org.typelevel.doobie.util.ExecutionContexts
 import cats._
 import cats.data._
 import cats.effect._
@@ -216,7 +218,7 @@ sql&quot;select array[&#39;foo&#39;,NULL,&#39;baz&#39;]&quot;.query[Option[List[
 </code></pre>
 <h3><a href="#array-of-enums" name="array-of-enums" class="anchor"><span class="anchor-link"></span></a>Array of enums</h3>
 <p>For reading from and writing to a column that is an array of enum, you can use <code>doobie.postgres.implicits.arrayOfEnum</code> to create a <code>Meta</code> instance for your enum type:</p>
-<pre class="prettyprint"><code class="language-scala">import doobie.postgres.implicits.arrayOfEnum
+<pre class="prettyprint"><code class="language-scala">import org.typelevel.doobie.postgres.implicits.arrayOfEnum
 
 sealed trait MyEnum
 
@@ -252,7 +254,7 @@ object MyEnum {
 </code></pre>
 <p>For an example of using an enum type from another schema, please see <a href="https://github.com/typelevel/doobie/blob/main/modules/postgres/src/test/scala/doobie/postgres/enums/OtherEnum.scala">OtherEnum.scala</a></p>
 <div class="source-github">
-The source code for this page can be found <a href="https://github.com/typelevel/doobie/tree/v1.0.0-RC12/modules/docs/target/jvm-2.13/mdoc/docs/11-Arrays.md">here</a>.
+The source code for this page can be found <a href="https://github.com/typelevel/doobie/tree/master/modules/docs/target/jvm-2.13/mdoc/docs/11-Arrays.md">here</a>.
 </div>
 
 <div class="nav-next">
@@ -338,7 +340,7 @@ The source code for this page can be found <a href="https://github.com/typelevel
 <script type="text/javascript" src="../lib/prettify/prettify.js"></script>
 <script type="text/javascript" src="../lib/prettify/lang-scala.js"></script>
 <script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
-<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.0.0-RC12', 'https://github.com/typelevel/doobie')});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.0.0-RC13', 'https://github.com/typelevel/doobie')});</script>
 
 
 </html>

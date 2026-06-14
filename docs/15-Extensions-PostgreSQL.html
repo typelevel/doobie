@@ -32,7 +32,7 @@
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-1.0.0-RC12
+1.0.0-RC13
 </div>
 </div>
 <div class="nav-toc">
@@ -51,6 +51,7 @@
     <li><a href="../docs/08-Fragments.html" class="page">Statement Fragments</a></li>
     <li><a href="../docs/09-Error-Handling.html" class="page">Error Handling</a></li>
     <li><a href="../docs/10-Logging.html" class="page">Logging</a></li>
+    <li><a href="../docs/20-Otel4s-Tracing.html" class="page">Tracing with otel4s</a></li>
     <li><a href="../docs/11-Arrays.html" class="page">SQL Arrays</a></li>
     <li><a href="../docs/12-Custom-Mappings.html" class="page">Custom Mappings</a></li>
     <li><a href="../docs/19-Custom-JDBC-Operations.html" class="page">Custom JDBC Operations</a></li>
@@ -92,7 +93,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-1.0.0-RC12
+1.0.0-RC13
 </div>
 </div>
 <div class="nav-toc">
@@ -111,6 +112,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
     <li><a href="../docs/08-Fragments.html" class="page">Statement Fragments</a></li>
     <li><a href="../docs/09-Error-Handling.html" class="page">Error Handling</a></li>
     <li><a href="../docs/10-Logging.html" class="page">Logging</a></li>
+    <li><a href="../docs/20-Otel4s-Tracing.html" class="page">Tracing with otel4s</a></li>
     <li><a href="../docs/11-Arrays.html" class="page">SQL Arrays</a></li>
     <li><a href="../docs/12-Custom-Mappings.html" class="page">Custom Mappings</a></li>
     <li><a href="../docs/19-Custom-JDBC-Operations.html" class="page">Custom JDBC Operations</a></li>
@@ -148,15 +150,15 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <div class="small-12 large-9 column" id="docs">
 <h2><a href="#extensions-for-postgresql" name="extensions-for-postgresql" class="anchor"><span class="anchor-link"></span></a>Extensions for PostgreSQL</h2>
 <p>In this chapter we discuss the extended support that <strong>doobie</strong> offers for users of <a href="http://www.postgresql.org/">PostgreSQL</a>. To use these extensions you must add an additional dependency to your project:</p>
-<pre class="prettyprint"><code class="language-scala">libraryDependencies += &quot;org.tpolecat&quot; %% &quot;doobie-postgres&quot; % &quot;1.0.0-RC12&quot;
+<pre class="prettyprint"><code class="language-scala">libraryDependencies += &quot;org.tpolecat&quot; %% &quot;doobie-postgres&quot; % &quot;1.0.0-RC13&quot;
 </code></pre>
 <p>This library pulls in <a href="https://jdbc.postgresql.org">PostgreSQL JDBC Driver</a> as a transitive dependency.</p>
 <p>There are extensions available for dealing with JSON by using Circe, if you like to use those, include this dependency:</p>
-<pre class="prettyprint"><code class="language-scala">libraryDependencies += &quot;org.tpolecat&quot; %% &quot;doobie-postgres-circe&quot; % &quot;1.0.0-RC12&quot;
+<pre class="prettyprint"><code class="language-scala">libraryDependencies += &quot;org.tpolecat&quot; %% &quot;doobie-postgres-circe&quot; % &quot;1.0.0-RC13&quot;
 </code></pre>
 <p>Then, you will be able to import the implicits for dealing with JSON:</p>
-<pre class="prettyprint"><code class="language-scala">import doobie.postgres.circe.json.implicits._
-import doobie.postgres.circe.jsonb.implicits._
+<pre class="prettyprint"><code class="language-scala">import org.typelevel.doobie.postgres.circe.json.implicits._
+import org.typelevel.doobie.postgres.circe.jsonb.implicits._
 
 </code></pre>
 <h3><a href="#setting-up" name="setting-up" class="anchor"><span class="anchor-link"></span></a>Setting Up</h3>
@@ -165,9 +167,9 @@ import doobie.postgres.circe.jsonb.implicits._
 import cats.data._
 import cats.effect._
 import cats.implicits._
-import doobie._
-import doobie.implicits._
-import doobie.util.ExecutionContexts
+import org.typelevel.doobie._
+import org.typelevel.doobie.implicits._
+import org.typelevel.doobie.util.ExecutionContexts
 
 // This is just for testing. Consider using cats.effect.IOApp instead of calling
 // unsafe methods directly.
@@ -184,8 +186,8 @@ val xa = Transactor.fromDriverManager[IO](
 )
 </code></pre>
 <p><strong>doobie</strong> adds support for a large number of extended types that are not supported directly by JDBC. All mappings (except postgis) are provided in the <code>pgtypes</code> module.</p>
-<pre class="prettyprint"><code class="language-scala">import doobie.postgres._
-import doobie.postgres.implicits._
+<pre class="prettyprint"><code class="language-scala">import org.typelevel.doobie.postgres._
+import org.typelevel.doobie.postgres.implicits._
 </code></pre>
 <h3><a href="#java-8-time-types-jsr310-" name="java-8-time-types-jsr310-" class="anchor"><span class="anchor-link"></span></a>Java 8 Time Types (JSR310)</h3>
 <p>To ensure <strong>doobie</strong> performs the conversion correctly between Java 8 time types and PostgreSQL Date/Time types when handling timezones or the lack thereof. The correct combination of date/time types should be used:</p>
@@ -273,7 +275,7 @@ implicit val FoobarMeta: Meta[FooBar] =
 <pre class="prettyprint"><code class="language-scala">libraryDependencies += &quot;net.postgis&quot; % &quot;postgis-jdbc&quot; % &quot;2.3.0&quot;
 </code></pre>
 <pre class="prettyprint"><code class="language-scala">// Not provided via doobie.postgres.imports._; you must import them explicitly.
-import doobie.postgres.pgisimplicits._
+import org.typelevel.doobie.postgres.pgisimplicits._
 </code></pre>
 <ul>
   <li><code>PGgeometry</code></li>
@@ -294,7 +296,7 @@ import doobie.postgres.pgisimplicits._
   <li><code>Point</code></li>
 </ul>
 <p><a href="http://postgis.net/workshops/postgis-intro/geography.html">Geographic types</a> mappings are defined in a different object (<code>pgisgeographyimplicits</code>), to allow geometric types using geodetic coordinates.</p>
-<pre class="prettyprint"><code class="language-scala">import doobie.postgres.pgisgeographyimplicits._
+<pre class="prettyprint"><code class="language-scala">import org.typelevel.doobie.postgres.pgisgeographyimplicits._
 
 // or define the implicit conversion manually
 
@@ -337,14 +339,14 @@ implicit val geographyPoint: Meta[Point] = doobie.postgres.pgisgeographyimplicit
   <h2><a href="#in-the-text-form-of-a-range-an-inclusive-lower-bound-is-represented-by-while-an-exclusive-upper-bound-is-represented-by-" name="in-the-text-form-of-a-range-an-inclusive-lower-bound-is-represented-by-while-an-exclusive-upper-bound-is-represented-by-" class="anchor"><span class="anchor-link"></span></a>In the text form of a range, an inclusive lower bound is represented by &lsquo;[&lsquo; while an exclusive lower bound is represented by &rsquo;(&lsquo;. Likewise, an inclusive upper bound is represented by &rsquo;]&rsquo;, while an exclusive upper bound is represented by &lsquo;)&rsquo;.</h2>
   <p>Note: the <a href="https://www.postgresql.org/docs/current/rangetypes.html#RANGETYPES">range types</a> mappings are defined in a different object (<code>rangeimplicits</code>). To enable it you must import them explicitly:</p>
 </blockquote>
-<pre class="prettyprint"><code class="language-scala">import doobie.postgres.rangeimplicits._
+<pre class="prettyprint"><code class="language-scala">import org.typelevel.doobie.postgres.rangeimplicits._
 </code></pre>
 <p>To create for example custom implementation of <code>Range[Byte]</code> you can use the public method which declared in the following package <code>doobie.postgres.rangeimplicits</code>:</p>
 <pre class="prettyprint"><code class="language-scala">def rangeMeta[T](sqlRangeType: String)(encode: T =&gt; String, decode: String =&gt; T): Meta[Range[T]]
 </code></pre>
 <p>For a <code>Range[Byte]</code>, the meta and bounds encoder and decoder would appear as follows:</p>
-<pre class="prettyprint"><code class="language-scala">import doobie.postgres.rangeimplicits._
-import doobie.postgres.types.Range
+<pre class="prettyprint"><code class="language-scala">import org.typelevel.doobie.postgres.rangeimplicits._
+import org.typelevel.doobie.postgres.types.Range
 
 implicit val byteRangeMeta: Meta[Range[Byte]] = rangeMeta[Byte](&quot;int4range&quot;)(_.toString, _.toByte)
 
@@ -395,7 +397,7 @@ p.onSyntaxError(&quot;caught!&quot;.pure[ConnectionIO]).transact(xa).unsafeRunSy
 <h3><a href="#large-objects" name="large-objects" class="anchor"><span class="anchor-link"></span></a>Large Objects</h3>
 <p>PostgreSQL provides a facility for storing very large objects (up to 4TB each) in a single uniform storage, identified by unique numeric ID and accessed via fast byte-block transfer. Note that &ldquo;normal&rdquo; large object columns types such as <code>bytea</code> and <code>text</code> can store values as large as 1GB each, so the large object API is rarely used. However there are cases where the size and/or efficiency of large objects justifies the use of this API.</p>
 <p><strong>doobie</strong> provides an algebra and free monads for the driver&rsquo;s <code>LargeObjectManager</code> and <code>LargeObject</code> types in the <code>doobie.postgres.free</code> package. There is also [the beginnings of] a high-level API that includes constructors for creating large objects from files and vice-versa. The <code>example</code> project contains a brief usage example.</p>
-<p>Please file an issue or ask questions on the <a href="https://gitter.im/tpolecat/doobie">Gitter</a> channel if you need to use this API; it will evolve as use cases demand.</p>
+<p>Please file an issue or ask questions on the <a href="https://discord.com/channels/632277896739946517/632727524434247691">Discord</a> channel if you need to use this API; it will evolve as use cases demand.</p>
 <h3><a href="#copy-manager" name="copy-manager" class="anchor"><span class="anchor-link"></span></a>Copy Manager</h3>
 <p>The PostgreSQL JDBC driver&rsquo;s <a href="https://jdbc.postgresql.org/documentation/publicapi/org/postgresql/copy/CopyManager.html">CopyManager</a> API provides a pass-through for the SQL <a href="http://www.postgresql.org/docs/9.3/static/sql-copy.html"><code>COPY</code></a> statement, allowing very fast data transfer via <code>java.io</code> streams. Here we construct a program that dumps a table to <code>Console.out</code> in CSV format, with quoted values.</p>
 <pre class="prettyprint"><code class="language-scala">val q = &quot;&quot;&quot;
@@ -461,13 +463,13 @@ val foods = List(
   .transact(xa)
   .unsafeRunSync()
   .foreach(println)
-// Seq Scan on country  (cost=0.00..7.39 rows=239 width=11) (actual time=0.007..0.033 rows=239 loops=1)
-// Planning Time: 0.164 ms
-// Execution Time: 0.073 ms
+// Seq Scan on country  (cost=0.00..7.39 rows=239 width=11) (actual time=0.006..0.023 rows=239 loops=1)
+// Planning Time: 0.137 ms
+// Execution Time: 0.062 ms
 </code></pre>
 <p><code>explain</code> and <code>explainAnalyze</code> both return a <code>ConnectinIO[List[String]]</code> result, where each member of the list is one row of the query planner&rsquo;s output.</p>
 <div class="source-github">
-The source code for this page can be found <a href="https://github.com/typelevel/doobie/tree/v1.0.0-RC12/modules/docs/target/jvm-2.13/mdoc/docs/15-Extensions-PostgreSQL.md">here</a>.
+The source code for this page can be found <a href="https://github.com/typelevel/doobie/tree/master/modules/docs/target/jvm-2.13/mdoc/docs/15-Extensions-PostgreSQL.md">here</a>.
 </div>
 
 <div class="nav-next">
@@ -564,7 +566,7 @@ The source code for this page can be found <a href="https://github.com/typelevel
 <script type="text/javascript" src="../lib/prettify/prettify.js"></script>
 <script type="text/javascript" src="../lib/prettify/lang-scala.js"></script>
 <script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
-<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.0.0-RC12', 'https://github.com/typelevel/doobie')});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.0.0-RC13', 'https://github.com/typelevel/doobie')});</script>
 
 
 </html>

@@ -32,7 +32,7 @@
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-1.0.0-RC12
+1.0.0-RC13
 </div>
 </div>
 <div class="nav-toc">
@@ -51,6 +51,7 @@
     <li><a href="../docs/08-Fragments.html" class="page">Statement Fragments</a></li>
     <li><a href="../docs/09-Error-Handling.html" class="page">Error Handling</a></li>
     <li><a href="../docs/10-Logging.html" class="page">Logging</a></li>
+    <li><a href="../docs/20-Otel4s-Tracing.html" class="page">Tracing with otel4s</a></li>
     <li><a href="../docs/11-Arrays.html" class="page">SQL Arrays</a></li>
     <li><a href="../docs/12-Custom-Mappings.html" class="page">Custom Mappings</a></li>
     <li><a href="../docs/19-Custom-JDBC-Operations.html" class="page">Custom JDBC Operations</a></li>
@@ -92,7 +93,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-1.0.0-RC12
+1.0.0-RC13
 </div>
 </div>
 <div class="nav-toc">
@@ -111,6 +112,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
     <li><a href="../docs/08-Fragments.html" class="page">Statement Fragments</a></li>
     <li><a href="../docs/09-Error-Handling.html" class="page">Error Handling</a></li>
     <li><a href="../docs/10-Logging.html" class="page">Logging</a></li>
+    <li><a href="../docs/20-Otel4s-Tracing.html" class="page">Tracing with otel4s</a></li>
     <li><a href="../docs/11-Arrays.html" class="page">SQL Arrays</a></li>
     <li><a href="../docs/12-Custom-Mappings.html" class="page">Custom Mappings</a></li>
     <li><a href="../docs/19-Custom-JDBC-Operations.html" class="page">Custom JDBC Operations</a></li>
@@ -150,8 +152,8 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <p>The YOLO-mode query checking feature demonstrated in an earlier chapter is also available as a trait you can mix into your <a href="http://etorreborre.github.io/specs2/">Specs2</a>, <a href="http://www.scalatest.org/">ScalaTest</a>, <a href="https://scalameta.org/munit">MUnit</a> or <a href="https://disneystreaming.github.io/weaver-test/">Weaver</a> unit tests.</p>
 <h3><a href="#setting-up" name="setting-up" class="anchor"><span class="anchor-link"></span></a>Setting Up</h3>
 <p>As with earlier chapters we set up a <code>Transactor</code> and YOLO mode. We will also use the <code>doobie-specs2</code> and <code>doobie-scalatest</code> add-ons.</p>
-<pre class="prettyprint"><code class="language-scala">import doobie._
-import doobie.implicits._
+<pre class="prettyprint"><code class="language-scala">import org.typelevel.doobie._
+import org.typelevel.doobie.implicits._
 import cats._
 import cats.data._
 import cats.effect._
@@ -206,8 +208,9 @@ val update: Update0 =
 <p>The <code>doobie-specs2</code> add-on provides a mix-in trait that we can add to a <code>Specification</code> to allow for typechecking of queries, interpreted as a set of specifications.</p>
 <p>Our unit test needs to extend <code>AnalysisSpec</code> and must define a <code>Transactor[IO]</code>. To construct a testcase for a query, pass it to the <code>check</code> method. Note that query arguments are never used, so they can be any values that typecheck.</p>
 <pre class="prettyprint"><code class="language-scala">import org.specs2.mutable.Specification
+import org.typelevel.doobie.specs2.IOChecker
 
-class AnalysisTestSpec extends Specification with doobie.specs2.IOChecker {
+class AnalysisTestSpec extends Specification with IOChecker {
 
   val transactor = Transactor.fromDriverManager[IO](
     driver = &quot;org.postgresql.Driver&quot;, url = &quot;jdbc:postgresql:world&quot;, user = &quot;postgres&quot;, password = &quot;password&quot;, logHandler = None
@@ -270,17 +273,18 @@ runTest(new AnalysisTestSpec)(Arguments(report = Report(_color = Some(false))))
 // [info] 
 // [info] 
 // [info] Total for specification AnalysisTestSpec
-// [info] Finished in 250 ms
+// [info] Finished in 164 ms
 // 13 examples, 4 failures, 0 error
 // [info]
 </code></pre>
 <h3><a href="#the-scalatest-package" name="the-scalatest-package" class="anchor"><span class="anchor-link"></span></a>The ScalaTest Package</h3>
 <p>The <code>doobie-scalatest</code> add-on provides a mix-in trait that we can add to any <code>Assertions</code> implementation (like <code>AnyFunSuite</code>) much like the Specs2 package above.</p>
 <pre class="prettyprint"><code class="language-scala">import org.scalatest._
+import org.typelevel.doobie.scalatest.IOChecker
 
-class AnalysisTestScalaCheck extends funsuite.AnyFunSuite with matchers.must.Matchers with doobie.scalatest.IOChecker {
+class AnalysisTestScalaCheck extends funsuite.AnyFunSuite with matchers.must.Matchers with IOChecker {
 
-  override val colors = doobie.util.Colors.None // just for docs
+  override val colors = org.typelevel.doobie.util.Colors.None // just for docs
 
   val transactor = Transactor.fromDriverManager[IO](
     driver = &quot;org.postgresql.Driver&quot;, url = &quot;jdbc:postgresql:world&quot;, user = &quot;postgres&quot;, password = &quot;password&quot;, logHandler = None
@@ -295,7 +299,7 @@ class AnalysisTestScalaCheck extends funsuite.AnyFunSuite with matchers.must.Mat
 <p>Details are shown for failing tests.</p>
 <pre class="prettyprint"><code class="language-scala">// Run a test programmatically. Usually you would do this from sbt, bloop, etc.
 (new AnalysisTestScalaCheck).execute(color = false)
-// MdocSession$MdocApp$AnalysisTestScalaCheck:
+// MdocSession$MdocApp$AnalysisTestScalaCheck$1:
 // - trivial
 // - biggerThan *** FAILED ***
 //   Query0[MdocApp.this.Country] defined at 13-Unit-Testing.md:57
@@ -328,10 +332,11 @@ class AnalysisTestScalaCheck extends funsuite.AnyFunSuite with matchers.must.Mat
 <h3><a href="#the-munit-package" name="the-munit-package" class="anchor"><span class="anchor-link"></span></a>The MUnit Package</h3>
 <p>The <code>doobie-munit</code> add-on provides a mix-in trait that we can add to any <code>Assertions</code> implementation (like <code>FunSuite</code>) much like the ScalaTest package above.</p>
 <pre class="prettyprint"><code class="language-scala">import _root_.munit._
+import org.typelevel.doobie.munit.IOChecker
 
-class AnalysisTestSuite extends FunSuite with doobie.munit.IOChecker {
+class AnalysisTestSuite extends FunSuite with IOChecker {
 
-  override val colors = doobie.util.Colors.None // just for docs
+  override val colors = org.typelevel.doobie.util.Colors.None // just for docs
 
   val transactor = Transactor.fromDriverManager[IO](
     driver = &quot;org.postgresql.Driver&quot;, url = &quot;jdbc:postgresql:world&quot;, user = &quot;postgres&quot;, password = &quot;password&quot;, logHandler = None
@@ -346,7 +351,7 @@ class AnalysisTestSuite extends FunSuite with doobie.munit.IOChecker {
 <h3><a href="#the-weaver-package" name="the-weaver-package" class="anchor"><span class="anchor-link"></span></a>The Weaver Package</h3>
 <p>The <code>doobie-weaver</code> add-on provides a mix-in trait what we can add to any effectful test Suite. The <code>check</code> function takes an implicit <code>Transactor[F]</code> parameter. Since Weaver has its own way to manage shared resources, it is convenient to use that to allocate the transactor.</p>
 <pre class="prettyprint"><code class="language-scala">import _root_.weaver._
-import doobie.weaver._
+import org.typelevel.doobie.weaver.IOChecker
 
 object AnalysisTestSuite extends IOSuite with IOChecker {
 
@@ -363,7 +368,7 @@ object AnalysisTestSuite extends IOSuite with IOChecker {
 }
 </code></pre>
 <div class="source-github">
-The source code for this page can be found <a href="https://github.com/typelevel/doobie/tree/v1.0.0-RC12/modules/docs/target/jvm-2.13/mdoc/docs/13-Unit-Testing.md">here</a>.
+The source code for this page can be found <a href="https://github.com/typelevel/doobie/tree/master/modules/docs/target/jvm-2.13/mdoc/docs/13-Unit-Testing.md">here</a>.
 </div>
 
 <div class="nav-next">
@@ -450,7 +455,7 @@ The source code for this page can be found <a href="https://github.com/typelevel
 <script type="text/javascript" src="../lib/prettify/prettify.js"></script>
 <script type="text/javascript" src="../lib/prettify/lang-scala.js"></script>
 <script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
-<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.0.0-RC12', 'https://github.com/typelevel/doobie')});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.0.0-RC13', 'https://github.com/typelevel/doobie')});</script>
 
 
 </html>
