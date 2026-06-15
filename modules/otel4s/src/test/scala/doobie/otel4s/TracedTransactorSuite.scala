@@ -10,7 +10,7 @@ import org.typelevel.doobie.Update
 import org.typelevel.doobie.otel4s.syntax.fragment.*
 import org.typelevel.doobie.syntax.all.*
 import io.opentelemetry.sdk.resources.Resource as OTelResource
-import munit.TestOptions
+import munit.{Location, TestOptions}
 import org.typelevel.otel4s.oteljava.testkit.{InstrumentationScopeExpectation, TelemetryResourceExpectation}
 import org.typelevel.otel4s.oteljava.testkit.trace.{
   EventExpectation,
@@ -357,7 +357,9 @@ class TracedTransactorSuite extends munit.CatsEffectSuite {
       span(
         name = "SELECT users",
         attributes = Attributes(
-          DbAttributes.DbOperationName("executeQuery")
+          DbAttributes.DbOperationName("SELECT"),
+          DbAttributes.DbQuerySummary("SELECT users"),
+          DbAttributes.DbCollectionName("users")
         )
       )
     )
@@ -365,6 +367,78 @@ class TracedTransactorSuite extends munit.CatsEffectSuite {
     for {
       tx <- testkit.tracedTransactor(config)
       _ <- sql"select 1".query[Int].unique.transact(tx)
+      _ <- testkit.assertFinishedSpans(expected)
+    } yield ()
+  }
+
+  testkitTest("append collection from the query analyzer metadata to the preconfigured one") { testkit =>
+    val analyzer = new QueryAnalyzer {
+      def analyze(sql: String): Option[QueryAnalyzer.QueryMetadata] =
+        Some(
+          QueryAnalyzer.QueryMetadata(
+            queryText = Some(sql),
+            operationName = None,
+            collectionName = Some("users"),
+            storedProcedureName = None,
+            querySummary = Some("SELECT users")
+          )
+        )
+    }
+
+    val config = tracedConfig(Attributes(DbAttributes.DbCollectionName("prod")))
+      .withQueryAnalyzer(analyzer)
+      .withSpanNamer(SpanNamer.fromQueryMetadata)
+
+    val expected = expectedSpans(
+      span(
+        name = "SELECT users",
+        attributes = Attributes(
+          DbAttributes.DbQuerySummary("SELECT users"),
+          DbAttributes.DbOperationName("executeQuery"),
+          DbAttributes.DbCollectionName("prod|users")
+        )
+      )
+    )
+
+    for {
+      tx <- testkit.tracedTransactor(config)
+      _ <- sql"select 1".query[Int].unique.transact(tx)
+      _ <- testkit.assertFinishedSpans(expected)
+    } yield ()
+  }
+
+  testkitTest("user query summary prevails over the query analyzer metadata") { testkit =>
+    val analyzer = new QueryAnalyzer {
+      def analyze(sql: String): Option[QueryAnalyzer.QueryMetadata] =
+        Some(
+          QueryAnalyzer.QueryMetadata(
+            queryText = Some(sql),
+            operationName = Some("SELECT"),
+            collectionName = Some("users"),
+            storedProcedureName = None,
+            querySummary = Some("SELECT users")
+          )
+        )
+    }
+
+    val config = tracedConfig()
+      .withQueryAnalyzer(analyzer)
+      .withSpanNamer(SpanNamer.fromQueryMetadata)
+
+    val expected = expectedSpans(
+      span(
+        name = "SELECT users",
+        attributes = Attributes(
+          DbAttributes.DbOperationName("SELECT"),
+          DbAttributes.DbCollectionName("users"),
+          DbAttributes.DbQuerySummary("custom summary")
+        )
+      )
+    )
+
+    for {
+      tx <- testkit.tracedTransactor(config)
+      _ <- sql"select 1".queryWithSummary[Int]("custom summary").unique.transact(tx)
       _ <- testkit.assertFinishedSpans(expected)
     } yield ()
   }
@@ -503,7 +577,7 @@ class TracedTransactorSuite extends munit.CatsEffectSuite {
     def tracedTransactor(config: TracingConfig): IO[Transactor[IO]] =
       TracedTransactor.create(xa, config, None)
 
-    def assertFinishedSpans(expected: TraceForestExpectation): IO[Unit] =
+    def assertFinishedSpans(expected: TraceForestExpectation)(implicit loc: Location): IO[Unit] =
       testkit.finishedSpans.flatMap { spans =>
         TraceExpectations.check(spans, expected) match {
           case Right(_) =>

@@ -69,10 +69,10 @@ import org.typelevel.otel4s.trace.{SpanFinalizer, SpanKind, StatusCode, Tracer, 
   * @param local
   *   local storage for an optional per-operation span name
   */
-private class TracedInterpreter[F[_]: Async: Tracer](
+private class TracedInterpreter[F[_]: Async: Tracer] private (
     config: TracingConfig,
     logHandler: LogHandler[F],
-    local: Local[F, Option[String]]
+    local: Local[F, Option[TracedInterpreter.SpanParams]]
 ) extends KleisliInterpreter(logHandler) {
   import TracedInterpreter.SpanParams
 
@@ -113,7 +113,7 @@ private class TracedInterpreter[F[_]: Async: Tracer](
           .addAttributes(params.attributes)
           .withFinalizationStrategy(finalizationStrategy)
           .build
-          .surround(poll(local.scope(super.trace(event, interpreter)(fa).run(j))(params.customSpanName)))
+          .surround(poll(local.scope(super.trace(event, interpreter)(fa).run(j))(Some(params))))
       }
     }
 
@@ -123,9 +123,16 @@ private class TracedInterpreter[F[_]: Async: Tracer](
       def updateSpan(operation: String): Kleisli[F, PreparedStatement, Unit] =
         Kleisli.liftF[F, PreparedStatement, Unit](
           Tracer[F].withCurrentSpanOrNoop { span =>
-            local.ask[Option[String]].flatMap { customSpanName =>
-              span.updateName(customSpanName.getOrElse(operation)) >>
-                span.addAttribute(DbAttributes.DbOperationName(operation))
+            local.ask[Option[SpanParams]].flatMap { spanParams =>
+              val spanName = spanParams
+                .flatMap(_.customSpanName)
+                .getOrElse(operation)
+
+              val operationName = spanParams
+                .flatMap(_.attributes.get(DbAttributes.DbOperationName).map(_.value))
+                .getOrElse(operation)
+
+              span.updateName(spanName) >> span.addAttribute(DbAttributes.DbOperationName(operationName))
             }
           }
         )
@@ -196,6 +203,11 @@ private class TracedInterpreter[F[_]: Async: Tracer](
 
     recordQuery(info, builder)
 
+    val queryMetadata =
+      config.queryAnalyzer.analyze(info.sql)
+
+    queryMetadata.foreach(metadata => recordQueryMetadata(metadata, builder))
+
     val parsedAttributes =
       if (label.nonEmpty && label != doobie.util.unlabeled)
         config.attributesExtractor.extract(label)
@@ -205,9 +217,6 @@ private class TracedInterpreter[F[_]: Async: Tracer](
     parsedAttributes.foreach { attributes =>
       builder.addAll(attributes)
     }
-
-    val queryMetadata =
-      config.queryAnalyzer.analyze(info.sql)
 
     val customSpanName = config.spanNamer.spanName(
       SpanNamer.Context(label, info.sql, parsedAttributes, queryMetadata)
@@ -264,6 +273,23 @@ private class TracedInterpreter[F[_]: Async: Tracer](
     }
   }
 
+  private def recordQueryMetadata(metadata: QueryAnalyzer.QueryMetadata, builder: Attributes.Builder): Unit = {
+    metadata.querySummary.foreach { summary =>
+      builder.addOne(DbAttributes.DbQuerySummary, summary)
+    }
+
+    metadata.operationName.foreach { operationName =>
+      builder.addOne(DbAttributes.DbOperationName, operationName)
+    }
+
+    metadata.collectionName.foreach { collectionName =>
+      val name = config.constAttributes.get(DbAttributes.DbCollectionName)
+        .map(v => v.value + "|" + collectionName)
+        .getOrElse(collectionName)
+
+      builder.addOne(DbAttributes.DbCollectionName, name)
+    }
+  }
 }
 
 object TracedInterpreter {
@@ -282,7 +308,7 @@ object TracedInterpreter {
       .withVersion(org.typelevel.doobie.buildinfo.version)
       .get
       .flatMap { implicit tracer =>
-        IOLocal(Option.empty[String]).to[F].map { ioLocal =>
+        IOLocal(Option.empty[TracedInterpreter.SpanParams]).to[F].map { ioLocal =>
           new TracedInterpreter(config, logHandler, ioLocal.asLocal[F])
         }
       }
