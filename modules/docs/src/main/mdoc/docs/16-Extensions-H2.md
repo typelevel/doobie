@@ -4,7 +4,7 @@ In this chapter we discuss the extended support that **doobie** offers for users
 
 @@@ vars
 ```scala
-libraryDependencies += "org.tpolecat" %% "doobie-h2" % "$version$"
+libraryDependencies += "org.typelevel" %% "doobie-h2" % "$version$"
 ```
 @@@
 
@@ -15,7 +15,7 @@ There are extensions available for dealing with JSON by using Circe, if you like
 @@@ vars
 
 ```scala
-libraryDependencies += "org.tpolecat" %% "doobie-h2-circe" % "$version$"
+libraryDependencies += "org.typelevel" %% "doobie-h2-circe" % "$version$"
 ```
 
 @@@

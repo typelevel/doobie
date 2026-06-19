@@ -597,6 +597,7 @@ lazy val docs = projectMatrix
   .enablePlugins(NoPublishPlugin)
   .enablePlugins(ParadoxPlugin)
   .enablePlugins(ParadoxSitePlugin)
+  .enablePlugins(SitePreviewPlugin)
   .enablePlugins(GhpagesPlugin)
   .enablePlugins(MdocPlugin)
   .settings(doobieSettings)

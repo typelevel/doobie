@@ -8,7 +8,7 @@ through [otel4s](https://github.com/typelevel/otel4s).
 @@@ vars
 
 ```scala
-libraryDependencies += "org.tpolecat" %% "doobie-otel4s" % "$version$"
+libraryDependencies += "org.typelevel" %% "doobie-otel4s" % "$version$"
 ```
 
 @@@
