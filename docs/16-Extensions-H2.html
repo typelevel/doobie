@@ -150,11 +150,11 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <div class="small-12 large-9 column" id="docs">
 <h2><a href="#extensions-for-h2" name="extensions-for-h2" class="anchor"><span class="anchor-link"></span></a>Extensions for H2</h2>
 <p>In this chapter we discuss the extended support that <strong>doobie</strong> offers for users of <a href="http://www.h2database.com/html/main.html">H2</a> . To use these extensions you must add an additional dependency to your project:</p>
-<pre class="prettyprint"><code class="language-scala">libraryDependencies += &quot;org.tpolecat&quot; %% &quot;doobie-h2&quot; % &quot;1.0.0-RC13&quot;
+<pre class="prettyprint"><code class="language-scala">libraryDependencies += &quot;org.typelevel&quot; %% &quot;doobie-h2&quot; % &quot;1.0.0-RC13&quot;
 </code></pre>
 <p>This library pulls in H2 as a transitive dependency.</p>
 <p>There are extensions available for dealing with JSON by using Circe, if you like to use those, include this dependency:</p>
-<pre class="prettyprint"><code class="language-scala">libraryDependencies += &quot;org.tpolecat&quot; %% &quot;doobie-h2-circe&quot; % &quot;1.0.0-RC13&quot;
+<pre class="prettyprint"><code class="language-scala">libraryDependencies += &quot;org.typelevel&quot; %% &quot;doobie-h2-circe&quot; % &quot;1.0.0-RC13&quot;
 </code></pre>
 <p>Then, you will be able to import the implicits for dealing with JSON:</p>
 <pre class="prettyprint"><code class="language-scala">import org.typelevel.doobie.h2.circe.json.implicits

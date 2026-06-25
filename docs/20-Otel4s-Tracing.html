@@ -151,7 +151,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <h1><a href="#tracing-with-otel4s" name="tracing-with-otel4s" class="anchor"><span class="anchor-link"></span></a>Tracing with otel4s</h1>
 <p>In this chapter we discuss the <code>doobie-otel4s</code> module, which adds OpenTelemetry tracing to doobie through <a href="https://github.com/typelevel/otel4s">otel4s</a>.</p>
 <h2><a href="#adding-the-dependency" name="adding-the-dependency" class="anchor"><span class="anchor-link"></span></a>Adding the Dependency</h2>
-<pre class="prettyprint"><code class="language-scala">libraryDependencies += &quot;org.tpolecat&quot; %% &quot;doobie-otel4s&quot; % &quot;1.0.0-RC13&quot;
+<pre class="prettyprint"><code class="language-scala">libraryDependencies += &quot;org.typelevel&quot; %% &quot;doobie-otel4s&quot; % &quot;1.0.0-RC13&quot;
 </code></pre>
 <p>In addition to <code>doobie-otel4s</code> you will need:</p>
 <ul>
@@ -538,7 +538,7 @@ import org.typelevel.otel4s.semconv.attributes.DbAttributes
 
 def fromOtelJava(delegate: SqlQueryAnalyzer): QueryAnalyzer =
   new QueryAnalyzer {
-    private val dialect = SqlDialect.DOUBLE_QUOTES_ARE_STRING_LITERALS
+    private val dialect = SqlDialect.DOUBLE_QUOTES_ARE_IDENTIFIERS
 
     def analyze(sql: String): Option[QueryAnalyzer.QueryMetadata] =
       Option(delegate.analyzeWithSummary(sql, dialect)).map { q: SqlQuery =&gt;
