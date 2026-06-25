@@ -466,7 +466,7 @@ import org.typelevel.otel4s.semconv.attributes.DbAttributes
 
 def fromOtelJava(delegate: SqlQueryAnalyzer): QueryAnalyzer =
   new QueryAnalyzer {
-    private val dialect = SqlDialect.DOUBLE_QUOTES_ARE_STRING_LITERALS
+    private val dialect = SqlDialect.DOUBLE_QUOTES_ARE_IDENTIFIERS
 
     def analyze(sql: String): Option[QueryAnalyzer.QueryMetadata] =
       Option(delegate.analyzeWithSummary(sql, dialect)).map { q: SqlQuery =>
