@@ -72,7 +72,7 @@ Please refer to the `examples` project for example usage, or ask questions on th
 
 ## Upgrading to 0.5.x from 0.4.x with Cats
 
-This guide covers the changes that are specific to **doobie**, but you will also need to deal with changes between cats 0.9 and cats 1.0 (the provided Scalafix rules may be helpful) and between fs2 0.9 and fs2 0.10. Please join the [gitter channel](https://gitter.im/tpolecat/doobie) if you run into trouble. We will update this document to reflect common issues as they arise.
+This guide covers the changes that are specific to **doobie**, but you will also need to deal with changes between cats 0.9 and cats 1.0 (the provided Scalafix rules may be helpful) and between fs2 0.9 and fs2 0.10.
 
 ### Artifacts
 

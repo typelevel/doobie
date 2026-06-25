@@ -7,12 +7,11 @@
 
 # doobie
 
-<img align="right" src="https://cdn.rawgit.com/typelevel/doobie/series/0.5.x/doobie_logo.svg" height="150px" style="padding-left: 20px"/>
+<img align="right" src="https://cdn.rawgit.com/typelevel/doobie/series/0.13.x/doobie_logo.svg" height="150px" style="padding-left: 20px"/>
 
-[![Travis CI](https://travis-ci.org/tpolecat/doobie.svg?branch=series%2F0.5.x)](https://travis-ci.org/tpolecat/doobie)
-[![Join the chat at https://gitter.im/tpolecat/doobie](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/tpolecat/doobie?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![Maven Central](https://img.shields.io/maven-central/v/org.tpolecat/doobie-core_2.12.svg)](https://maven-badges.herokuapp.com/maven-central/org.tpolecat/doobie-core_2.12)
-[![Javadocs](https://javadoc.io/badge/org.tpolecat/doobie-core_2.12.svg)](https://javadoc.io/doc/org.tpolecat/doobie-core_2.12)
+[![Discord](https://img.shields.io/discord/632277896739946517.svg?label=&logo=discord&logoColor=ffffff&color=404244&labelColor=6A7EC2)](https://discord.gg/7B4VfFTvsS)
+[![Maven Central](https://img.shields.io/maven-central/v/org.typelevel/doobie-core_2.13.svg)](https://maven-badges.herokuapp.com/maven-central/org.typelevel/doobie-core_2.12)
+[![Javadocs](https://javadoc.io/badge/org.typelevel/doobie-core_2.12.svg)](https://javadoc.io/doc/org.typelevel/doobie-core_2.12)
 
 
 **doobie** is a pure functional JDBC layer for Scala and [**Cats**](http://typelevel.org/cats/). It is not an ORM, nor is it a relational algebra; it simply provides a functional way to construct programs (and higher-level libraries) that use JDBC. For common use cases **doobie** provides a minimal but expressive high-level API:
@@ -62,14 +61,14 @@ To use **doobie** you need to add the following to your `build.sbt`. If you're n
 libraryDependencies ++= Seq(
 
   // Start with this one
-  "org.tpolecat" %% "doobie-core"      % "$version$",
+  "org.typelevel" %% "doobie-core"      % "$version$",
 
   // And add any of these as needed
-  "org.tpolecat" %% "doobie-h2"        % "$version$",          // H2 driver $h2Version$ + type mappings.
-  "org.tpolecat" %% "doobie-hikari"    % "$version$",          // HikariCP transactor.
-  "org.tpolecat" %% "doobie-postgres"  % "$version$",          // Postgres driver $postgresVersion$ + type mappings.
-  "org.tpolecat" %% "doobie-specs2"    % "$version$" % "test", // Specs2 support for typechecking statements.
-  "org.tpolecat" %% "doobie-scalatest" % "$version$" % "test"  // ScalaTest support for typechecking statements.
+  "org.typelevel" %% "doobie-h2"        % "$version$",          // H2 driver $h2Version$ + type mappings.
+  "org.typelevel" %% "doobie-hikari"    % "$version$",          // HikariCP transactor.
+  "org.typelevel" %% "doobie-postgres"  % "$version$",          // Postgres driver $postgresVersion$ + type mappings.
+  "org.typelevel" %% "doobie-specs2"    % "$version$" % "test", // Specs2 support for typechecking statements.
+  "org.typelevel" %% "doobie-scalatest" % "$version$" % "test"  // ScalaTest support for typechecking statements.
 
 )
 ```
@@ -82,11 +81,11 @@ Note that **doobie** is pre-1.0 software and is still undergoing active developm
 ## Documentation and Support
 
 - Behold the sparkly [**documentation**](docs/01-Introduction.html) ← start here
-- The [**Scaladoc**](https://www.javadoc.io/doc/org.tpolecat/doobie-core_$scala.binary.version$) will be handy once you get your feet wet.
+- The [**Scaladoc**](https://www.javadoc.io/doc/org.typelevel/doobie-core_$scala.binary.version$) will be handy once you get your feet wet.
 - See [**releases**](https://github.com/typelevel/doobie/releases) for an overview of changes in this and previous versions.
-- The [**Gitter Channel**](https://gitter.im/tpolecat/doobie) is a great place to chat!
+- The [**Discord Channel**](https://discord.com/channels/632277896739946517/632727524434247691) is a great place to chat!
 - There is a [**Scala Exercises**](https://www.scala-exercises.org/) module, courtesy of our friends at 47 Degrees!
-- There is also the [**source**](https://github.com/tpolecat/doobie). Check out the examples too.
+- There is also the [**source**](https://github.com/typelevel/doobie). Check out the examples too.
 - If you have comments or run into trouble, please file an issue.
 
 ## Presentations, Blog Posts, etc.

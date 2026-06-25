@@ -14,11 +14,11 @@ This book is organized cookbook-style: we demonstrate a common task and then exp
 
 This library is designed for people who are interested in typed, pure functional programming. If you are not a [Cats](https://github.com/typelevel/cats) user or are not familiar with functional I/O and monadic effects, you may need to go slowly and may want to spend some time reading [Functional Programming in Scala](http://manning.com/bjarnason/), which introduces all of the ideas that you will find when exploring **doobie**.
 
-Having said this, if you find yourself confused or frustrated by this documentation or the **doobie** API, *please* ask a question on [Gitter](https://gitter.im/tpolecat/doobie), file an [issue](https://github.com/typelevel/doobie/issues) and ask for help. Both the library and the documentation are young and are changing quickly, and it is inevitable that some things will be unclear. Accordingly, **this book is updated continuously** to address problems and omissions.
+Having said this, if you find yourself confused or frustrated by this documentation or the **doobie** API, *please* ask a question on [Discord](https://discord.com/channels/632277896739946517/632727524434247691), file an [issue](https://github.com/typelevel/doobie/issues) and ask for help. Both the library and the documentation are young and are changing quickly, and it is inevitable that some things will be unclear. Accordingly, **this book is updated continuously** to address problems and omissions.
 
 ### The Setup
 
-This book is compiled as part of the build using the [tut](https://github.com/tpolecat/tut) tutorial generator, so the code examples are guaranteed to compile (and with luck should also work correctly). Each page stands on its own: if you copy and paste code samples starting from the top, it will work in your REPL as long as you have the proper setup, described here.
+This book is compiled as part of the build using the [mdoc](https://scalameta.org/mdoc/) documentation tool, so the code examples are guaranteed to compile (and with luck should also work correctly). Each page stands on its own: if you copy and paste code samples starting from the top, it will work in your REPL as long as you have the proper setup, described here.
 
 #### Sample Database Setup
 
@@ -70,9 +70,9 @@ scalaVersion := "$scalaVersion$" // Scala $scalaVersion$
 lazy val doobieVersion = "$version$"
 
 libraryDependencies ++= Seq(
-  "org.tpolecat" %% "doobie-core"     % doobieVersion,
-  "org.tpolecat" %% "doobie-postgres" % doobieVersion,
-  "org.tpolecat" %% "doobie-specs2"   % doobieVersion
+  "org.typelevel" %% "doobie-core"     % doobieVersion,
+  "org.typelevel" %% "doobie-postgres" % doobieVersion,
+  "org.typelevel" %% "doobie-specs2"   % doobieVersion
 )
 ```
 @@@
@@ -111,4 +111,4 @@ woozle(nel) // doesn't compile
 
 ### Feedback and Contributions
 
-Feedback on **doobie** or this book is genuinely welcome. Please feel free to file a [pull request](https://github.com/tpolecat/doobie) if you have a contribution, or file an [issue](https://github.com/typelevel/doobie/issues), or chat with us on [Gitter](https://gitter.im/tpolecat/doobie).
+Feedback on **doobie** or this book is genuinely welcome. Please feel free to file a [pull request](https://github.com/typelevel/doobie) if you have a contribution, or file an [issue](https://github.com/typelevel/doobie/issues), or chat with us on [Discord](https://discord.com/channels/632277896739946517/632727524434247691).
