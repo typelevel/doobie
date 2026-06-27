@@ -123,19 +123,17 @@ ThisBuild / githubWorkflowPublishPostamble ++= Seq(
   )
 )
 
+ThisBuild / mergifyStewardConfig ~= { configOpt =>
+  configOpt.map(config =>
+    config.withAuthor("typelevel-steward"))
+}
 ThisBuild / mergifyPrRules += MergifyPrRule(
-  name = "merge-when-ci-pass",
-  conditions = githubWorkflowGeneratedCI.value.flatMap {
-    case job if mergifyRequiredJobs.value.contains(job.id) =>
-      val buildSuccesses = for {
-        os <- job.oses
-        scalaVer <- job.scalas
-        javaSpec <- job.javas
-      } yield MergifyCondition.Custom(s"status-success=${job.name} ($os, $scalaVer, ${javaSpec.render})")
-      buildSuccesses :+ MergifyCondition.Custom("label=merge-on-build-success")
-    case _ => Nil
-  }.toList,
-  actions = List(MergifyAction.Merge())
+  "merge-when-ci-pass",
+  List(
+    MergifyCondition.Custom("status-success=Test (ubuntu-22.04, 2.13, temurin@11)"),
+    MergifyCondition.Custom("label=merge-on-build-success")
+  ),
+  List(MergifyAction.Merge())
 )
 
 // This is used in a couple places. Might be nice to separate these things out.
