@@ -8,8 +8,10 @@
 pull_request_rules:
 - name: merge scala-steward's PRs
   conditions:
-  - author=typelevel-steward
-  - body~=labels:.*early-semver-patch
+  - author=typelevel-steward[bot]
+  - or:
+    - body~=labels:.*early-semver-patch
+    - body~=labels:.*early-semver-minor
   - status-success=Test (ubuntu-22.04, 2.13, temurin@11)
   actions:
     merge: {}

@@ -125,7 +125,9 @@ ThisBuild / githubWorkflowPublishPostamble ++= Seq(
 
 ThisBuild / mergifyStewardConfig ~= { configOpt =>
   configOpt.map(config =>
-    config.withAuthor("typelevel-steward"))
+    config
+      .withAuthor("typelevel-steward[bot]")
+      .withMergeMinors(true))
 }
 ThisBuild / mergifyPrRules += MergifyPrRule(
   "merge-when-ci-pass",
