@@ -220,12 +220,13 @@ class FreeGen2(
 
   implicit class MethodOps(m: Method) {
     def isStatic: Boolean = (m.getModifiers & Modifier.STATIC) != 0
+    def isPrivate: Boolean = (m.getModifiers & Modifier.PRIVATE) != 0
   }
 
   // All non-deprecated methods for this class and any superclasses/interfaces
   def methods(c: Class[?]): List[Method] =
     closure(c).flatMap(_.getDeclaredMethods.toList).distinct
-      .filterNot(_.isStatic)
+      .filterNot(m => m.isStatic || m.isPrivate)
       .filter(_.getAnnotation(classOf[Deprecated]) == null)
 
   // Ctor values for all methods in of A plus superclasses, interfaces, etc.
