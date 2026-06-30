@@ -67,6 +67,21 @@ class TypesSuite extends munit.CatsEffectSuite with munit.ScalaCheckEffectSuite 
     }
   }
 
+  def testInOutTweakExpected[A](col: String, a: A)(expected: A => A)(implicit m: Get[A], p: Put[A]) = {
+    test(s"Mapping for $col as ${m.typeStack} - write+read $col as ${m.typeStack}") {
+      inOut(col, a).transact(xa)
+        .assertEquals(expected(a))
+    }
+    test(s"Mapping for $col as ${m.typeStack} - write+read $col as Option[${m.typeStack}] (Some)") {
+      inOutOpt[A](col, Some(a)).transact(xa).attempt
+        .assertEquals(Right(Some(expected(a))))
+    }
+    test(s"Mapping for $col as ${m.typeStack} - write+read $col as Option[${m.typeStack}] (None)") {
+      inOutOpt[A](col, None).transact(xa).attempt
+        .assertEquals(Right(None))
+    }
+  }
+
   def testInOutWithCustomGen[A](col: String, gen: Gen[A], expected: A => A = identity[A](_))(implicit
       m: Get[A],
       p: Put[A]
@@ -91,6 +106,26 @@ class TypesSuite extends munit.CatsEffectSuite with munit.ScalaCheckEffectSuite 
 
   def skip(col: String, msg: String = "not yet implemented") =
     test(s"Mapping for $col ($msg)".ignore) {}
+
+  private def truncateToMicros(value: LocalDateTime): LocalDateTime =
+    value.withNano(value.getNano / 1000 * 1000)
+
+  private def truncateToMicros(value: OffsetDateTime): OffsetDateTime =
+    value.withNano(value.getNano / 1000 * 1000)
+
+  private def truncateRangeToMicros(value: Range[LocalDateTime]): Range[LocalDateTime] =
+    value match {
+      case NonEmptyRange(lowerBound, upperBound, edge) =>
+        NonEmptyRange(lowerBound.map(truncateToMicros), upperBound.map(truncateToMicros), edge)
+      case EmptyRange => EmptyRange
+    }
+
+  private def truncateOffsetRangeToMicros(value: Range[OffsetDateTime]): Range[OffsetDateTime] =
+    value match {
+      case NonEmptyRange(lowerBound, upperBound, edge) =>
+        NonEmptyRange(lowerBound.map(truncateToMicros), upperBound.map(truncateToMicros), edge)
+      case EmptyRange => EmptyRange
+    }
 
   // 8.1 Numeric Types
   testInOut[Short]("smallint")
@@ -240,8 +275,14 @@ class TypesSuite extends munit.CatsEffectSuite with munit.ScalaCheckEffectSuite 
   testInOut[Range[Long]]("int8range", Range[Long](111, 222))
   testInOut[Range[BigDecimal]]("numrange", Range[BigDecimal](111.111, 222.222, ExclExcl))
   testInOut[Range[LocalDate]]("daterange", Range(LocalDate.now.minusDays(10), LocalDate.now, InclExcl))
-  testInOut[Range[LocalDateTime]]("tsrange", Range(LocalDateTime.now.minusDays(10), LocalDateTime.now, ExclExcl))
-  testInOut[Range[OffsetDateTime]]("tstzrange", Range(OffsetDateTime.now.minusDays(10), OffsetDateTime.now, ExclExcl))
+  testInOutTweakExpected[Range[LocalDateTime]](
+    "tsrange",
+    Range(LocalDateTime.now.minusDays(10), LocalDateTime.now, ExclExcl))(
+    truncateRangeToMicros)
+  testInOutTweakExpected[Range[OffsetDateTime]](
+    "tstzrange",
+    Range(OffsetDateTime.now.minusDays(10), OffsetDateTime.now, ExclExcl))(
+    truncateOffsetRangeToMicros)
   testInOutWithCustomGen[Range[Int]](
     "int4range",
     NonEmptyRange[Int](None, Some(1), InclExcl),
