@@ -275,9 +275,13 @@ class TypesSuite extends munit.CatsEffectSuite with munit.ScalaCheckEffectSuite 
   testInOut[Range[Long]]("int8range", Range[Long](111, 222))
   testInOut[Range[BigDecimal]]("numrange", Range[BigDecimal](111.111, 222.222, ExclExcl))
   testInOut[Range[LocalDate]]("daterange", Range(LocalDate.now.minusDays(10), LocalDate.now, InclExcl))
-  testInOutTweakExpected[Range[LocalDateTime]]("tsrange", Range(LocalDateTime.now.minusDays(10), LocalDateTime.now, ExclExcl))(
+  testInOutTweakExpected[Range[LocalDateTime]](
+    "tsrange",
+    Range(LocalDateTime.now.minusDays(10), LocalDateTime.now, ExclExcl))(
     truncateRangeToMicros)
-  testInOutTweakExpected[Range[OffsetDateTime]]("tstzrange", Range(OffsetDateTime.now.minusDays(10), OffsetDateTime.now, ExclExcl))(
+  testInOutTweakExpected[Range[OffsetDateTime]](
+    "tstzrange",
+    Range(OffsetDateTime.now.minusDays(10), OffsetDateTime.now, ExclExcl))(
     truncateOffsetRangeToMicros)
   testInOutWithCustomGen[Range[Int]](
     "int4range",

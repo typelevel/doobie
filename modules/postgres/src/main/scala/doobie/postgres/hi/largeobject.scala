@@ -22,7 +22,7 @@ object largeobject {
 
   def copyFromStream(blockSize: Int, is: InputStream): LargeObjectIO[Unit] =
     IPFLO.getOutputStream.flatMap { os =>
-      io.copyStream(new Array[Byte](blockSize))(is, os)
+      io.copyStream(new Array[Byte](blockSize))(is, os) *> io.flush(os)
     }
 
   def copyToStream(blockSize: Int, os: OutputStream): LargeObjectIO[Unit] =
