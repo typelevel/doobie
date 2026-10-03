@@ -25,8 +25,8 @@ import org.typelevel.otel4s.trace.{SpanFinalizer, SpanKind, StatusCode, Tracer, 
   * Span enrichment and naming are controlled by [[TracingConfig]]:
   *
   *   - [[TracingConfig.captureQuery]] controls query text/parameter capture.
-  *   - [[TracingConfig.attributesExtractor]] decodes a doobie label into attributes (default:
-  *     [[AttributesExtractor.json]]).
+  *   - Attributes in statement metadata enrich spans directly. [[TracingConfig.attributesExtractor]] decodes legacy
+  *     doobie labels into attributes (default: [[AttributesExtractor.json]]).
   *   - [[TracingConfig.queryAnalyzer]] extracts structured query info from SQL text (default: [[QueryAnalyzer.noop]]).
   *   - [[TracingConfig.spanNamer]] chooses an optional custom span name from label/attributes context.
   *
@@ -209,10 +209,12 @@ private class TracedInterpreter[F[_]: Async: Tracer] private (
     queryMetadata.foreach(metadata => recordQueryMetadata(metadata, builder))
 
     val parsedAttributes =
-      if (label.nonEmpty && label != doobie.util.unlabeled)
-        config.attributesExtractor.extract(label)
-      else
-        None
+      info.metadata.lookup(AttributesMetadata.key).orElse {
+        if (label.nonEmpty && label != doobie.util.unlabeled)
+          config.attributesExtractor.extract(label)
+        else
+          None
+      }
 
     parsedAttributes.foreach { attributes =>
       builder.addAll(attributes)

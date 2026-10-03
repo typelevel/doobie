@@ -12,7 +12,7 @@ trait QueryLogSuitePlatform { self: QueryLogSuite =>
     val Sql = "select 1 where ? = ?"
     val Arg = 1 *: 1 *: EmptyTuple
     eventForUniqueQuery(Sql, Arg).map {
-      case Success(Sql, Parameters.NonBatch(List(1, 1)), _, _, _) => ()
+      case Success(Sql, Parameters.NonBatch(List(1, 1)), _, _, _, _) => ()
       case a                                                      => fail(s"no match: $a")
     }
   }
@@ -21,7 +21,7 @@ trait QueryLogSuitePlatform { self: QueryLogSuite =>
     val Sql = "select 1 where ? = ?"
     val Arg = 1 *: 2 *: EmptyTuple
     eventForUniqueQuery(Sql, Arg).map {
-      case ProcessingFailure(Sql, Parameters.NonBatch(List(1, 2)), _, _, _, _) => ()
+      case ProcessingFailure(Sql, Parameters.NonBatch(List(1, 2)), _, _, _, _, _) => ()
       case a                                                                   => fail(s"no match: $a")
     }
   }

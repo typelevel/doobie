@@ -13,8 +13,8 @@ trait QueryLogSuitePlatform { self: QueryLogSuite =>
     val Sql = "select 1 where ? = ?"
     val Arg = 1 :: 1 :: HNil
     eventForUniqueQuery(Sql, Arg).map {
-      case Success(Sql, Parameters.NonBatch(List(1, 1)), _, _, _) => ()
-      case a                                                      => fail(s"no match: $a")
+      case Success(Sql, Parameters.NonBatch(List(1, 1)), _, _, _, _) => ()
+      case a                                                         => fail(s"no match: $a")
     }
   }
 
@@ -22,8 +22,8 @@ trait QueryLogSuitePlatform { self: QueryLogSuite =>
     val Sql = "select 1 where ? = ?"
     val Arg = 1 :: 2 :: HNil
     eventForUniqueQuery(Sql, Arg).map {
-      case ProcessingFailure(Sql, Parameters.NonBatch(List(1, 2)), _, _, _, _) => ()
-      case a                                                                   => fail(s"no match: $a")
+      case ProcessingFailure(Sql, Parameters.NonBatch(List(1, 2)), _, _, _, _, _) => ()
+      case a                                                                      => fail(s"no match: $a")
     }
   }
 

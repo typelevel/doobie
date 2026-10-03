@@ -8,6 +8,7 @@ import cats.effect.IO
 import org.typelevel.doobie.Transactor
 import org.typelevel.doobie.Update
 import org.typelevel.doobie.otel4s.syntax.fragment.*
+import org.typelevel.doobie.otel4s.syntax.statement.*
 import org.typelevel.doobie.syntax.all.*
 import io.opentelemetry.sdk.resources.Resource as OTelResource
 import munit.{Location, TestOptions}
@@ -23,10 +24,26 @@ import org.typelevel.otel4s.oteljava.testkit.trace.{
 }
 import org.typelevel.otel4s.semconv.attributes.{DbAttributes, ErrorAttributes, ExceptionAttributes}
 import org.typelevel.otel4s.trace.TracerProvider
-import org.typelevel.otel4s.{Attribute, Attributes}
+import org.typelevel.otel4s.{Attribute, AttributeKey, Attributes}
 
 class TracedTransactorSuite extends munit.CatsEffectSuite {
   import QueryCaptureConfig.{QueryParametersPolicy, QueryTextPolicy}
+
+  test("attributes added at multiple stages merge with later values winning") {
+    val key = AttributeKey[String]("app.stage")
+    val query = sql"select 1"
+      .queryWithAttributes[Int](Attribute("app.first", "kept"), Attribute("app.stage", "first"))
+      .withAttributes(Attribute("app.stage", "second"))
+    val update = sql"UPDATE person SET name = 'a'"
+      .updateWithAttributes(Attribute("app.first", "kept"))
+      .withAttributes(Attribute("app.stage", "second"))
+
+    List(query.metadata, update.metadata).foreach { metadata =>
+      val attributes = metadata.lookup(AttributesMetadata.key).getOrElse(fail("missing attributes"))
+      assertEquals(attributes.get(AttributeKey[String]("app.first")).map(_.value), Some("kept"))
+      assertEquals(attributes.get(key).map(_.value), Some("second"))
+    }
+  }
 
   private val xa = Transactor.fromDriverManager[IO](
     driver = "org.h2.Driver",
@@ -255,7 +272,7 @@ class TracedTransactorSuite extends munit.CatsEffectSuite {
     } yield ()
   }
 
-  testkitTest("capture explicit summary with default parser and span namer") { testkit =>
+  testkitTest("capture explicit summary from statement metadata") { testkit =>
     val summary = "summary via syntax"
 
     val expected = expectedSpans(
@@ -283,7 +300,7 @@ class TracedTransactorSuite extends munit.CatsEffectSuite {
     } yield ()
   }
 
-  testkitTest("capture explicit attributes with default parser") { testkit =>
+  testkitTest("capture attributes from statement metadata") { testkit =>
     val attrs = Attributes(Attribute("test.attr", "ok"))
 
     val expected = expectedSpans(

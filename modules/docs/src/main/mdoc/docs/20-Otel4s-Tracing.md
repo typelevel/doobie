@@ -133,8 +133,8 @@ def insertPerson(name: String, age: Int) =
     )
 ```
 
-These helpers encode attributes into the doobie label. The default extractor, `AttributesExtractor.json`, decodes that
-label back into `Attributes` during tracing.
+These helpers store attributes directly in the final query or update's `Vault` metadata. The label remains available
+for human-readable text and legacy integrations.
 
 The available helpers are:
 
@@ -143,18 +143,49 @@ The available helpers are:
 - `queryWithAttributes` - attaches one or more tracing attributes
 - `updateWithAttributes` - attaches one or more tracing attributes
 
+To add attributes at later stages, import `org.typelevel.doobie.otel4s.syntax.statement._` and call
+`addAttributes(...)` on a `Query`, `Query0`, `Update`, or `Update0`. Each call merges with the attributes already attached;
+the later value wins if an attribute key is repeated. Other Vault entries remain intact. A raw
+`withMetadata(AttributesMetadata.key, attributes)` replaces the full attribute set instead.
+
+```scala mdoc:silent
+import org.typelevel.doobie.otel4s.syntax.statement._
+
+val enriched = sql"select name from person"
+  .queryWithAttributes[String](Attribute("app.stage", "created"))
+  .withAttributes(
+    Attribute("app.stage", "enriched"),
+    Attribute("app.owner", "people")
+  )
+```
+
+## Raw statement metadata
+
+Queries and updates expose a raw `org.typelevel.vault.Vault`. Create a key once, then use the same key to read the value
+in a log handler. Key creation is effectful; application code can also allocate a long-lived key at startup.
+
+```scala mdoc:silent
+import cats.effect.SyncIO
+import cats.effect.unsafe.implicits.global
+import org.typelevel.vault.Key
+
+val requestIdKey = Key.newKey[SyncIO, String].unsafeRunSync()
+
+val query = sql"select name from person".query[String]
+  .withMetadata(requestIdKey, "request-123")
+
+val requestId = query.metadata.lookup(requestIdKey)
+```
+
+`Query`, `Query0`, `Update`, and `Update0` provide both `withMetadata(vault)` to replace the whole vault and
+`withMetadata(key, value)` to insert or replace one entry. Metadata
+reaches tracing and all log event variants. It is not attached to fragments or merged during fragment composition.
+
 ## `AttributesExtractor.json`
 
-The syntax helpers above rely on `AttributesExtractor.json`.
-
-If you replace the extractor with something incompatible, for example `AttributesExtractor.plain(...)`, the helpers
-still compile, but their encoded label payload is no longer decoded, so:
-
-- `db.query.summary` is not recovered from the label
-- `SpanNamer.fromAttribute(...)` will not find it
-- span naming falls back to whatever other strategy you configured
-
-This can be useful, but it should be explicit.
+The default extractor still supports older labels containing JSON-encoded attributes. When a statement has directly
+attached otel4s attributes, those take precedence over attributes decoded from its label. Changing the extractor does
+not affect attributes attached with the syntax helpers above.
 
 ## Query Capture Policies
 
@@ -283,7 +314,7 @@ This is useful when:
 
 - you already use human-readable labels
 - you want labels preserved as attributes
-- you do not use the JSON-encoded helper syntax
+- you want a human-readable label recorded as an attribute
 
 Like `SpanNamer`, extractors compose with `orElse`.
 
@@ -301,7 +332,7 @@ val extractor =
 
 This means:
 
-- first try to decode a helper-produced JSON payload
+- first try to decode a legacy JSON label
 - if that fails, keep the raw label as a fallback attribute
 
 ## Customizing `TracingConfig`

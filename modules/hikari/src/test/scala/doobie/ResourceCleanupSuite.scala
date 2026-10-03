@@ -14,6 +14,7 @@ import com.zaxxer.hikari.HikariConfig
 import org.typelevel.doobie.hi.{connection as IHC, resultset as IHRS}
 import org.typelevel.doobie.free.{connection as IFC, preparedstatement as IFPS, resultset as IFRS}
 import org.typelevel.doobie.util.log.{Parameters, LoggingInfo}
+import org.typelevel.vault.Vault
 import org.postgresql.util.PSQLException
 import cats.effect.unsafe.implicits.global
 
@@ -103,7 +104,8 @@ class ResourceCleanupSuite extends munit.FunSuite {
   private val loggingInfo = LoggingInfo(
     "select * from not_exist",
     Parameters.nonBatchEmpty,
-    "unset"
+    "unset",
+    Vault.empty
   )
 
   private class SimulatedError() extends Exception("simulated error")

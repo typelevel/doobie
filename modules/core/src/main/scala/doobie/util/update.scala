@@ -17,6 +17,7 @@ import org.typelevel.doobie.hi.{connection as IHC, preparedstatement as IHPS, re
 import org.typelevel.doobie.util.fragment.Fragment
 import org.typelevel.doobie.util.log.{LoggingInfo, Parameters}
 import fs2.Stream
+import org.typelevel.vault.{Key, Vault}
 
 import scala.Predef.genericArrayOps
 
@@ -58,6 +59,23 @@ object update {
 
     /** Label to be used during logging */
     val label: String
+
+    /** Metadata carried to tracing and log events when this update executes. */
+    def metadata: Vault
+
+    /** Replace this update's metadata. */
+    def withMetadata(value: Vault): Update[A] =
+      new Update[A] {
+        val write: Write[A] = u.write
+        val sql: String = u.sql
+        val pos: Option[Pos] = u.pos
+        val label: String = u.label
+        override val metadata: Vault = value
+      }
+
+    /** Insert a typed metadata value. */
+    def withMetadata[B](key: Key[B], value: B): Update[A] =
+      withMetadata(metadata.insert(key, value))
 
     /** Program to construct an analysis of this query's SQL statement and asserted parameter types.
       * @group Diagnostics
@@ -104,7 +122,8 @@ object update {
       LoggingInfo(
         sql,
         Parameters.NonBatch(write.toList(a)),
-        label
+        label,
+        metadata
       )
 
     /** Add many sets of parameters and execute as a batch update, returning total rows updated. Note that when an error
@@ -137,7 +156,8 @@ object update {
       LoggingInfo(
         sql,
         Parameters.Batch(() => fa.toList.map(write.toList)),
-        label
+        label,
+        metadata
       )
 
     /** Construct a stream that performs a batch update as with `updateMany`, yielding generated keys of readable type
@@ -216,7 +236,8 @@ object update {
       LoggingInfo(
         sql,
         Parameters.NonBatch(write.toList(a)),
-        label
+        label,
+        metadata
       )
 
     /** Update is a contravariant functor.
@@ -228,6 +249,7 @@ object update {
         val sql: String = u.sql
         val pos: Option[Pos] = u.pos
         val label: String = u.label
+        override val metadata: Vault = u.metadata
       }
 
     /** Apply an argument, yielding a residual [[Update0]].
@@ -237,6 +259,8 @@ object update {
       new Update0 {
         override val sql: String = u.sql
         override val pos: Option[Pos] = u.pos
+        override def metadata: Vault = u.metadata
+        override def withMetadata(value: Vault): Update0 = u.withMetadata(value).toUpdate0(a)
         override def toFragment: Fragment = u.toFragment(a)
         override def analysis: ConnectionIO[Analysis] = u.analysis
         override def outputAnalysis: ConnectionIO[Analysis] = u.outputAnalysis
@@ -276,6 +300,7 @@ object update {
         val write: Write[A] = W
         val sql: String = sql0
         val label: String = label0
+        val metadata: Vault = Vault.empty
         val pos: Option[Pos] = pos0
       }
     }
@@ -291,6 +316,16 @@ object update {
   }
 
   trait Update0 {
+
+    /** Metadata carried to tracing and log events when this update executes. */
+    def metadata: Vault
+
+    /** Replace this update's metadata. */
+    def withMetadata(value: Vault): Update0
+
+    /** Insert a typed metadata value. */
+    def withMetadata[A](key: Key[A], value: A): Update0 =
+      withMetadata(metadata.insert(key, value))
 
     /** The SQL string.
       * @group Diagnostics
