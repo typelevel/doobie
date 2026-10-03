@@ -542,32 +542,6 @@ class TracedTransactorSuite extends munit.CatsEffectSuite {
     } yield ()
   }
 
-  testkitTest("ignore plain fragment labels when parser cannot parse") { testkit =>
-    val label = "some label"
-
-    val expected = expectedSpans(
-      span(
-        name = "executeQuery",
-        attributes = Attributes(
-          DbAttributes.DbOperationName("executeQuery")
-        )
-      ),
-      span(
-        name = "executeLargeUpdate",
-        attributes = Attributes(
-          DbAttributes.DbOperationName("executeLargeUpdate")
-        )
-      )
-    )
-
-    for {
-      tx <- testkit.tracedTransactor(tracedConfig())
-      _ <- sql"select 1".queryWithLabel[Int](label).unique.transact(tx)
-      _ <- sql"CREATE LOCAL TEMPORARY TABLE TEST (int_value INT)".updateWithLabel(label).run.transact(tx)
-      _ <- testkit.assertFinishedSpans(expected)
-    } yield ()
-  }
-
   private def testkitTest(name: TestOptions)(f: Testkit => IO[Unit])(implicit loc: munit.Location): Unit =
     test(name) {
       TracesTestkit

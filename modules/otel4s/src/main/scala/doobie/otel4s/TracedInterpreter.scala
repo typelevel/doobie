@@ -12,7 +12,6 @@ import cats.free.Free
 import cats.mtl.Local
 import cats.syntax.all.*
 import cats.~>
-import org.typelevel.doobie
 import org.typelevel.doobie.free.KleisliInterpreter
 import org.typelevel.doobie.util.log.{LogHandler, LoggingInfo}
 import org.typelevel.doobie.util.trace.TraceEvent
@@ -25,37 +24,12 @@ import org.typelevel.otel4s.trace.{SpanFinalizer, SpanKind, StatusCode, Tracer, 
   * Span enrichment and naming are controlled by [[TracingConfig]]:
   *
   *   - [[TracingConfig.captureQuery]] controls query text/parameter capture.
-  *   - Attributes in statement metadata enrich spans directly. [[TracingConfig.attributesExtractor]] decodes legacy
-  *     doobie labels into attributes (default: [[AttributesExtractor.json]]).
+  *   - Attributes in statement metadata enrich spans directly.
   *   - [[TracingConfig.queryAnalyzer]] extracts structured query info from SQL text (default: [[QueryAnalyzer.noop]]).
   *   - [[TracingConfig.spanNamer]] chooses an optional custom span name from label/attributes context.
   *
-  * With the default naming flow (`SpanNamer.fromAttribute(db.query.summary)`), span names come from extracted
+  * With the default naming flow (`SpanNamer.fromAttribute(db.query.summary)`), span names come from attached
   * `db.query.summary` when present; otherwise naming falls back to JDBC operation names (`executeQuery`, etc.).
-  *
-  * @example
-  *   to support both new fragment helpers and legacy raw labels:
-  *   {{{
-  * import org.typelevel.doobie.otel4s.*
-  * import org.typelevel.otel4s.AttributeKey
-  * import org.typelevel.otel4s.semconv.attributes.DbAttributes
-  *
-  * val legacyLabelKey = AttributeKey[String]("db.query.legacy_label")
-  *
-  * val config =
-  *   TracingConfig
-  *     .recommended(DbAttributes.DbSystemNameValue.Postgresql, "app")
-  *     .withAttributesExtractor(
-  *       AttributesExtractor
-  *         .json
-  *         .orElse(AttributesExtractor.plain(legacyLabelKey))
-  *     )
-  *     .withSpanNamer(
-  *       SpanNamer
-  *         .fromAttribute(DbAttributes.DbQuerySummary)
-  *         .orElse(SpanNamer.fromAttribute(legacyLabelKey))
-  *     )
-  *   }}}
   *
   * @see
   *   [[https://opentelemetry.io/docs/specs/semconv/database/database-spans]]
@@ -208,20 +182,14 @@ private class TracedInterpreter[F[_]: Async: Tracer] private (
 
     queryMetadata.foreach(metadata => recordQueryMetadata(metadata, builder))
 
-    val parsedAttributes =
-      info.metadata.lookup(AttributesMetadata.key).orElse {
-        if (label.nonEmpty && label != doobie.util.unlabeled)
-          config.attributesExtractor.extract(label)
-        else
-          None
-      }
+    val attachedAttributes = info.metadata.lookup(AttributesMetadata.key)
 
-    parsedAttributes.foreach { attributes =>
+    attachedAttributes.foreach { attributes =>
       builder.addAll(attributes)
     }
 
     val customSpanName = config.spanNamer.spanName(
-      SpanNamer.Context(label, info.sql, parsedAttributes, queryMetadata)
+      SpanNamer.Context(label, info.sql, attachedAttributes, queryMetadata)
     )
 
     SpanParams(customSpanName, builder.result())

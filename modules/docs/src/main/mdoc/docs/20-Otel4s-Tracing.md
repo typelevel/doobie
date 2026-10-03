@@ -78,14 +78,13 @@ For each traced operation the interpreter builds span data in this order:
     - `db.query.text`
     - `db.query.parameter.*`
     - `db.operation.batch.size`
-3. Read the doobie label, if there is one, and pass it to `TracingConfig.attributesExtractor`.
+3. Read tracing attributes attached to the final statement's metadata.
 4. Analyze the raw SQL with `TracingConfig.queryAnalyzer`.
 5. Compute an optional custom span name with `TracingConfig.spanNamer`.
 6. If no custom name is produced, fall back to JDBC operation names.
 
 The main extension points are:
 
-- `AttributesExtractor`, which reads doobie labels
 - `QueryAnalyzer`, which reads SQL text
 - `SpanNamer`, which chooses the final span name
 
@@ -99,7 +98,6 @@ It configures:
 - `defaultSpanName = "doobie:exec"`
 - `constAttributes = db.system.name + db.namespace`
 - `captureQuery = QueryCaptureConfig.recommended`
-- `attributesExtractor = AttributesExtractor.json`
 - `queryAnalyzer = QueryAnalyzer.noop`
 - `spanNamer = SpanNamer.fromAttribute(DbAttributes.DbQuerySummary)`
 
@@ -134,7 +132,7 @@ def insertPerson(name: String, age: Int) =
 ```
 
 These helpers store attributes directly in the final query or update's `Vault` metadata. The label remains available
-for human-readable text and legacy integrations.
+for human-readable text and span naming with `SpanNamer.fromQueryLabel`.
 
 The available helpers are:
 
@@ -144,7 +142,7 @@ The available helpers are:
 - `updateWithAttributes` - attaches one or more tracing attributes
 
 To add attributes at later stages, import `org.typelevel.doobie.otel4s.syntax.statement._` and call
-`addAttributes(...)` on a `Query`, `Query0`, `Update`, or `Update0`. Each call merges with the attributes already attached;
+`withAttributes(...)` on a `Query`, `Query0`, `Update`, or `Update0`. Each call merges with the attributes already attached;
 the later value wins if an attribute key is repeated. Other Vault entries remain intact. A raw
 `withMetadata(AttributesMetadata.key, attributes)` replaces the full attribute set instead.
 
@@ -180,12 +178,6 @@ val requestId = query.metadata.lookup(requestIdKey)
 `Query`, `Query0`, `Update`, and `Update0` provide both `withMetadata(vault)` to replace the whole vault and
 `withMetadata(key, value)` to insert or replace one entry. Metadata
 reaches tracing and all log event variants. It is not attached to fragments or merged during fragment composition.
-
-## `AttributesExtractor.json`
-
-The default extractor still supports older labels containing JSON-encoded attributes. When a statement has directly
-attached otel4s attributes, those take precedence over attributes decoded from its label. Changing the extractor does
-not affect attributes attached with the syntax helpers above.
 
 ## Query Capture Policies
 
@@ -234,7 +226,7 @@ The built-in strategies are:
 
 - `SpanNamer.noop` - does not provide a custom span name
 - `SpanNamer.fromQueryLabel` - uses the raw doobie label as the span name
-- `SpanNamer.fromAttribute(key)` - uses the value of the given extracted attribute as the span name
+- `SpanNamer.fromAttribute(key)` - uses the value of the given attached attribute as the span name
 - `SpanNamer.fromQueryMetadata` - builds the span name from [QueryAnalyzer.QueryMetadata](#sql-analysis-with-queryanalyzer)
 
 ### `SpanNamer.fromAttribute`
@@ -248,11 +240,10 @@ import org.typelevel.otel4s.semconv.attributes.DbAttributes
 val namer = SpanNamer.fromAttribute(DbAttributes.DbQuerySummary)
 ```
 
-It checks extracted attributes for the given key.
+It checks attributes attached to the statement for the given key.
 
 - if the attribute exists, its value becomes the span name
 - if it does not exist, it returns `None`
-- if attribute extraction failed, it also returns `None`
 
 When it returns `None`, the interpreter falls back to JDBC operation names.
 
@@ -276,64 +267,16 @@ Use this when span names should come from SQL analysis rather than from doobie l
 
 ```scala mdoc:silent:reset
 import org.typelevel.doobie.otel4s.SpanNamer
-import org.typelevel.otel4s.AttributeKey
 import org.typelevel.otel4s.semconv.attributes.DbAttributes
-
-val legacyLabelKey = AttributeKey[String]("db.query.legacy_label")
 
 val namer =
   SpanNamer
     .fromAttribute(DbAttributes.DbQuerySummary)
     .orElse(SpanNamer.fromQueryMetadata)
-    .orElse(SpanNamer.fromAttribute(legacyLabelKey))
     .orElse(SpanNamer.fromQueryLabel)
 ```
 
 This lets you define naming precedence explicitly.
-
-## Customizing the Extractor
-
-`AttributesExtractor` turns the raw doobie label into typed attributes.
-
-The built-ins are:
-
-- `AttributesExtractor.json`
-- `AttributesExtractor.plain(key)`
-
-`plain(key)` stores the label as a single string attribute:
-
-```scala mdoc:silent
-import org.typelevel.doobie.otel4s.AttributesExtractor
-import org.typelevel.otel4s.AttributeKey
-
-val extractor =
-  AttributesExtractor.plain(AttributeKey[String]("db.query.label"))
-```
-
-This is useful when:
-
-- you already use human-readable labels
-- you want labels preserved as attributes
-- you want a human-readable label recorded as an attribute
-
-Like `SpanNamer`, extractors compose with `orElse`.
-
-```scala mdoc:silent:reset
-import org.typelevel.doobie.otel4s.AttributesExtractor
-import org.typelevel.otel4s.AttributeKey
-
-val legacyLabelKey = AttributeKey[String]("db.query.legacy_label")
-
-val extractor =
-  AttributesExtractor
-    .json
-    .orElse(AttributesExtractor.plain(legacyLabelKey))
-```
-
-This means:
-
-- first try to decode a legacy JSON label
-- if that fails, keep the raw label as a fallback attribute
 
 ## Customizing `TracingConfig`
 
@@ -353,7 +296,6 @@ val config =
     .withTracerScopeName("com.example.doobie")
     .withDefaultSpanName("db.exec")
     .withCaptureQuery(QueryCaptureConfig.disabled)
-    .withAttributesExtractor(AttributesExtractor.json)
     .withQueryAnalyzer(QueryAnalyzer.noop)
     .withSpanNamer(SpanNamer.fromAttribute(DbAttributes.DbQuerySummary))
     .addConstAttributes(Attributes(Attribute("system.module", "payments")))
@@ -366,25 +308,21 @@ The main customization points are:
 - `withConstAttributes` - replaces the set of attributes added to every span
 - `addConstAttributes` - appends more attributes to the existing constant attributes
 - `withCaptureQuery` - changes how SQL text and parameters are recorded
-- `withAttributesExtractor` - changes how doobie labels are decoded into attributes
 - `withQueryAnalyzer` - changes how SQL text is analyzed into query metadata
 - `withSpanNamer` - changes how the final span name is chosen
 
-## New Syntax and Legacy Labels Together
+## Statement Attributes and Labels Together
 
 When migrating existing code it is common to have both of these:
 
 - new code using `queryWithSummary` or `queryWithAttributes`
-- old code using raw doobie labels such as `queryWithLabel("find-user")`
+- code using raw doobie labels such as `queryWithLabel("find-user")`
 
-In this case, use a composed extractor and a composed namer.
+Use a composed namer to prefer attached summaries and fall back to raw labels.
 
 ```scala mdoc:silent:reset
 import org.typelevel.doobie.otel4s._
-import org.typelevel.otel4s.AttributeKey
 import org.typelevel.otel4s.semconv.attributes.DbAttributes
-
-val legacyLabelKey = AttributeKey[String]("db.query.legacy_label")
 
 val config =
   TracingConfig
@@ -392,22 +330,17 @@ val config =
       dbSystemName = DbAttributes.DbSystemNameValue.Postgresql,
       dbNamespace = "app"
     )
-    .withAttributesExtractor(
-      AttributesExtractor
-        .json
-        .orElse(AttributesExtractor.plain(legacyLabelKey))
-    )
     .withSpanNamer(
       SpanNamer
         .fromAttribute(DbAttributes.DbQuerySummary)
-        .orElse(SpanNamer.fromAttribute(legacyLabelKey))
+        .orElse(SpanNamer.fromQueryLabel)
     )
 ```
 
 With this setup:
 
 - helper-generated summaries still win
-- raw legacy labels remain visible
+- raw labels are used as fallback span names
 - unlabeled queries still fall back to JDBC operation names
 
 ## SQL Analysis with `QueryAnalyzer`
@@ -422,7 +355,7 @@ It returns `QueryAnalyzer.QueryMetadata`, which may contain:
 - `storedProcedureName`
 - `querySummary`
 
-Unlike `AttributesExtractor`, which works from labels, `QueryAnalyzer` works from the SQL statement itself.
+`QueryAnalyzer` works from the SQL statement itself; attached attributes and labels are handled separately.
 
 ```scala mdoc:silent:reset
 import org.typelevel.doobie.otel4s.QueryAnalyzer
@@ -474,7 +407,7 @@ val config =
 With this configuration:
 
 - SQL-derived metadata is used first
-- then label-derived `db.query.summary`
+- then the attached `db.query.summary`
 - finally JDBC operation names
 
 ## OpenTelemetry Java Instrumentation
@@ -547,7 +480,6 @@ If you want manual summaries to override analyzer results, reverse the order.
 ## Caveats
 
 - unlabeled queries are still traced; they just rely on SQL analysis or JDBC fallback naming
-- `AttributesExtractor.json` only works for labels encoded as JSON attributes
 - `QueryAnalyzer` does not currently add analyzed fields as span attributes by itself; it feeds naming through
   `SpanNamer`
 - capturing parameters can expose secrets, tokens, emails, IDs, or other sensitive values
