@@ -225,6 +225,7 @@ The `sql` interpolator is sugar for constructors defined in the `doobie.hi.conne
 import org.typelevel.doobie.hi.HC
 import org.typelevel.doobie.free.{FC, FPS}
 import org.typelevel.doobie.util.log.{LoggingInfo, Parameters}
+import org.typelevel.vault.Vault
 
 val sql = "select code, name, population, gnp from country"
 val proc = HC.stream[(Code, Country2)](
@@ -235,7 +236,8 @@ val proc = HC.stream[(Code, Country2)](
   loggingInfo = LoggingInfo(
     sql = sql,
     params = Parameters.NonBatch(List.empty), // No parameters
-    label = "unlabeled"
+    label = "unlabeled",
+    metadata = Vault.empty
   )
 )
 

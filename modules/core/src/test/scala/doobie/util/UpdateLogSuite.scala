@@ -10,6 +10,7 @@ import org.typelevel.doobie.*
 import org.typelevel.doobie.implicits.*
 import org.typelevel.doobie.util.log.Parameters.NonBatch
 import org.typelevel.doobie.util.log.*
+import org.typelevel.vault.Key
 
 import scala.annotation.nowarn
 
@@ -67,6 +68,17 @@ class UpdateLogSuite extends munit.FunSuite {
     assertEquals(ev.sql, "INSERT INTO foo VALUES (?, ?)")
     assertEquals(ev.params, NonBatch(List(1, "str")))
     assertEquals(ev.label, "unlabeled")
+  }
+
+  test("update metadata reaches log events after transformations") {
+    val key = Key.newKey[IO, String].unsafeRunSync()
+    val update = Update[Int]("UPDATE foo SET c1 = ?")
+      .withMetadata(key, "request-123")
+      .contramap[Int](identity)
+      .toUpdate0(1)
+      .withMetadata(key, "request-456")
+    val event = successEventForCIO(update.run)
+    assertEquals(event.metadata.lookup(key), Some("request-456"))
   }
 
   test("update: Log ExecFailure on failed PreparedStatement construction") {

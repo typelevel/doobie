@@ -9,7 +9,7 @@ import org.typelevel.otel4s.{AttributeKey, Attributes}
 
 trait SpanNamer { self =>
 
-  /** Chooses a span name from the raw label and/or parsed attributes.
+  /** Chooses a span name from the raw label and/or attached attributes.
     */
   def spanName(context: SpanNamer.Context): Option[String]
 
@@ -33,10 +33,10 @@ object SpanNamer {
       */
     def sql: String
 
-    /** Attributes extracted by [[AttributesExtractor]].
+    /** Attributes attached to the statement.
       *
       * @return
-      *   `None` if attributes extraction failed.
+      *   `None` if no attributes were attached.
       */
     def attributes: Option[Attributes]
 
@@ -57,7 +57,7 @@ object SpanNamer {
       *   the SQL statement text
       *
       * @param attributes
-      *   attributes extracted by [[AttributesExtractor]]
+      *   attributes attached to the statement
       *
       * @param queryMetadata
       *   query metadata extracted by [[QueryAnalyzer]]
@@ -104,9 +104,8 @@ object SpanNamer {
 
   /** Look up a specific attribute value as the span name.
     *
-    * With the default interpreter flow, this strategy receives attributes produced by the configured
-    * [[AttributesExtractor]]. If the target key is found, that value is used as the operation span name; otherwise this
-    * namer returns `None`.
+    * This strategy receives attributes attached to the statement. If the target key is found, that value is used as the
+    * operation span name; otherwise this namer returns `None`.
     *
     * When used as the only namer, `None` means the interpreter falls back to JDBC operation names (`executeQuery`,
     * `executeUpdate`, etc.). Use [[SpanNamer.orElse]] to define explicit fallback naming chains.
@@ -115,11 +114,11 @@ object SpanNamer {
     *   {{{
     * SpanNamer.fromAttribute(DbAttributes.DbQuerySummary)
     *
-    * // if parsed attributes contain db.query.summary: "select users" -> span name "select users"
+    * // if attached attributes contain db.query.summary: "select users" -> span name "select users"
     *   }}}
     *
     * @param key
-    *   the [[org.typelevel.otel4s.AttributeKey]] to look up in parsed attributes
+    *   the [[org.typelevel.otel4s.AttributeKey]] to look up in attached attributes
     */
   def fromAttribute(key: AttributeKey[String]): SpanNamer = new FromAttribute(key)
 

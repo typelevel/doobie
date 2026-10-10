@@ -15,7 +15,7 @@ import org.typelevel.log4cats.*
   */
 class Log4CatsDebuggingLogHandler[F[_]](logger: MessageLogger[F]) extends LogHandler[F] {
   override def run(logEvent: LogEvent): F[Unit] = logEvent match {
-    case Success(s, a, l, e1, e2) => {
+    case Success(s, a, l, e1, e2, _) => {
       val paramsStr = a match {
         case nonBatch: Parameters.NonBatch => s"[${nonBatch.paramsAsList.mkString(", ")}]"
         case _: Parameters.Batch           => "<batch arguments not rendered>"
@@ -32,7 +32,7 @@ class Log4CatsDebuggingLogHandler[F[_]](logger: MessageLogger[F]) extends LogHan
         """.stripMargin)
     }
 
-    case ProcessingFailure(s, a, l, e1, e2, t) => {
+    case ProcessingFailure(s, a, l, e1, e2, t, _) => {
       val paramsStr = a.allParams.map(thisArgs => thisArgs.mkString("(", ", ", ")"))
         .mkString("[", ", ", "]")
       logger.warn(
@@ -48,7 +48,7 @@ class Log4CatsDebuggingLogHandler[F[_]](logger: MessageLogger[F]) extends LogHan
         """.stripMargin)
     }
 
-    case ExecFailure(s, a, l, e1, t) => {
+    case ExecFailure(s, a, l, e1, t, _) => {
       val paramsStr = a.allParams.map(thisArgs => thisArgs.mkString("(", ", ", ")"))
         .mkString("[", ", ", "]")
       logger.error(

@@ -13,8 +13,22 @@ import org.typelevel.doobie.util.log.{ExecFailure, LogEvent, Parameters, Process
 import org.typelevel.doobie.util.query.Query
 import org.typelevel.doobie.util.transactor.Transactor
 import org.typelevel.doobie.util.update.Update
+import org.typelevel.vault.{Key, Vault}
 
 class QueryLogSuite extends munit.CatsEffectSuite with QueryLogSuitePlatform {
+
+  test("query metadata reaches log events after transformations") {
+    for {
+      key <- Key.newKey[IO, String]
+      query = Query[Int, Int]("select ?")
+        .withMetadata(Vault.empty.insert(key, "request-123"))
+        .map(_ + 1)
+        .contramap[Int](identity)
+        .toQuery0(1)
+        .withMetadata(key, "request-456")
+      event <- successEventForCIO(query.unique)
+    } yield assertEquals(event.metadata.lookup(key), Some("request-456"))
+  }
 
   val logEventRef: Ref[IO, LogEvent] =
     Ref.of[IO, LogEvent](null).unsafeRunSync()

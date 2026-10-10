@@ -20,6 +20,7 @@ import org.typelevel.doobie.util.fragment.Fragment
 import org.typelevel.doobie.util.log.{LoggingInfo, Parameters}
 import org.typelevel.doobie.util.pos.Pos
 import fs2.Stream
+import org.typelevel.vault.{Key, Vault}
 
 /** Module defining queries parameterized by input and output types. */
 object query {
@@ -52,6 +53,24 @@ object query {
 
     /** Label to be used during logging */
     val label: String
+
+    /** Metadata carried to tracing and log events when this query executes. */
+    def metadata: Vault
+
+    /** Replace this query's metadata. */
+    def withMetadata(value: Vault): Query[A, B] =
+      new Query[A, B] {
+        val write: Write[A] = outer.write
+        val read: Read[B] = outer.read
+        def sql: String = outer.sql
+        def pos: Option[Pos] = outer.pos
+        val label: String = outer.label
+        override val metadata: Vault = value
+      }
+
+    /** Insert a typed metadata value. */
+    def withMetadata[C](key: Key[C], value: C): Query[A, B] =
+      withMetadata(metadata.insert(key, value))
 
     /** Program to construct an analysis of this query's SQL statement and asserted parameter and column types.
       * @group Diagnostics
@@ -86,7 +105,8 @@ object query {
         loggingInfo = LoggingInfo(
           sql = sql,
           params = Parameters.NonBatch(Write[A].toList(a)),
-          label = label
+          label = label,
+          metadata = metadata
         )
       )
 
@@ -213,7 +233,8 @@ object query {
       LoggingInfo(
         sql = sql,
         params = Parameters.NonBatch(write.toList(a)),
-        label = label
+        label = label,
+        metadata = metadata
       )
 
     /** @group Transformations */
@@ -224,6 +245,7 @@ object query {
         def sql: String = outer.sql
         def pos: Option[Pos] = outer.pos
         val label: String = outer.label
+        override val metadata: Vault = outer.metadata
       }
 
     /** @group Transformations */
@@ -234,6 +256,7 @@ object query {
         def sql: String = outer.sql
         def pos: Option[Pos] = outer.pos
         val label: String = outer.label
+        override val metadata: Vault = outer.metadata
       }
 
     /** Apply an argument, yielding a residual [[Query0]].
@@ -243,6 +266,8 @@ object query {
       new Query0[B] {
         override def sql: String = outer.sql
         override def pos: Option[Pos] = outer.pos
+        override def metadata: Vault = outer.metadata
+        override def withMetadata(value: Vault): Query0[B] = outer.withMetadata(value).toQuery0(a)
         override def toFragment: Fragment = outer.toFragment(a)
         override def analysis: ConnectionIO[Analysis] = outer.analysis
         override def outputAnalysis: ConnectionIO[Analysis] = outer.outputAnalysis
@@ -304,6 +329,7 @@ object query {
         val sql: String = sql0
         val pos: Option[Pos] = pos0
         val label: String = label0
+        val metadata: Vault = Vault.empty
       }
     }
 
@@ -346,6 +372,16 @@ object query {
       * @group Diagnostics
       */
     def pos: Option[Pos]
+
+    /** Metadata carried to tracing and log events when this query executes. */
+    def metadata: Vault
+
+    /** Replace this query's metadata. */
+    def withMetadata(value: Vault): Query0[B]
+
+    /** Insert a typed metadata value. */
+    def withMetadata[A](key: Key[A], value: A): Query0[B] =
+      withMetadata(metadata.insert(key, value))
 
     /** Program to construct an analysis of this query's SQL statement and asserted parameter and column types.
       * @group Diagnostics

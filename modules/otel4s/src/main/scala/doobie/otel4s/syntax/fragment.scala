@@ -7,9 +7,8 @@ package org.typelevel.doobie.otel4s.syntax
 import org.typelevel.doobie.Fragment
 import org.typelevel.doobie.util.query.Query0
 import org.typelevel.doobie.util.update.Update0
-import org.typelevel.otel4s.Attribute
-import io.circe.syntax.*
-import org.typelevel.doobie.otel4s.AttributesCodec.*
+import org.typelevel.otel4s.{Attribute, Attributes}
+import org.typelevel.doobie.otel4s.AttributesMetadata
 import org.typelevel.doobie.otel4s.syntax.all.*
 import org.typelevel.doobie.util.Read
 import org.typelevel.otel4s.semconv.attributes.DbAttributes
@@ -28,41 +27,21 @@ class FragmentOps(fragment: Fragment) {
   def updateWithSummary(summary: String): Update0 =
     fragment.updateWithAttributes(DbAttributes.DbQuerySummary(summary))
 
-  /** Build a query with encoded tracing attributes payload.
-    *
-    * @note
-    *   these attributes are encoded as an internal label payload and interpreted by
-    *   [[doobie.otel4s.AttributesExtractor.json]].
-    */
+  /** Build a query with tracing attributes stored in statement metadata. */
   def queryWithAttributes[A: Read](attributes: immutable.Iterable[Attribute[?]]): Query0[A] =
-    fragment.queryWithLabel(attributes.asJson.noSpaces)
+    fragment.query[A].withMetadata(AttributesMetadata.key, Attributes.fromSpecific(attributes))
 
-  /** Build a query with encoded tracing attributes payload.
-    *
-    * @note
-    *   these attributes are encoded as an internal label payload and interpreted by
-    *   [[doobie.otel4s.AttributesExtractor.json]].
-    */
+  /** Build a query with tracing attributes stored in statement metadata. */
   def queryWithAttributes[A: Read](attributes: Attribute[?]*): Query0[A] =
-    fragment.queryWithLabel(attributes.asJson.noSpaces)
+    queryWithAttributes[A](Attributes.fromSpecific(attributes))
 
-  /** Build an update with encoded tracing attributes payload.
-    *
-    * @note
-    *   these attributes are encoded as an internal label payload and interpreted by
-    *   [[doobie.otel4s.AttributesExtractor.json]].
-    */
+  /** Build an update with tracing attributes stored in statement metadata. */
   def updateWithAttributes(attributes: immutable.Iterable[Attribute[?]]): Update0 =
-    fragment.updateWithLabel(attributes.asJson.noSpaces)
+    fragment.update.withMetadata(AttributesMetadata.key, Attributes.fromSpecific(attributes))
 
-  /** Build an update with encoded tracing attributes payload.
-    *
-    * @note
-    *   these attributes are encoded as an internal label payload and interpreted by
-    *   [[doobie.otel4s.AttributesExtractor.json]].
-    */
+  /** Build an update with tracing attributes stored in statement metadata. */
   def updateWithAttributes(attributes: Attribute[?]*): Update0 =
-    fragment.updateWithLabel(attributes.asJson.noSpaces)
+    updateWithAttributes(Attributes.fromSpecific(attributes.toVector))
 
 }
 

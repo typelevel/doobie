@@ -6,6 +6,7 @@ package org.typelevel.doobie.util
 
 import cats.Applicative
 import cats.effect.Sync
+import org.typelevel.vault.Vault
 
 import java.util.logging.Logger
 import scala.Predef.augmentString
@@ -15,7 +16,7 @@ import scala.concurrent.duration.FiniteDuration
 object log {
 
   // Wrapper for a few information about a query for logging purposes
-  final case class LoggingInfo(sql: String, params: Parameters, label: String)
+  final case class LoggingInfo(sql: String, params: Parameters, label: String, metadata: Vault)
 
   /** Parameters used in a query. For queries using batch arguments (e.g. updateMany) argument list is constructed
     * lazily.
@@ -49,6 +50,8 @@ object log {
 
     def label: String
 
+    def metadata: Vault
+
   }
 
   /** @group Events */
@@ -57,7 +60,8 @@ object log {
       params: Parameters,
       label: String,
       exec: FiniteDuration,
-      processing: FiniteDuration
+      processing: FiniteDuration,
+      metadata: Vault
   ) extends LogEvent
 
   /** @group Events */
@@ -67,12 +71,19 @@ object log {
       label: String,
       exec: FiniteDuration,
       processing: FiniteDuration,
-      failure: Throwable
+      failure: Throwable,
+      metadata: Vault
   ) extends LogEvent
 
   /** @group Events */
-  final case class ExecFailure(sql: String, params: Parameters, label: String, exec: FiniteDuration, failure: Throwable)
-      extends LogEvent
+  final case class ExecFailure(
+      sql: String,
+      params: Parameters,
+      label: String,
+      exec: FiniteDuration,
+      failure: Throwable,
+      metadata: Vault
+  ) extends LogEvent
 
   object LogEvent {
     def success(
@@ -84,7 +95,8 @@ object log {
       params = info.params,
       label = info.label,
       exec = execDuration,
-      processing = processDuration
+      processing = processDuration,
+      metadata = info.metadata
     )
 
     def processingFailure(
@@ -99,7 +111,8 @@ object log {
         label = info.label,
         exec = execDuration,
         processing = processDuration,
-        failure = error
+        failure = error,
+        metadata = info.metadata
       )
 
     def execFailure(
@@ -112,7 +125,8 @@ object log {
         params = info.params,
         label = info.label,
         exec = execDuration,
-        failure = error
+        failure = error,
+        metadata = info.metadata
       )
   }
 
@@ -144,7 +158,7 @@ object log {
     def jdkLogHandler[M[_]: Sync]: LogHandler[M] = new LogHandler[M] {
       override def run(logEvent: LogEvent): M[Unit] = Sync[M].delay(
         logEvent match {
-          case Success(s, a, l, e1, e2) =>
+          case Success(s, a, l, e1, e2, _) =>
             val paramsStr = a match {
               case nonBatch: Parameters.NonBatch => s"[${nonBatch.paramsAsList.mkString(", ")}]"
               case _: Parameters.Batch           => "<batch arguments not rendered>"
@@ -159,7 +173,7 @@ object log {
                                .toString} ms processing (${(e1 + e2).toMillis.toString} ms total)
               """.stripMargin)
 
-          case ProcessingFailure(s, a, l, e1, e2, t) =>
+          case ProcessingFailure(s, a, l, e1, e2, t, _) =>
             val paramsStr = a.allParams.map(thisArgs => thisArgs.mkString("(", ", ", ")"))
               .mkString("[", ", ", "]")
             jdkLogger.severe(s"""Failed Resultset Processing:
@@ -173,7 +187,7 @@ object log {
                                 | failure = ${t.getMessage}
               """.stripMargin)
 
-          case ExecFailure(s, a, l, e1, t) =>
+          case ExecFailure(s, a, l, e1, t, _) =>
             val paramsStr = a.allParams.map(thisArgs => thisArgs.mkString("(", ", ", ")"))
               .mkString("[", ", ", "]")
             jdkLogger.severe(s"""Failed Statement Execution:

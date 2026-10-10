@@ -4,6 +4,6 @@
 
 package org.typelevel.doobie.otel4s.syntax
 
-trait AllSyntax extends ToFragmentOps
+trait AllSyntax extends ToFragmentOps with ToStatementOps
 
 object all extends AllSyntax

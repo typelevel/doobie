@@ -144,6 +144,7 @@ In the previous chapter's *Diving Deeper* we saw how a query constructed with th
 import org.typelevel.doobie.hi.{HC, HPS}
 import org.typelevel.doobie.free.{FC, FPS}
 import org.typelevel.doobie.util.log.{LoggingInfo, Parameters}
+import org.typelevel.vault.Vault
 import fs2.Stream
 
 val q =
@@ -164,7 +165,8 @@ def proc(range: Range): Stream[ConnectionIO, Country] = {
     loggingInfo = LoggingInfo(
       sql = q,
       params = Parameters.NonBatch(Write[(Int, Int)].toList(params)),
-      label = "fetch_country_in_population_range"
+      label = "fetch_country_in_population_range",
+      metadata = Vault.empty
     )
   )
 }

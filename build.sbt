@@ -6,6 +6,7 @@ import org.typelevel.sbt.tpolecat.{DevMode, CiMode}
 // Library versions all in one place, for convenience and sanity.
 lazy val catsVersion = "2.13.0"
 lazy val catsEffectVersion = "3.7.1"
+lazy val vaultVersion = "3.7.0"
 lazy val circeVersion = "0.14.17"
 lazy val fs2Version = "3.14.0"
 lazy val h2Version = "2.4.240"
@@ -273,7 +274,8 @@ lazy val free = projectMatrix
       "co.fs2" %% "fs2-core" % fs2Version,
       "org.typelevel" %% "cats-core" % catsVersion,
       "org.typelevel" %% "cats-free" % catsVersion,
-      "org.typelevel" %% "cats-effect" % catsEffectVersion
+      "org.typelevel" %% "cats-effect" % catsEffectVersion,
+      "org.typelevel" %% "vault" % vaultVersion
     ) ++ Seq(
       scalaOrganization.value % "scala-reflect" % scalaVersion.value // required for macros
     ).filterNot(_ => tlIsScala3.value),
@@ -670,8 +672,6 @@ lazy val otel4s = projectMatrix
     libraryDependencies ++= Seq(
       "org.typelevel" %% "otel4s-core-trace" % otel4sVersion,
       "org.typelevel" %% "otel4s-semconv" % otel4sVersion,
-      "io.circe" %% "circe-core" % circeVersion,
-      "io.circe" %% "circe-parser" % circeVersion,
       "org.typelevel" %% "otel4s-oteljava-trace-testkit" % otel4sVersion % "test",
       "com.h2database" % "h2" % h2Version % "test"
     ),

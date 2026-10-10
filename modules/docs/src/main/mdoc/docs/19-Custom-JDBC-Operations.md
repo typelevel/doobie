@@ -102,6 +102,7 @@ import org.typelevel.doobie.HC  // High-level API over java.sql.Connection
 import org.typelevel.doobie.HRS  // High-level API over java.sql.ResultSet
 import org.typelevel.doobie.ConnectionIO
 import org.typelevel.doobie.util.log.{LoggingInfo, Parameters}
+import org.typelevel.vault.Vault
 import cats.effect.unsafe.implicits.global
 import org.typelevel.doobie.util.unlabeled
 
@@ -111,7 +112,7 @@ val program: ConnectionIO[List[(Int, String)]] = HC.executeWithResultSet(
   prep = FPS.unit,
   exec = FPS.executeQuery,
   process = HRS.list[(Int, String)],
-  loggingInfo = LoggingInfo(sql, Parameters.NonBatch(List.empty), label = unlabeled)
+  loggingInfo = LoggingInfo(sql, Parameters.NonBatch(List.empty), label = unlabeled, metadata = Vault.empty)
 )
 ```
 
