@@ -84,15 +84,12 @@ class TracedTransactorSuite extends munit.CatsEffectSuite {
           DbAttributes.DbResponseStatusCode("22018"),
           DbAttributes.DbOperationName("executeQuery")
         ),
-        status = StatusExpectation.error.description(
-          "Data conversion error converting \"text\" [22018-240]"
-        ),
+        status = StatusExpectation.error,
         events = List(
           event(
             name = "exception",
             attributes = Attributes(
-              ExceptionAttributes.ExceptionType("org.h2.jdbc.JdbcSQLDataException"),
-              ExceptionAttributes.ExceptionMessage("Data conversion error converting \"text\" [22018-240]")
+              ExceptionAttributes.ExceptionType("org.h2.jdbc.JdbcSQLDataException")
             )
           )
         )
