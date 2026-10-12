@@ -184,18 +184,18 @@ class TracedTransactorSuite extends munit.CatsEffectSuite {
   testkitTest("record db.operation.batch.size for batch operations") { testkit =>
     val expected = expectedSpans(
       span(
-        name = "executeLargeUpdate",
+        name = "executeUpdate",
         attributes = Attributes(
           DbAttributes.DbQueryText("CREATE LOCAL TEMPORARY TABLE TEST_BATCH (int_value INT)"),
-          DbAttributes.DbOperationName("executeLargeUpdate")
+          DbAttributes.DbOperationName("executeUpdate")
         )
       ),
       span(
-        name = "executeLargeBatch",
+        name = "executeBatch",
         attributes = Attributes(
           DbAttributes.DbQueryText("insert into TEST_BATCH (int_value) values (?)"),
           DbAttributes.DbOperationBatchSize(3L),
-          DbAttributes.DbOperationName("executeLargeBatch")
+          DbAttributes.DbOperationName("executeBatch")
         )
       )
     )
@@ -283,7 +283,7 @@ class TracedTransactorSuite extends munit.CatsEffectSuite {
       span(
         name = summary,
         attributes = Attributes(
-          DbAttributes.DbOperationName("executeLargeUpdate"),
+          DbAttributes.DbOperationName("executeUpdate"),
           DbAttributes.DbQuerySummary(summary)
         )
       )
@@ -308,9 +308,9 @@ class TracedTransactorSuite extends munit.CatsEffectSuite {
         ) ++ attrs
       ),
       span(
-        name = "executeLargeUpdate",
+        name = "executeUpdate",
         attributes = Attributes(
-          DbAttributes.DbOperationName("executeLargeUpdate")
+          DbAttributes.DbOperationName("executeUpdate")
         ) ++ attrs
       )
     )
@@ -468,9 +468,9 @@ class TracedTransactorSuite extends munit.CatsEffectSuite {
         )
       ),
       span(
-        name = "executeLargeUpdate",
+        name = "executeUpdate",
         attributes = Attributes(
-          DbAttributes.DbOperationName("executeLargeUpdate")
+          DbAttributes.DbOperationName("executeUpdate")
         )
       )
     )
@@ -494,9 +494,9 @@ class TracedTransactorSuite extends munit.CatsEffectSuite {
         ) ++ attrs
       ),
       span(
-        name = "executeLargeUpdate",
+        name = "executeUpdate",
         attributes = Attributes(
-          DbAttributes.DbOperationName("executeLargeUpdate")
+          DbAttributes.DbOperationName("executeUpdate")
         ) ++ attrs
       )
     )
@@ -526,7 +526,7 @@ class TracedTransactorSuite extends munit.CatsEffectSuite {
       span(
         name = summary,
         attributes = Attributes(
-          DbAttributes.DbOperationName("executeLargeUpdate")
+          DbAttributes.DbOperationName("executeUpdate")
         ) ++ attrs
       )
     )
