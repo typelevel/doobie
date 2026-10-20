@@ -52,6 +52,58 @@ class UpdateSuite extends CatsEffectSuite {
       }
   }
 
+  test("Update runLarge") {
+    (for {
+      _ <- sql"create temp table t1 (a int)".update.run
+      res <- Update[Int]("insert into t1 (a) values (?)").runLarge(1)
+    } yield {
+      assertEquals(res, 1L)
+    })
+      .transact(xa)
+  }
+
+  test("Update runLargeAlteringExecution") {
+    var didRun = false
+    (for {
+      _ <- sql"create temp table t1 (a int)".update.run
+      res <- Update[Int]("insert into t1 (a) values (?)").runLargeAlteringExecution(
+        1,
+        pe => pe.copy(exec = IFPS.delay { didRun = true } *> pe.exec))
+    } yield {
+      assertEquals(res, 1L)
+    })
+      .transact(xa)
+      .flatMap { _ =>
+        IO(assert(didRun))
+      }
+  }
+
+  test("Update updateManyLarge") {
+    (for {
+      _ <- sql"create temp table t1 (a int)".update.run
+      res <- Update[Int]("insert into t1 (a) values (?)").updateManyLarge(List(2, 4, 6, 8))
+    } yield {
+      assertEquals(res, 4L)
+    })
+      .transact(xa)
+  }
+
+  test("Update updateManyLargeAlteringExecution") {
+    var didRun = false
+    (for {
+      _ <- sql"create temp table t1 (a int)".update.run
+      res <- Update[Int]("insert into t1 (a) values (?)").updateManyLargeAlteringExecution(
+        List(2, 4, 6, 8),
+        pe => pe.copy(exec = IFPS.delay { didRun = true } *> pe.exec))
+    } yield {
+      assertEquals(res, 4L)
+    })
+      .transact(xa)
+      .flatMap { _ =>
+        IO(assert(didRun))
+      }
+  }
+
   test("Update withUniqueGeneratedKeysAlteringExecution") {
     var didRun = false
     (for {
@@ -78,6 +130,31 @@ class UpdateSuite extends CatsEffectSuite {
         pe.copy(exec = IFPS.delay { didRun = true } *> pe.exec))
     } yield {
       assertEquals(res, 1)
+    })
+      .transact(xa)
+      .flatMap { _ =>
+        IO(assert(didRun))
+      }
+  }
+
+  test("Update0 runLarge") {
+    (for {
+      _ <- sql"create temp table t1 (a int)".update.run
+      res <- sql"insert into t1 (a) values (${1})".update.runLarge
+    } yield {
+      assertEquals(res, 1L)
+    })
+      .transact(xa)
+  }
+
+  test("Update0 runLargeAlteringExecution") {
+    var didRun = false
+    (for {
+      _ <- sql"create temp table t1 (a int)".update.run
+      res <- Update[Int]("insert into t1 (a) values (?)").toUpdate0(1).runLargeAlteringExecution(pe =>
+        pe.copy(exec = IFPS.delay { didRun = true } *> pe.exec))
+    } yield {
+      assertEquals(res, 1L)
     })
       .transact(xa)
       .flatMap { _ =>

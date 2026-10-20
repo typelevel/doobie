@@ -42,7 +42,7 @@ implicit val mdocColors: org.typelevel.doobie.util.Colors = org.typelevel.doobie
 
 It is uncommon to define database structures at runtime, but **doobie** handles it just fine and treats such operations like any other kind of update. And it happens to be useful here!
 
-Let's create a new table, which we will use for the examples to follow. This looks a lot like our prior usage of the `sql` interpolator, but this time we're using `update` rather than `query`. The `.run` method gives a `ConnectionIO[Int]` that yields the total number of rows modified, and the YOLO-mode `.quick` gives a `IO[Unit]` that prints out the row count.
+Let's create a new table, which we will use for the examples to follow. This looks a lot like our prior usage of the `sql` interpolator, but this time we're using `update` rather than `query`. The `.run` method gives a `ConnectionIO[Int]` that yields the total number of rows modified, and the YOLO-mode `.quick` gives a `IO[Unit]` that prints out the row count. If an update may affect more than `Int.MaxValue` rows, use `.runLarge` instead, which gives a `ConnectionIO[Long]` (via JDBC's `executeLargeUpdate`).
 
 ```scala mdoc:silent
 val drop =
@@ -212,6 +212,8 @@ Running this program yields the number of updated rows.
 ```scala mdoc
 insertMany(data).quick.unsafeRunSync()
 ```
+
+As with `.run`, there is an `updateManyLarge` variant which yields the total as a `Long` (via JDBC's `executeLargeBatch`).
 
 For databases that support it (such as PostgreSQL) we can use `updateManyWithGeneratedKeys` to return a stream of updated rows.
 
