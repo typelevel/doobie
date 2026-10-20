@@ -118,6 +118,28 @@ object update {
         exec = IFPS.executeUpdate
       )
 
+    /** Just like `run` but yields the count of affected rows as a `Long` (via JDBC's `executeLargeUpdate`), for updates
+      * that may affect more than `Int.MaxValue` rows. Note that not all drivers support `executeLargeUpdate`.
+      * @group Execution
+      */
+    def runLarge(a: A): ConnectionIO[Long] =
+      IHC.executeWithoutResultSet(prepareExecutionForRunLarge(a), loggingForRun(a))
+
+    /** Just like `runLarge` but allowing to alter `PreparedExecutionWithoutProcessStep`.
+      */
+    def runLargeAlteringExecution(
+        a: A,
+        fn: PreparedExecutionWithoutProcessStep[Long] => PreparedExecutionWithoutProcessStep[Long]
+    ): ConnectionIO[Long] =
+      IHC.executeWithoutResultSet(fn(prepareExecutionForRunLarge(a)), loggingForRun(a))
+
+    private def prepareExecutionForRunLarge(a: A): PreparedExecutionWithoutProcessStep[Long] =
+      PreparedExecutionWithoutProcessStep(
+        create = IFC.prepareStatement(sql),
+        prep = IHPS.set(a),
+        exec = IFPS.executeLargeUpdate
+      )
+
     private def loggingForRun(a: A): LoggingInfo =
       LoggingInfo(
         sql,
@@ -150,6 +172,29 @@ object update {
         create = IFC.prepareStatement(sql),
         prep = fa.foldMap(a => IHPS.set(a) *> IFPS.addBatch),
         exec = IFPS.executeBatch.map(updateCounts => updateCounts.foldLeft(0)((acc, n) => acc + n.max(0)))
+      )
+
+    /** Just like `updateMany` but yields the total rows updated as a `Long` (via JDBC's `executeLargeBatch`), for batch
+      * updates that may affect more than `Int.MaxValue` rows. Note that not all drivers support `executeLargeBatch`.
+      * @group Execution
+      */
+    def updateManyLarge[F[_]: Foldable](fa: F[A]): ConnectionIO[Long] =
+      IHC.executeWithoutResultSet(prepareExecutionForUpdateManyLarge(fa), loggingInfoForUpdateMany(fa))
+
+    /** Just like `updateManyLarge` but allowing to alter `PreparedExecutionWithoutProcessStep`.
+      */
+    def updateManyLargeAlteringExecution[F[_]: Foldable](
+        fa: F[A],
+        fn: PreparedExecutionWithoutProcessStep[Long] => PreparedExecutionWithoutProcessStep[Long]
+    ): ConnectionIO[Long] =
+      IHC.executeWithoutResultSet(fn(prepareExecutionForUpdateManyLarge(fa)), loggingInfoForUpdateMany(fa))
+
+    private def prepareExecutionForUpdateManyLarge[F[_]: Foldable](fa: F[A])
+        : PreparedExecutionWithoutProcessStep[Long] =
+      PreparedExecutionWithoutProcessStep(
+        create = IFC.prepareStatement(sql),
+        prep = fa.foldMap(a => IHPS.set(a) *> IFPS.addBatch),
+        exec = IFPS.executeLargeBatch.map(updateCounts => updateCounts.foldLeft(0L)((acc, n) => acc + n.max(0L)))
       )
 
     private def loggingInfoForUpdateMany[F[_]: Foldable](fa: F[A]) =
@@ -269,6 +314,11 @@ object update {
             fn: PreparedExecutionWithoutProcessStep[Int] => PreparedExecutionWithoutProcessStep[Int]
         ): ConnectionIO[Int] =
           u.runAlteringExecution(a, fn)
+        override def runLarge: ConnectionIO[Long] = u.runLarge(a)
+        override def runLargeAlteringExecution(
+            fn: PreparedExecutionWithoutProcessStep[Long] => PreparedExecutionWithoutProcessStep[Long]
+        ): ConnectionIO[Long] =
+          u.runLargeAlteringExecution(a, fn)
         override def withGeneratedKeysWithChunkSize[K: Read](columns: String*)(chunkSize: Int)
             : Stream[ConnectionIO, K] =
           u.withGeneratedKeysWithChunkSize[K](columns*)(a, chunkSize)
@@ -366,6 +416,17 @@ object update {
     def runAlteringExecution(
         fn: PreparedExecutionWithoutProcessStep[Int] => PreparedExecutionWithoutProcessStep[Int]
     ): ConnectionIO[Int]
+
+    /** Program to execute the update and yield a count of affected rows as a `Long` (via JDBC's `executeLargeUpdate`),
+      * for updates that may affect more than `Int.MaxValue` rows. Note that not all drivers support
+      * `executeLargeUpdate`.
+      * @group Execution
+      */
+    def runLarge: ConnectionIO[Long]
+
+    def runLargeAlteringExecution(
+        fn: PreparedExecutionWithoutProcessStep[Long] => PreparedExecutionWithoutProcessStep[Long]
+    ): ConnectionIO[Long]
 
     /** Construct a stream that performs the update, yielding generated keys of readable type `K`, identified by the
       * specified columns. Note that not all drivers support generated keys, and some support only a single key column.
