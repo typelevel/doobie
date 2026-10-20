@@ -100,22 +100,22 @@ object update {
     /** Construct a program to execute the update and yield a count of affected rows, given the writable argument `a`.
       * @group Execution
       */
-    def run(a: A): ConnectionIO[Long] =
+    def run(a: A): ConnectionIO[Int] =
       IHC.executeWithoutResultSet(prepareExecutionForRun(a), loggingForRun(a))
 
     /** Just like `run` but allowing to alter `PreparedExecutionWithoutProcessStep`.
       */
     def runAlteringExecution(
         a: A,
-        fn: PreparedExecutionWithoutProcessStep[Long] => PreparedExecutionWithoutProcessStep[Long]
-    ): ConnectionIO[Long] =
+        fn: PreparedExecutionWithoutProcessStep[Int] => PreparedExecutionWithoutProcessStep[Int]
+    ): ConnectionIO[Int] =
       IHC.executeWithoutResultSet(fn(prepareExecutionForRun(a)), loggingForRun(a))
 
-    private def prepareExecutionForRun(a: A): PreparedExecutionWithoutProcessStep[Long] =
+    private def prepareExecutionForRun(a: A): PreparedExecutionWithoutProcessStep[Int] =
       PreparedExecutionWithoutProcessStep(
         create = IFC.prepareStatement(sql),
         prep = IHPS.set(a),
-        exec = IFPS.executeLargeUpdate
+        exec = IFPS.executeUpdate
       )
 
     private def loggingForRun(a: A): LoggingInfo =
@@ -134,22 +134,22 @@ object update {
       * information
       * @group Execution
       */
-    def updateMany[F[_]: Foldable](fa: F[A]): ConnectionIO[Long] =
+    def updateMany[F[_]: Foldable](fa: F[A]): ConnectionIO[Int] =
       IHC.executeWithoutResultSet(prepareExecutionForUpdateMany(fa), loggingInfoForUpdateMany(fa))
 
     /** Just like `updateMany` but allowing to alter `PreparedExecutionWithoutProcessStep`.
       */
     def updateManyAlteringExecution[F[_]: Foldable](
         fa: F[A],
-        fn: PreparedExecutionWithoutProcessStep[Long] => PreparedExecutionWithoutProcessStep[Long]
-    ): ConnectionIO[Long] =
+        fn: PreparedExecutionWithoutProcessStep[Int] => PreparedExecutionWithoutProcessStep[Int]
+    ): ConnectionIO[Int] =
       IHC.executeWithoutResultSet(fn(prepareExecutionForUpdateMany(fa)), loggingInfoForUpdateMany(fa))
 
-    private def prepareExecutionForUpdateMany[F[_]: Foldable](fa: F[A]): PreparedExecutionWithoutProcessStep[Long] =
+    private def prepareExecutionForUpdateMany[F[_]: Foldable](fa: F[A]): PreparedExecutionWithoutProcessStep[Int] =
       PreparedExecutionWithoutProcessStep(
         create = IFC.prepareStatement(sql),
         prep = fa.foldMap(a => IHPS.set(a) *> IFPS.addBatch),
-        exec = IFPS.executeLargeBatch.map(updateCounts => updateCounts.foldLeft(0L)((acc, n) => acc + n.max(0L)))
+        exec = IFPS.executeBatch.map(updateCounts => updateCounts.foldLeft(0)((acc, n) => acc + n.max(0)))
       )
 
     private def loggingInfoForUpdateMany[F[_]: Foldable](fa: F[A]) =
@@ -264,10 +264,10 @@ object update {
         override def toFragment: Fragment = u.toFragment(a)
         override def analysis: ConnectionIO[Analysis] = u.analysis
         override def outputAnalysis: ConnectionIO[Analysis] = u.outputAnalysis
-        override def run: ConnectionIO[Long] = u.run(a)
+        override def run: ConnectionIO[Int] = u.run(a)
         override def runAlteringExecution(
-            fn: PreparedExecutionWithoutProcessStep[Long] => PreparedExecutionWithoutProcessStep[Long]
-        ): ConnectionIO[Long] =
+            fn: PreparedExecutionWithoutProcessStep[Int] => PreparedExecutionWithoutProcessStep[Int]
+        ): ConnectionIO[Int] =
           u.runAlteringExecution(a, fn)
         override def withGeneratedKeysWithChunkSize[K: Read](columns: String*)(chunkSize: Int)
             : Stream[ConnectionIO, K] =
@@ -361,11 +361,11 @@ object update {
     /** Program to execute the update and yield a count of affected rows.
       * @group Execution
       */
-    def run: ConnectionIO[Long]
+    def run: ConnectionIO[Int]
 
     def runAlteringExecution(
-        fn: PreparedExecutionWithoutProcessStep[Long] => PreparedExecutionWithoutProcessStep[Long]
-    ): ConnectionIO[Long]
+        fn: PreparedExecutionWithoutProcessStep[Int] => PreparedExecutionWithoutProcessStep[Int]
+    ): ConnectionIO[Int]
 
     /** Construct a stream that performs the update, yielding generated keys of readable type `K`, identified by the
       * specified columns. Note that not all drivers support generated keys, and some support only a single key column.
