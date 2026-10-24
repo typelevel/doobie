@@ -25,7 +25,6 @@ import org.postgresql.util.*
 import org.scalacheck.{Arbitrary, Gen, Test}
 import org.scalacheck.effect.PropF.forAllF
 
-
 // Establish that we can write and read various types.
 class TypesSuite extends munit.CatsEffectSuite with munit.ScalaCheckEffectSuite {
   import PostgresTestTransactor.xa

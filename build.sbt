@@ -146,6 +146,12 @@ lazy val compilerFlags = Seq(
   Compile / doc / scalacOptions --= Seq(
     "-Xfatal-warnings"
   ),
+  // Disable warning when @nowarn annotation isn't suppressing a warning
+  // to simplify cross-building
+  scalacOptions ++= {
+    if (scalaBinaryVersion.value == "3") Nil
+    else Seq("-Wconf:cat=unused-nowarn:s")
+  },
   scalacOptions ++= {
     scalaBinaryVersion.value match {
       case "3" =>
