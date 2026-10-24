@@ -4,52 +4,28 @@
 
 package org.typelevel.doobie.util
 
-import scala.deriving.Mirror
-import scala.compiletime.{erasedValue, summonAll}
-import scala.compiletime
+trait ReadPlatform:
 
-trait ReadPlatform extends LowestPriorityRead:
-  trait Auto {
-    implicit final inline def autoDerivedRead[A <: Product](using
-        mirror: Mirror.ProductOf[A]
-    ): Derived[Read[A]] =
-      Derived(derivedImpl[A])
-  }
+  /** Brings an implicit into scope which behaves like [[instance]], but also derives Read instances for case classes */
+  trait Auto:
+    implicit final inline def autoDerivedRead[A]: Read[A] =
+      ${ ReadMacros.instance[A](autoDerivation = true) }
 
-  inline def derived[A <: Product](using
-      mirror: Mirror.ProductOf[A]
-  ): Read[A] =
-    derivedImpl[A]
+  /** Read instance for any type, constructed by a macro. Being fully generic, the compiler prefers any more specific
+    * Read instance in scope over this one. Otherwise the macro looks for, in order:
+    *
+    *   - For `Option[A]`: a Read instance for `A`, made nullable
+    *   - A Get instance, for reading a single column
+    *   - For tuples: Read instances for each element
+    *   - For case classes, when automatic derivation is enabled: Read instances for each field
+    *
+    * Read instances for elements and fields are resolved by the same rules.
+    */
+  inline given instance[A]: Read[A] =
+    ${ ReadMacros.instance[A](autoDerivation = false) }
 
-  private inline def derivedImpl[A <: Product](using
-      mirror: Mirror.ProductOf[A]
-  ): Read[A] =
-    inline erasedValue[mirror.MirroredElemTypes] match {
-      case _: EmptyTuple => compiletime.error(
-          "Cannot derive Read instance for case objects or empty case classes (as they do not have any fields)")
-      case _ =>
-        val readsTuple: Tuple.Map[mirror.MirroredElemTypes, Read] =
-          summonAll[Tuple.Map[mirror.MirroredElemTypes, Read]]
-        Read.CompositeOfInstances[Any](readsTuple.productIterator.asInstanceOf[Iterator[Read[Any]]].toArray).map(a =>
-          mirror.fromProduct(Tuple.fromArray(a)))
-    }
+  /** Derive a Read instance for a case class or tuple, using the Read instances for each field */
+  inline def derived[A <: Product]: Read[A] =
+    ${ ReadMacros.derived[A] }
 
-  given tupleBase[H](
-      using H: Read[H]
-  ): Read[H *: EmptyTuple] =
-    H.map(h => h *: EmptyTuple)
-
-  given tuple[H, T <: Tuple](
-      using
-      H: Read[H],
-      T: Read[T]
-  ): Read[H *: T] =
-    Read.Composite(H, T, (h, t) => h *: t)
-
-  given optionalFromRead[A](using read: Read[A]): Read[Option[A]] = read.toOpt
-
-  given fromGet[A](using get: Get[A]): Read[A] = new Read.Single(get)
-
-trait LowestPriorityRead {
-  given fromDerived[A](using ev: Derived[Read[A]]): Read[A] = ev.instance
-}
+  def fromGet[A](using get: Get[A]): Read[A] = new Read.Single(get)
