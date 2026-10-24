@@ -10,8 +10,8 @@
 <img align="right" src="https://cdn.rawgit.com/typelevel/doobie/series/0.13.x/doobie_logo.svg" height="150px" style="padding-left: 20px"/>
 
 [![Discord](https://img.shields.io/discord/632277896739946517.svg?label=&logo=discord&logoColor=ffffff&color=404244&labelColor=6A7EC2)](https://discord.gg/7B4VfFTvsS)
-[![Maven Central](https://img.shields.io/maven-central/v/org.typelevel/doobie-core_2.13.svg)](https://maven-badges.herokuapp.com/maven-central/org.typelevel/doobie-core_2.12)
-[![Javadocs](https://javadoc.io/badge/org.typelevel/doobie-core_2.12.svg)](https://javadoc.io/doc/org.typelevel/doobie-core_2.12)
+[![Maven Central](https://img.shields.io/maven-central/v/org.typelevel/doobie-core_2.13.svg)](https://maven-badges.herokuapp.com/maven-central/org.typelevel/doobie-core_2.13)
+[![Javadocs](https://javadoc.io/badge/org.typelevel/doobie-core_2.13.svg)](https://javadoc.io/doc/org.typelevel/doobie-core_2.13)
 
 
 **doobie** is a pure functional JDBC layer for Scala and [**Cats**](http://typelevel.org/cats/). It is not an ORM, nor is it a relational algebra; it simply provides a functional way to construct programs (and higher-level libraries) that use JDBC. For common use cases **doobie** provides a minimal but expressive high-level API:

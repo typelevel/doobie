@@ -7,7 +7,6 @@ package org.typelevel.doobie.util
 sealed trait ScalaBinaryVersion
 
 object ScalaBinaryVersion extends ScalaBinaryVersionPlatform {
-  case object S2_12 extends ScalaBinaryVersion
   case object S2_13 extends ScalaBinaryVersion
   case object S3 extends ScalaBinaryVersion
 }

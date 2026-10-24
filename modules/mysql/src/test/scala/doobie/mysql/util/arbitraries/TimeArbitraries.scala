@@ -16,11 +16,6 @@ object TimeArbitraries {
   // max resolution is 1 microsecond
   private def micros(nanos: Long) = Math.floorDiv(nanos, 1000)
 
-  // for Scala 2.12
-  private implicit val orderingLocalDate: Ordering[LocalDate] = new Ordering[LocalDate] {
-    override def compare(x: LocalDate, y: LocalDate): Int = x `compareTo` y
-  }
-
   // 1000-01-01 to 9999-12-31
   implicit val arbitraryLocalDate: Arbitrary[LocalDate] = Arbitrary {
     GenHelpers.chooseT(LocalDate.of(1000, 1, 1), LocalDate.of(9999, 12, 31), LocalDate.of(1970, 1, 1))
