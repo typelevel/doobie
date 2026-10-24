@@ -12,7 +12,7 @@ pull_request_rules:
   - or:
     - body~=labels:.*early-semver-patch
     - body~=labels:.*early-semver-minor
-  - status-success=Test (ubuntu-22.04, 2.13, temurin@11)
+  - status-success=Test (ubuntu-22.04, 2.13, temurin@21)
   actions:
     merge: {}
 - name: Label bench PRs
@@ -39,14 +39,6 @@ pull_request_rules:
       add:
       - core
       remove: []
-- name: Label core2_12 PRs
-  conditions:
-  - files~=^.sbt/matrix/core2_12/
-  actions:
-    label:
-      add:
-      - core2_12
-      remove: []
 - name: Label core3 PRs
   conditions:
   - files~=^.sbt/matrix/core3/
@@ -71,14 +63,6 @@ pull_request_rules:
       add:
       - example
       remove: []
-- name: Label example2_12 PRs
-  conditions:
-  - files~=^.sbt/matrix/example2_12/
-  actions:
-    label:
-      add:
-      - example2_12
-      remove: []
 - name: Label example3 PRs
   conditions:
   - files~=^.sbt/matrix/example3/
@@ -94,14 +78,6 @@ pull_request_rules:
     label:
       add:
       - free
-      remove: []
-- name: Label free2_12 PRs
-  conditions:
-  - files~=^.sbt/matrix/free2_12/
-  actions:
-    label:
-      add:
-      - free2_12
       remove: []
 - name: Label free3 PRs
   conditions:
@@ -127,14 +103,6 @@ pull_request_rules:
       add:
       - h2-circe
       remove: []
-- name: Label h2-circe2_12 PRs
-  conditions:
-  - files~=^.sbt/matrix/h2-circe2_12/
-  actions:
-    label:
-      add:
-      - h2-circe2_12
-      remove: []
 - name: Label h2-circe3 PRs
   conditions:
   - files~=^.sbt/matrix/h2-circe3/
@@ -142,14 +110,6 @@ pull_request_rules:
     label:
       add:
       - h2-circe3
-      remove: []
-- name: Label h22_12 PRs
-  conditions:
-  - files~=^.sbt/matrix/h22_12/
-  actions:
-    label:
-      add:
-      - h22_12
       remove: []
 - name: Label h23 PRs
   conditions:
@@ -167,14 +127,6 @@ pull_request_rules:
       add:
       - hikari
       remove: []
-- name: Label hikari2_12 PRs
-  conditions:
-  - files~=^.sbt/matrix/hikari2_12/
-  actions:
-    label:
-      add:
-      - hikari2_12
-      remove: []
 - name: Label hikari3 PRs
   conditions:
   - files~=^.sbt/matrix/hikari3/
@@ -190,14 +142,6 @@ pull_request_rules:
     label:
       add:
       - log4cats
-      remove: []
-- name: Label log4cats2_12 PRs
-  conditions:
-  - files~=^.sbt/matrix/log4cats2_12/
-  actions:
-    label:
-      add:
-      - log4cats2_12
       remove: []
 - name: Label log4cats3 PRs
   conditions:
@@ -215,14 +159,6 @@ pull_request_rules:
       add:
       - munit
       remove: []
-- name: Label munit2_12 PRs
-  conditions:
-  - files~=^.sbt/matrix/munit2_12/
-  actions:
-    label:
-      add:
-      - munit2_12
-      remove: []
 - name: Label munit3 PRs
   conditions:
   - files~=^.sbt/matrix/munit3/
@@ -238,14 +174,6 @@ pull_request_rules:
     label:
       add:
       - mysql
-      remove: []
-- name: Label mysql2_12 PRs
-  conditions:
-  - files~=^.sbt/matrix/mysql2_12/
-  actions:
-    label:
-      add:
-      - mysql2_12
       remove: []
 - name: Label mysql3 PRs
   conditions:
@@ -287,14 +215,6 @@ pull_request_rules:
       add:
       - postgres-circe
       remove: []
-- name: Label postgres-circe2_12 PRs
-  conditions:
-  - files~=^.sbt/matrix/postgres-circe2_12/
-  actions:
-    label:
-      add:
-      - postgres-circe2_12
-      remove: []
 - name: Label postgres-circe3 PRs
   conditions:
   - files~=^.sbt/matrix/postgres-circe3/
@@ -302,14 +222,6 @@ pull_request_rules:
     label:
       add:
       - postgres-circe3
-      remove: []
-- name: Label postgres2_12 PRs
-  conditions:
-  - files~=^.sbt/matrix/postgres2_12/
-  actions:
-    label:
-      add:
-      - postgres2_12
       remove: []
 - name: Label postgres3 PRs
   conditions:
@@ -327,14 +239,6 @@ pull_request_rules:
       add:
       - refined
       remove: []
-- name: Label refined2_12 PRs
-  conditions:
-  - files~=^.sbt/matrix/refined2_12/
-  actions:
-    label:
-      add:
-      - refined2_12
-      remove: []
 - name: Label refined3 PRs
   conditions:
   - files~=^.sbt/matrix/refined3/
@@ -350,14 +254,6 @@ pull_request_rules:
     label:
       add:
       - scalatest
-      remove: []
-- name: Label scalatest2_12 PRs
-  conditions:
-  - files~=^.sbt/matrix/scalatest2_12/
-  actions:
-    label:
-      add:
-      - scalatest2_12
       remove: []
 - name: Label scalatest3 PRs
   conditions:
@@ -375,14 +271,6 @@ pull_request_rules:
       add:
       - specs2
       remove: []
-- name: Label specs22_12 PRs
-  conditions:
-  - files~=^.sbt/matrix/specs22_12/
-  actions:
-    label:
-      add:
-      - specs22_12
-      remove: []
 - name: Label specs23 PRs
   conditions:
   - files~=^.sbt/matrix/specs23/
@@ -398,14 +286,6 @@ pull_request_rules:
     label:
       add:
       - testutils
-      remove: []
-- name: Label testutils2_12 PRs
-  conditions:
-  - files~=^.sbt/matrix/testutils2_12/
-  actions:
-    label:
-      add:
-      - testutils2_12
       remove: []
 - name: Label testutils3 PRs
   conditions:
@@ -423,14 +303,6 @@ pull_request_rules:
       add:
       - weaver
       remove: []
-- name: Label weaver2_12 PRs
-  conditions:
-  - files~=^.sbt/matrix/weaver2_12/
-  actions:
-    label:
-      add:
-      - weaver2_12
-      remove: []
 - name: Label weaver3 PRs
   conditions:
   - files~=^.sbt/matrix/weaver3/
@@ -441,7 +313,7 @@ pull_request_rules:
       remove: []
 - name: merge-when-ci-pass
   conditions:
-  - status-success=Test (ubuntu-22.04, 2.13, temurin@11)
+  - status-success=Test (ubuntu-22.04, 2.13, temurin@21)
   - label=merge-on-build-success
   actions:
     merge: {}

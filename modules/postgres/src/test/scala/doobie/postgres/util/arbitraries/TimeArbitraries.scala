@@ -28,11 +28,6 @@ object TimeArbitraries {
   val MinOffset = ZoneOffset.ofTotalSeconds(-MaxOffsetSeconds)
   val MaxOffset = ZoneOffset.ofTotalSeconds(MaxOffsetSeconds)
 
-  // for Scala 2.12
-  private implicit val orderingLocalDate: Ordering[LocalDate] = new Ordering[LocalDate] {
-    override def compare(x: LocalDate, y: LocalDate): Int = x `compareTo` y
-  }
-
   // 4713 BC to 5874897 AD
   implicit val arbitraryLocalDate: Arbitrary[LocalDate] = Arbitrary {
     GenHelpers.chooseT(MinDate, MaxDate, LocalDate.of(0, 1, 1), LocalDate.of(1970, 1, 1))

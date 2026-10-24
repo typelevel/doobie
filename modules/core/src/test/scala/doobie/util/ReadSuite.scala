@@ -110,7 +110,6 @@ class ReadSuite extends munit.CatsEffectSuite with ReadSuitePlatform {
   test("Read should not be derivable for case objects or empty case classes") {
     val expectedDeriveError =
       ScalaBinaryVersion.currentVersion match {
-        case ScalaBinaryVersion.S2_12 => "could not find implicit"
         case ScalaBinaryVersion.S2_13 => "Cannot derive"
         case ScalaBinaryVersion.S3    => "Cannot derive"
       }
@@ -118,7 +117,6 @@ class ReadSuite extends munit.CatsEffectSuite with ReadSuitePlatform {
     assert(compileErrors("Read.derived[ZeroFieldCaseClass]").contains(expectedDeriveError))
 
     val expectedErrorWithAutoDerivationEnabled = ScalaBinaryVersion.currentVersion match {
-      case ScalaBinaryVersion.S2_12 => "Cannot find or construct"
       case ScalaBinaryVersion.S2_13 => "Cannot find or construct"
       case ScalaBinaryVersion.S3    => "Cannot derive"
     }

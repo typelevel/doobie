@@ -17,7 +17,6 @@ lazy val log4catsVersion = "2.8.0"
 lazy val postGisVersion = "2025.1.1"
 lazy val postgresVersion = "42.7.14"
 lazy val refinedVersion = "0.11.4"
-lazy val scalaCollectionCompatVersion = "2.14.0"
 lazy val scalaCheckVersion = "1.15.4"
 lazy val scalatestVersion = "3.2.20"
 lazy val munitVersion = "1.3.6"
@@ -26,10 +25,9 @@ lazy val otelInstrumentationVersion = "2.26.1-alpha"
 lazy val shapelessVersion = "2.3.13"
 lazy val silencerVersion = "1.7.1"
 lazy val specs2Version = "4.23.0"
-lazy val scala212Version = "2.12.21"
 lazy val scala213Version = "2.13.18"
-lazy val scala3Version = "3.3.8"
-lazy val allScalaVersions = List(scala212Version, scala213Version, scala3Version)
+lazy val scala3Version = "3.9.0"
+lazy val allScalaVersions = List(scala213Version, scala3Version)
 lazy val doobieGitRemote =
   if (sys.env.get("GITHUB_ACTIONS").contains("true"))
     sys.env
@@ -51,13 +49,12 @@ lazy val weaverVersion = "0.13.0"
 ThisBuild / tlBaseVersion := "1.0"
 ThisBuild / tlCiReleaseBranches := Seq("main") // publish snapshots on `main`
 ThisBuild / tlCiScalafmtCheck := true
-//ThisBuild / scalaVersion := scala212Version
 ThisBuild / scalaVersion := scala213Version
 // ThisBuild / scalaVersion := scala3Version
 ThisBuild / developers += tlGitHubDev("tpolecat", "Rob Norris")
 ThisBuild / tpolecatDefaultOptionsMode :=
   (if (sys.env.contains("CI")) CiMode else DevMode)
-ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("11"))
+ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("21"))
 useReadableConsoleGit
 ThisBuild / githubWorkflowPermissions := Some(doobieGithubWorkflowPermissions)
 ThisBuild / githubWorkflowBuildPreamble ++= Seq(
@@ -133,7 +130,7 @@ ThisBuild / mergifyStewardConfig ~= { configOpt =>
 ThisBuild / mergifyPrRules += MergifyPrRule(
   "merge-when-ci-pass",
   List(
-    MergifyCondition.Custom("status-success=Test (ubuntu-22.04, 2.13, temurin@11)"),
+    MergifyCondition.Custom("status-success=Test (ubuntu-22.04, 2.13, temurin@21)"),
     MergifyCondition.Custom("label=merge-on-build-success")
   ),
   List(MergifyAction.Merge())
@@ -151,7 +148,6 @@ lazy val compilerFlags = Seq(
   ),
   // Disable warning when @nowarn annotation isn't suppressing a warning
   // to simplify cross-building
-  // because 2.12 @nowarn doesn't actually do anything.. https://github.com/scala/bug/issues/12313
   scalacOptions ++= {
     if (scalaBinaryVersion.value == "3") Nil
     else Seq("-Wconf:cat=unused-nowarn:s")
@@ -159,16 +155,13 @@ lazy val compilerFlags = Seq(
   scalacOptions ++= {
     scalaBinaryVersion.value match {
       case "3" =>
-        // Handle irrefutable patterns in for comprehensions
-        Seq("-source:future", "-language:adhocExtensions", "-Xmax-inlines", "64")
+        Seq("-language:adhocExtensions", "-Xmax-inlines", "64")
       case "2.13" =>
         Seq(
           "-Xsource:3-cross",
           // See https://github.com/scala/bug/issues/13128. Should no longer be need in 2.13.18 since change was reverted
           "-Wconf:cat=lint-infer-any&msg=kind-polymorphic:s"
         )
-      case "2.12" =>
-        Seq("-Xsource:3")
     }
   }
 )
@@ -329,17 +322,6 @@ lazy val core = projectMatrix
          Seq.empty
        else
          Seq("com.chuusai" %% "shapeless" % shapelessVersion)),
-    libraryDependencies ++=
-      (if (scalaVersion.value == scala212Version)
-         Seq("org.scala-lang.modules" %% "scala-collection-compat" % scalaCollectionCompatVersion)
-       else Seq.empty),
-    Compile / unmanagedSourceDirectories += {
-      val sourceDir = (Compile / sourceDirectory).value
-      CrossVersion.partialVersion(scalaVersion.value) match {
-        case Some((2, n)) if n <= 12 => sourceDir / "scala-2.13-"
-        case _                       => sourceDir / "scala-2.13+"
-      }
-    },
     Compile / sourceGenerators += Def.task {
       val outDir = (Compile / sourceManaged).value / "scala" / "doobie"
       val outFile = new File(outDir, "buildinfo.scala")
@@ -415,8 +397,7 @@ lazy val postgres = projectMatrix
     libraryDependencies ++= Seq(
       "co.fs2" %% "fs2-io" % fs2Version,
       "org.postgresql" % "postgresql" % postgresVersion,
-      postgisDep % "provided",
-      "org.scala-lang.modules" %% "scala-collection-compat" % scalaCollectionCompatVersion % Test
+      postgisDep % "provided"
     ),
     freeGen2Dir := (Compile / scalaSource).value / "doobie" / "postgres" / "free",
     freeGen2Package := "org.typelevel.doobie.postgres.free",
@@ -623,9 +604,9 @@ lazy val docs = projectMatrix
     paradoxProperties ++= Map(
       "scala-versions" -> {
         val crossVersions = allScalaVersions.flatMap(CrossVersion.partialVersion)
-        val scala2Versions = crossVersions.filter(_._1 == 2).map(_._2).mkString("2.", "/", "") // 2.12/13
+        val scala2Versions = crossVersions.filter(_._1 == 2).map(_._2).mkString("2.", "/", "") // 2.13
         val scala3 = crossVersions.find(_._1 == 3).map(_ => "3") // 3
-        List(Some(scala2Versions), scala3).flatten.filter(_.nonEmpty).mkString(" and ") // 2.12/13 and 3
+        List(Some(scala2Versions), scala3).flatten.filter(_.nonEmpty).mkString(" and ") // 2.13 and 3
       },
       "org" -> organization.value,
       "scala.binary.version" -> CrossVersion.binaryScalaVersion(scalaVersion.value),
