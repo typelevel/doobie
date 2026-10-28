@@ -28,7 +28,7 @@ lazy val silencerVersion = "1.7.1"
 lazy val specs2Version = "4.23.0"
 lazy val scala212Version = "2.12.21"
 lazy val scala213Version = "2.13.18"
-lazy val scala3Version = "3.3.8"
+lazy val scala3Version = "3.3.9"
 lazy val allScalaVersions = List(scala212Version, scala213Version, scala3Version)
 lazy val doobieGitRemote =
   if (sys.env.get("GITHUB_ACTIONS").contains("true"))
