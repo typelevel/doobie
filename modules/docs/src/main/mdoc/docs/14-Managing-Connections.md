@@ -157,6 +157,32 @@ def transactor(c: Connection): Transactor[IO] =
   Transactor.fromConnection[IO](c, logHandler = None)
 ```
 
+### Reusing Prepared Statements
+
+By default **doobie** prepares the SQL of each query or update every time it runs, and then closes the statement. Some JDBC drivers (pgjdbc, for example) cache prepared statements internally, so this costs little. Other drivers (sqlite-jdbc, for example) do not, and then preparing the same SQL again and again can use a lot of CPU time.
+
+`PreparedStatementCache` is an opt-in cache of prepared statements per connection. It wraps a `Connection` (or a `DataSource`, so that it wraps each connection it opens). When **doobie** closes a statement, the wrapper resets it and keeps it for the next use of the same SQL on the same connection. At most `maxSize` idle statements are kept per connection; the least recently used one is closed when the cache is full. The cached statements are closed when the connection is closed.
+
+The cache lives in the connection, so it helps only when the same physical connection is used for many transactions. With HikariCP, wrap the `DataSource` that the pool uses to open its connections:
+
+```scala mdoc:silent
+import com.zaxxer.hikari.HikariConfig
+import org.typelevel.doobie.util.PreparedStatementCache
+
+def cachingHikariConfig(ds: DataSource): HikariConfig = {
+  val config = new HikariConfig()
+  config.setDataSource(PreparedStatementCache.wrapDataSource(ds, maxSize = 256))
+  config
+}
+```
+
+Or wrap a single long-lived connection:
+
+```scala mdoc:silent
+def cachingTransactor(c: Connection): Transactor[IO] =
+  Transactor.fromConnection[IO](PreparedStatementCache.wrap(c, maxSize = 256), logHandler = None)
+```
+
 ### Customizing Transactors
 
 If the default `Transactor` behavior don't meet your needs you can replace any member with one that does what you need. See the Scaladoc for `Transactor` and `Strategy` for details on the structure. Lenses are provided to make it straightforward to replace just the piece you're interested in. For example, to create a transactor that is the same as `xa` but always rolls back (for testing perhaps) you can say:
