@@ -23,6 +23,7 @@ lazy val scalatestVersion = "3.2.20"
 lazy val munitVersion = "1.3.6"
 lazy val otel4sVersion = "1.1.0"
 lazy val otelInstrumentationVersion = "2.26.1-alpha"
+lazy val sqliteVersion = "3.54.1.0"
 lazy val shapelessVersion = "2.3.13"
 lazy val silencerVersion = "1.7.1"
 lazy val specs2Version = "4.23.0"
@@ -591,6 +592,12 @@ lazy val bench = projectMatrix
   .enablePlugins(JmhPlugin)
   .dependsOn(core, postgres, hikari)
   .settings(doobieSettings)
+  .settings(
+    libraryDependencies ++= Seq(
+      "com.h2database" % "h2" % h2Version,
+      "org.xerial" % "sqlite-jdbc" % sqliteVersion
+    )
+  )
   .jvmPlatform(scalaVersions = Seq(scala213Version, scala3Version))
 
 lazy val docs = projectMatrix

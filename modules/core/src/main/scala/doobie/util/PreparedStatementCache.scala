@@ -1,0 +1,544 @@
+// Copyright (c) 2013-2020 Rob Norris and Contributors
+// This software is licensed under the MIT License (MIT).
+// For more information see LICENSE or https://opensource.org/licenses/MIT
+
+package org.typelevel.doobie.util
+
+import java.io.PrintWriter
+import java.sql.{
+  Blob,
+  CallableStatement,
+  Clob,
+  Connection,
+  DatabaseMetaData,
+  Date,
+  NClob,
+  ParameterMetaData,
+  PreparedStatement,
+  Ref,
+  ResultSet,
+  ResultSetMetaData,
+  RowId,
+  SQLException,
+  SQLType,
+  SQLWarning,
+  SQLXML,
+  Savepoint,
+  Statement,
+  Struct,
+  Time,
+  Timestamp
+}
+import java.util.logging.Logger
+import javax.sql.DataSource
+import scala.annotation.nowarn
+import scala.util.control.NonFatal
+
+/** Opt-in, per-connection cache of `PreparedStatement`s.
+  *
+  * By default doobie prepares the SQL of every query or update each time it runs, and closes the statement afterwards.
+  * Some JDBC drivers (pgjdbc, for example) cache prepared statements internally, so this costs little. Other drivers
+  * (sqlite-jdbc, for example) do not, and then preparing the same SQL again and again can be a large part of the CPU
+  * time.
+  *
+  * The wrappers created here keep the prepared statements of a connection open, keyed by the SQL string and by the
+  * variant of `prepareStatement` that was called (auto-generated keys, column indexes or names, result set type,
+  * concurrency and holdability). When doobie closes a statement, the wrapper resets it (parameters, batch, warnings,
+  * fetch size, max rows, query timeout and similar settings, open result sets) and keeps it for the next use of the
+  * same SQL on the same connection. At most `maxSize` idle statements are kept per connection. The least recently used
+  * statement is closed when the cache is full. All cached statements are closed when the connection is closed.
+  *
+  * A statement that is in use is never given out a second time. If the same SQL is prepared again while the first
+  * statement is still open (for example in a nested query), a new statement is prepared.
+  *
+  * `CallableStatement`s and plain `Statement`s are not cached.
+  *
+  * A statement is bound to the schema and catalog that were current when it was prepared. All cached statements are
+  * dropped when `setSchema` or `setCatalog` is called on the connection (HikariCP does this when it resets a
+  * connection). The cache cannot see changes made with SQL (for example `SET search_path` or `USE`), so do not use the
+  * cache if you change the schema that way.
+  *
+  * Statements stay prepared across transactions, so DDL can make a cached statement stale. Most drivers prepare the
+  * statement again if necessary, but some report an error instead. For example, pgjdbc can fail with "cached plan must
+  * not change result type" after a table that a server-prepared statement uses was altered. A long-lived cached
+  * statement reaches the `prepareThreshold` of pgjdbc sooner, so it is server-prepared sooner than without the cache.
+  *
+  * `ResultSet.getStatement` returns the statement of the driver, not the wrapper. If that statement is closed, it is
+  * not used again.
+  *
+  * Because the cache lives in the connection, it helps only when the same physical connection is used for many
+  * transactions. Wrap the `DataSource` that a connection pool uses to open its physical connections, for example with
+  * HikariCP:
+  *
+  * {{{
+  * val config = new HikariConfig()
+  * config.setDataSource(PreparedStatementCache.wrapDataSource(underlyingDataSource, maxSize = 256))
+  * }}}
+  *
+  * or wrap a single long-lived connection:
+  *
+  * {{{
+  * Transactor.fromConnection[IO](PreparedStatementCache.wrap(connection, maxSize = 256), logHandler = None)
+  * }}}
+  *
+  * Wrapping the connections of a non-pooling transactor (for example `Transactor.fromDriverManager`) has no benefit,
+  * because each transaction then uses a new connection.
+  */
+object PreparedStatementCache {
+
+  /** Wrap a connection so that it reuses up to `maxSize` idle prepared statements. Closing the returned connection
+    * closes the cached statements and then `connection`.
+    */
+  def wrap(connection: Connection, maxSize: Int): Connection = {
+    require(maxSize > 0, s"maxSize must be positive, but was $maxSize")
+    new CachingConnection(connection, maxSize)
+  }
+
+  /** Wrap a data source so that each connection it opens is wrapped with [[wrap]]. */
+  def wrapDataSource(dataSource: DataSource, maxSize: Int): DataSource = {
+    require(maxSize > 0, s"maxSize must be positive, but was $maxSize")
+    new CachingDataSource(dataSource, maxSize)
+  }
+
+  /** The variant of `Connection.prepareStatement` that was used. Statements prepared with different variants of the
+    * same SQL are different statements.
+    */
+  private[util] sealed abstract class Variant extends Product with Serializable
+  private[util] object Variant {
+    case object Default extends Variant
+    final case class AutoGeneratedKeys(autoGeneratedKeys: Int) extends Variant
+    final case class ColumnIndexes(columnIndexes: List[Int]) extends Variant
+    final case class ColumnNames(columnNames: List[String]) extends Variant
+    final case class ResultSetOptions(resultSetType: Int, resultSetConcurrency: Int) extends Variant
+    final case class ResultSetOptionsWithHoldability(
+        resultSetType: Int,
+        resultSetConcurrency: Int,
+        resultSetHoldability: Int
+    ) extends Variant
+  }
+
+  private[util] final case class Key(sql: String, variant: Variant)
+
+  private[util] def closeQuietly(statement: Statement): Unit =
+    try statement.close()
+    catch { case _: SQLException => () }
+
+  private[util] final class CachingDataSource(underlying: DataSource, maxSize: Int) extends DataSource {
+    override def getConnection(): Connection = new CachingConnection(underlying.getConnection(), maxSize)
+    override def getConnection(username: String, password: String): Connection =
+      new CachingConnection(underlying.getConnection(username, password), maxSize)
+    override def getLogWriter(): PrintWriter = underlying.getLogWriter()
+    override def setLogWriter(out: PrintWriter): Unit = underlying.setLogWriter(out)
+    override def setLoginTimeout(seconds: Int): Unit = underlying.setLoginTimeout(seconds)
+    override def getLoginTimeout(): Int = underlying.getLoginTimeout()
+    override def getParentLogger(): Logger = underlying.getParentLogger()
+    override def unwrap[T](iface: Class[T]): T =
+      if (iface.isInstance(this)) iface.cast(this) else underlying.unwrap(iface)
+    override def isWrapperFor(iface: Class[?]): Boolean =
+      iface.isInstance(this) || underlying.isWrapperFor(iface)
+  }
+
+  private[util] final class CachingConnection(underlying: Connection, maxSize: Int) extends Connection {
+
+    // Idle statements, least recently used first. All access to `idle`, `closed` and `generation` is guarded by
+    // `idle.synchronized`.
+    private val idle = new java.util.LinkedHashMap[Key, PreparedStatement](16, 0.75f, true)
+    private var closed = false
+    // incremented when the schema or catalog changes, so that statements prepared before are not used again
+    private var generation = 0L
+
+    private def checkout(key: Key)(prepare: => PreparedStatement): PreparedStatement = {
+      val (cached, gen) = idle.synchronized((idle.remove(key), generation))
+      val statement = if (cached eq null) prepare else cached
+      new CachedPreparedStatement(this, key, gen, statement)
+    }
+
+    /** Give back a statement that was reset and can be used again. */
+    private[util] def checkin(key: Key, gen: Long, statement: PreparedStatement): Unit = {
+      val toClose = idle.synchronized {
+        if (closed || gen != generation || idle.containsKey(key)) Some(statement)
+        else {
+          idle.put(key, statement)
+          if (idle.size > maxSize) {
+            val eldest = idle.values.iterator
+            val evicted = eldest.next()
+            eldest.remove()
+            Some(evicted)
+          } else None
+        }
+      }
+      toClose.foreach(closeQuietly)
+    }
+
+    private def evictAll(): List[PreparedStatement] =
+      idle.synchronized {
+        closed = true
+        drain()
+      }
+
+    /** Close the idle statements, and make sure that the statements in use are not cached when they are closed. They
+      * were prepared for the old schema or catalog.
+      */
+    private def invalidate(): Unit = {
+      val statements = idle.synchronized {
+        generation += 1
+        drain()
+      }
+      statements.foreach(closeQuietly)
+    }
+
+    // must be called inside `idle.synchronized`
+    private def drain(): List[PreparedStatement] = {
+      val statements = List.newBuilder[PreparedStatement]
+      idle.values.forEach(s => statements += s)
+      idle.clear()
+      statements.result()
+    }
+
+    override def close(): Unit = {
+      val statements = evictAll()
+      try statements.foreach(closeQuietly)
+      finally underlying.close()
+    }
+
+    override def abort(executor: java.util.concurrent.Executor): Unit = {
+      // the statements die with the connection, so they are only dropped here
+      val _ = evictAll()
+      underlying.abort(executor)
+    }
+
+    override def isClosed(): Boolean = underlying.isClosed()
+
+    override def setSchema(schema: String): Unit = {
+      underlying.setSchema(schema)
+      invalidate()
+    }
+
+    override def setCatalog(catalog: String): Unit = {
+      underlying.setCatalog(catalog)
+      invalidate()
+    }
+
+    override def prepareStatement(sql: String): PreparedStatement =
+      checkout(Key(sql, Variant.Default))(underlying.prepareStatement(sql))
+
+    override def prepareStatement(sql: String, autoGeneratedKeys: Int): PreparedStatement =
+      checkout(Key(sql, Variant.AutoGeneratedKeys(autoGeneratedKeys)))(
+        underlying.prepareStatement(sql, autoGeneratedKeys))
+
+    override def prepareStatement(sql: String, columnIndexes: Array[Int]): PreparedStatement =
+      checkout(Key(sql, Variant.ColumnIndexes(columnIndexes.toList)))(underlying.prepareStatement(sql, columnIndexes))
+
+    override def prepareStatement(sql: String, columnNames: Array[String]): PreparedStatement =
+      checkout(Key(sql, Variant.ColumnNames(columnNames.toList)))(underlying.prepareStatement(sql, columnNames))
+
+    override def prepareStatement(sql: String, resultSetType: Int, resultSetConcurrency: Int): PreparedStatement =
+      checkout(Key(sql, Variant.ResultSetOptions(resultSetType, resultSetConcurrency)))(
+        underlying.prepareStatement(sql, resultSetType, resultSetConcurrency))
+
+    override def prepareStatement(
+        sql: String,
+        resultSetType: Int,
+        resultSetConcurrency: Int,
+        resultSetHoldability: Int
+    ): PreparedStatement =
+      checkout(
+        Key(sql, Variant.ResultSetOptionsWithHoldability(resultSetType, resultSetConcurrency, resultSetHoldability)))(
+        underlying.prepareStatement(sql, resultSetType, resultSetConcurrency, resultSetHoldability))
+
+    override def unwrap[T](iface: Class[T]): T =
+      if (iface.isInstance(this)) iface.cast(this) else underlying.unwrap(iface)
+    override def isWrapperFor(iface: Class[?]): Boolean =
+      iface.isInstance(this) || underlying.isWrapperFor(iface)
+
+    // Plain forwarders
+    override def clearWarnings(): Unit = underlying.clearWarnings()
+    override def commit(): Unit = underlying.commit()
+    override def createArrayOf(p0: String, p1: Array[AnyRef]): java.sql.Array = underlying.createArrayOf(p0, p1)
+    override def createBlob(): Blob = underlying.createBlob()
+    override def createClob(): Clob = underlying.createClob()
+    override def createNClob(): NClob = underlying.createNClob()
+    override def createSQLXML(): SQLXML = underlying.createSQLXML()
+    override def createStatement(): Statement = underlying.createStatement()
+    override def createStatement(p0: Int, p1: Int, p2: Int): Statement = underlying.createStatement(p0, p1, p2)
+    override def createStatement(p0: Int, p1: Int): Statement = underlying.createStatement(p0, p1)
+    override def createStruct(p0: String, p1: Array[AnyRef]): Struct = underlying.createStruct(p0, p1)
+    override def getAutoCommit(): Boolean = underlying.getAutoCommit()
+    override def getCatalog(): String = underlying.getCatalog()
+    override def getClientInfo(): java.util.Properties = underlying.getClientInfo()
+    override def getClientInfo(p0: String): String = underlying.getClientInfo(p0)
+    override def getHoldability(): Int = underlying.getHoldability()
+    override def getMetaData(): DatabaseMetaData = underlying.getMetaData()
+    override def getNetworkTimeout(): Int = underlying.getNetworkTimeout()
+    override def getSchema(): String = underlying.getSchema()
+    override def getTransactionIsolation(): Int = underlying.getTransactionIsolation()
+    override def getTypeMap(): java.util.Map[String, Class[?]] = underlying.getTypeMap()
+    override def getWarnings(): SQLWarning = underlying.getWarnings()
+    override def isReadOnly(): Boolean = underlying.isReadOnly()
+    override def isValid(p0: Int): Boolean = underlying.isValid(p0)
+    override def nativeSQL(p0: String): String = underlying.nativeSQL(p0)
+    override def prepareCall(p0: String, p1: Int, p2: Int, p3: Int): CallableStatement =
+      underlying.prepareCall(p0, p1, p2, p3)
+    override def prepareCall(p0: String, p1: Int, p2: Int): CallableStatement = underlying.prepareCall(p0, p1, p2)
+    override def prepareCall(p0: String): CallableStatement = underlying.prepareCall(p0)
+    override def releaseSavepoint(p0: Savepoint): Unit = underlying.releaseSavepoint(p0)
+    override def rollback(): Unit = underlying.rollback()
+    override def rollback(p0: Savepoint): Unit = underlying.rollback(p0)
+    override def setAutoCommit(p0: Boolean): Unit = underlying.setAutoCommit(p0)
+    override def setClientInfo(p0: String, p1: String): Unit = underlying.setClientInfo(p0, p1)
+    override def setClientInfo(p0: java.util.Properties): Unit = underlying.setClientInfo(p0)
+    override def setHoldability(p0: Int): Unit = underlying.setHoldability(p0)
+    override def setNetworkTimeout(p0: java.util.concurrent.Executor, p1: Int): Unit =
+      underlying.setNetworkTimeout(p0, p1)
+    override def setReadOnly(p0: Boolean): Unit = underlying.setReadOnly(p0)
+    override def setSavepoint(): Savepoint = underlying.setSavepoint()
+    override def setSavepoint(p0: String): Savepoint = underlying.setSavepoint(p0)
+    override def setTransactionIsolation(p0: Int): Unit = underlying.setTransactionIsolation(p0)
+    override def setTypeMap(p0: java.util.Map[String, Class[?]]): Unit = underlying.setTypeMap(p0)
+  }
+
+  private val FetchSize = 1
+  private val FetchDirection = 2
+  private val MaxRows = 4
+  private val MaxFieldSize = 8
+  private val QueryTimeout = 16
+  private val EscapeProcessing = 32
+  private val Poolable = 64
+
+  /** One use of a cached statement. Closing it resets `delegate` and gives it back to `owner`. */
+  private[util] final class CachedPreparedStatement(
+      owner: CachingConnection,
+      key: Key,
+      generation: Long,
+      delegate: PreparedStatement
+  ) extends PreparedStatement {
+
+    private var closed = false
+    // true if the statement has state that cannot be reset, so it must not be used again
+    private var discard = false
+    private var batched = false
+    // true if `execute` or `getMoreResults` returned a result set, which may not have been read
+    private var pendingResult = false
+    // bit set of the settings that were changed, so that they are restored only once
+    private var changed = 0
+    private var restores: List[() => Unit] = Nil
+    private var resultSets: List[ResultSet] = Nil
+
+    private def checkOpen(): Unit =
+      if (closed) throw new SQLException("PreparedStatement is closed")
+
+    private def underlying: PreparedStatement = {
+      checkOpen()
+      delegate
+    }
+
+    private def remember(setting: Int)(restore: => () => Unit): Unit =
+      if ((changed & setting) == 0) {
+        restores = restore :: restores
+        changed |= setting
+      }
+
+    private def track(resultSet: ResultSet): ResultSet = {
+      if ((resultSet ne null) && !resultSets.exists(_ eq resultSet)) resultSets = resultSet :: resultSets
+      resultSet
+    }
+
+    private def closeResultSet(rs: ResultSet): Unit =
+      if ((rs ne null) && !rs.isClosed()) rs.close()
+
+    private def reset(): Boolean =
+      try {
+        resultSets.foreach(closeResultSet)
+        if (pendingResult) closeResultSet(delegate.getResultSet())
+        delegate.clearParameters()
+        if (batched) delegate.clearBatch()
+        delegate.clearWarnings()
+        restores.foreach(_())
+        !delegate.isClosed()
+      } catch { case NonFatal(_) => false }
+
+    override def close(): Unit =
+      if (!closed) {
+        closed = true
+        if (!discard && reset()) owner.checkin(key, generation, delegate) else delegate.close()
+      }
+
+    override def isClosed(): Boolean = closed || delegate.isClosed()
+
+    override def getConnection(): Connection = {
+      checkOpen()
+      owner
+    }
+
+    override def executeQuery(): ResultSet = track(underlying.executeQuery())
+    override def executeQuery(sql: String): ResultSet = track(underlying.executeQuery(sql))
+    override def getResultSet(): ResultSet = track(underlying.getResultSet())
+    override def getGeneratedKeys(): ResultSet = track(underlying.getGeneratedKeys())
+
+    private def result(isResultSet: Boolean): Boolean = {
+      if (isResultSet) pendingResult = true
+      isResultSet
+    }
+
+    override def execute(): Boolean = result(underlying.execute())
+    override def execute(sql: String): Boolean = result(underlying.execute(sql))
+    override def execute(sql: String, autoGeneratedKeys: Int): Boolean =
+      result(underlying.execute(sql, autoGeneratedKeys))
+    override def execute(sql: String, columnIndexes: Array[Int]): Boolean =
+      result(underlying.execute(sql, columnIndexes))
+    override def execute(sql: String, columnNames: Array[String]): Boolean =
+      result(underlying.execute(sql, columnNames))
+    override def getMoreResults(): Boolean = result(underlying.getMoreResults())
+    override def getMoreResults(current: Int): Boolean = result(underlying.getMoreResults(current))
+
+    override def addBatch(): Unit = {
+      underlying.addBatch()
+      batched = true
+    }
+    override def addBatch(sql: String): Unit = {
+      underlying.addBatch(sql)
+      batched = true
+    }
+
+    override def closeOnCompletion(): Unit = {
+      underlying.closeOnCompletion()
+      discard = true
+    }
+    override def setCursorName(name: String): Unit = {
+      underlying.setCursorName(name)
+      discard = true
+    }
+
+    override def setFetchSize(rows: Int): Unit = {
+      remember(FetchSize) { val v = underlying.getFetchSize(); () => delegate.setFetchSize(v) }
+      underlying.setFetchSize(rows)
+    }
+    override def setFetchDirection(direction: Int): Unit = {
+      remember(FetchDirection) { val v = underlying.getFetchDirection(); () => delegate.setFetchDirection(v) }
+      underlying.setFetchDirection(direction)
+    }
+    override def setMaxRows(max: Int): Unit = {
+      remember(MaxRows) { val v = underlying.getMaxRows(); () => delegate.setMaxRows(v) }
+      underlying.setMaxRows(max)
+    }
+    override def setLargeMaxRows(max: Long): Unit = {
+      remember(MaxRows) { val v = underlying.getMaxRows(); () => delegate.setMaxRows(v) }
+      underlying.setLargeMaxRows(max)
+    }
+    override def setMaxFieldSize(max: Int): Unit = {
+      remember(MaxFieldSize) { val v = underlying.getMaxFieldSize(); () => delegate.setMaxFieldSize(v) }
+      underlying.setMaxFieldSize(max)
+    }
+    override def setQueryTimeout(seconds: Int): Unit = {
+      remember(QueryTimeout) { val v = underlying.getQueryTimeout(); () => delegate.setQueryTimeout(v) }
+      underlying.setQueryTimeout(seconds)
+    }
+    override def setEscapeProcessing(enable: Boolean): Unit = {
+      // there is no getter, and drivers enable escape processing by default
+      remember(EscapeProcessing)(() => delegate.setEscapeProcessing(true))
+      underlying.setEscapeProcessing(enable)
+    }
+    override def setPoolable(poolable: Boolean): Unit = {
+      remember(Poolable) { val v = underlying.isPoolable(); () => delegate.setPoolable(v) }
+      underlying.setPoolable(poolable)
+    }
+
+    override def unwrap[T](iface: Class[T]): T =
+      if (iface.isInstance(this)) iface.cast(this) else underlying.unwrap(iface)
+    override def isWrapperFor(iface: Class[?]): Boolean =
+      iface.isInstance(this) || underlying.isWrapperFor(iface)
+
+    // Plain forwarders
+    override def cancel(): Unit = underlying.cancel()
+    override def clearBatch(): Unit = underlying.clearBatch()
+    override def clearParameters(): Unit = underlying.clearParameters()
+    override def clearWarnings(): Unit = underlying.clearWarnings()
+    override def executeBatch(): Array[Int] = underlying.executeBatch()
+    override def executeLargeBatch(): Array[Long] = underlying.executeLargeBatch()
+    override def executeLargeUpdate(): Long = underlying.executeLargeUpdate()
+    override def executeLargeUpdate(p0: String, p1: Array[Int]): Long = underlying.executeLargeUpdate(p0, p1)
+    override def executeLargeUpdate(p0: String, p1: Array[String]): Long = underlying.executeLargeUpdate(p0, p1)
+    override def executeLargeUpdate(p0: String, p1: Int): Long = underlying.executeLargeUpdate(p0, p1)
+    override def executeLargeUpdate(p0: String): Long = underlying.executeLargeUpdate(p0)
+    override def executeUpdate(): Int = underlying.executeUpdate()
+    override def executeUpdate(p0: String, p1: Array[Int]): Int = underlying.executeUpdate(p0, p1)
+    override def executeUpdate(p0: String, p1: Array[String]): Int = underlying.executeUpdate(p0, p1)
+    override def executeUpdate(p0: String, p1: Int): Int = underlying.executeUpdate(p0, p1)
+    override def executeUpdate(p0: String): Int = underlying.executeUpdate(p0)
+    override def getFetchDirection(): Int = underlying.getFetchDirection()
+    override def getFetchSize(): Int = underlying.getFetchSize()
+    override def getLargeMaxRows(): Long = underlying.getLargeMaxRows()
+    override def getLargeUpdateCount(): Long = underlying.getLargeUpdateCount()
+    override def getMaxFieldSize(): Int = underlying.getMaxFieldSize()
+    override def getMaxRows(): Int = underlying.getMaxRows()
+    override def getMetaData(): ResultSetMetaData = underlying.getMetaData()
+    override def getParameterMetaData(): ParameterMetaData = underlying.getParameterMetaData()
+    override def getQueryTimeout(): Int = underlying.getQueryTimeout()
+    override def getResultSetConcurrency(): Int = underlying.getResultSetConcurrency()
+    override def getResultSetHoldability(): Int = underlying.getResultSetHoldability()
+    override def getResultSetType(): Int = underlying.getResultSetType()
+    override def getUpdateCount(): Int = underlying.getUpdateCount()
+    override def getWarnings(): SQLWarning = underlying.getWarnings()
+    override def isCloseOnCompletion(): Boolean = underlying.isCloseOnCompletion()
+    override def isPoolable(): Boolean = underlying.isPoolable()
+    override def setArray(p0: Int, p1: java.sql.Array): Unit = underlying.setArray(p0, p1)
+    override def setAsciiStream(p0: Int, p1: java.io.InputStream, p2: Int): Unit = underlying.setAsciiStream(p0, p1, p2)
+    override def setAsciiStream(p0: Int, p1: java.io.InputStream, p2: Long): Unit =
+      underlying.setAsciiStream(p0, p1, p2)
+    override def setAsciiStream(p0: Int, p1: java.io.InputStream): Unit = underlying.setAsciiStream(p0, p1)
+    override def setBigDecimal(p0: Int, p1: java.math.BigDecimal): Unit = underlying.setBigDecimal(p0, p1)
+    override def setBinaryStream(p0: Int, p1: java.io.InputStream, p2: Int): Unit =
+      underlying.setBinaryStream(p0, p1, p2)
+    override def setBinaryStream(p0: Int, p1: java.io.InputStream, p2: Long): Unit =
+      underlying.setBinaryStream(p0, p1, p2)
+    override def setBinaryStream(p0: Int, p1: java.io.InputStream): Unit = underlying.setBinaryStream(p0, p1)
+    override def setBlob(p0: Int, p1: java.io.InputStream, p2: Long): Unit = underlying.setBlob(p0, p1, p2)
+    override def setBlob(p0: Int, p1: java.io.InputStream): Unit = underlying.setBlob(p0, p1)
+    override def setBlob(p0: Int, p1: Blob): Unit = underlying.setBlob(p0, p1)
+    override def setBoolean(p0: Int, p1: Boolean): Unit = underlying.setBoolean(p0, p1)
+    override def setByte(p0: Int, p1: Byte): Unit = underlying.setByte(p0, p1)
+    override def setBytes(p0: Int, p1: Array[Byte]): Unit = underlying.setBytes(p0, p1)
+    override def setCharacterStream(p0: Int, p1: java.io.Reader, p2: Int): Unit =
+      underlying.setCharacterStream(p0, p1, p2)
+    override def setCharacterStream(p0: Int, p1: java.io.Reader, p2: Long): Unit =
+      underlying.setCharacterStream(p0, p1, p2)
+    override def setCharacterStream(p0: Int, p1: java.io.Reader): Unit = underlying.setCharacterStream(p0, p1)
+    override def setClob(p0: Int, p1: java.io.Reader, p2: Long): Unit = underlying.setClob(p0, p1, p2)
+    override def setClob(p0: Int, p1: java.io.Reader): Unit = underlying.setClob(p0, p1)
+    override def setClob(p0: Int, p1: Clob): Unit = underlying.setClob(p0, p1)
+    override def setDate(p0: Int, p1: Date, p2: java.util.Calendar): Unit = underlying.setDate(p0, p1, p2)
+    override def setDate(p0: Int, p1: Date): Unit = underlying.setDate(p0, p1)
+    override def setDouble(p0: Int, p1: Double): Unit = underlying.setDouble(p0, p1)
+    override def setFloat(p0: Int, p1: Float): Unit = underlying.setFloat(p0, p1)
+    override def setInt(p0: Int, p1: Int): Unit = underlying.setInt(p0, p1)
+    override def setLong(p0: Int, p1: Long): Unit = underlying.setLong(p0, p1)
+    override def setNCharacterStream(p0: Int, p1: java.io.Reader, p2: Long): Unit =
+      underlying.setNCharacterStream(p0, p1, p2)
+    override def setNCharacterStream(p0: Int, p1: java.io.Reader): Unit = underlying.setNCharacterStream(p0, p1)
+    override def setNClob(p0: Int, p1: java.io.Reader, p2: Long): Unit = underlying.setNClob(p0, p1, p2)
+    override def setNClob(p0: Int, p1: java.io.Reader): Unit = underlying.setNClob(p0, p1)
+    override def setNClob(p0: Int, p1: NClob): Unit = underlying.setNClob(p0, p1)
+    override def setNString(p0: Int, p1: String): Unit = underlying.setNString(p0, p1)
+    override def setNull(p0: Int, p1: Int, p2: String): Unit = underlying.setNull(p0, p1, p2)
+    override def setNull(p0: Int, p1: Int): Unit = underlying.setNull(p0, p1)
+    override def setObject(p0: Int, p1: AnyRef, p2: Int, p3: Int): Unit = underlying.setObject(p0, p1, p2, p3)
+    override def setObject(p0: Int, p1: AnyRef, p2: Int): Unit = underlying.setObject(p0, p1, p2)
+    override def setObject(p0: Int, p1: AnyRef, p2: SQLType, p3: Int): Unit = underlying.setObject(p0, p1, p2, p3)
+    override def setObject(p0: Int, p1: AnyRef, p2: SQLType): Unit = underlying.setObject(p0, p1, p2)
+    override def setObject(p0: Int, p1: AnyRef): Unit = underlying.setObject(p0, p1)
+    override def setRef(p0: Int, p1: Ref): Unit = underlying.setRef(p0, p1)
+    override def setRowId(p0: Int, p1: RowId): Unit = underlying.setRowId(p0, p1)
+    override def setSQLXML(p0: Int, p1: SQLXML): Unit = underlying.setSQLXML(p0, p1)
+    override def setShort(p0: Int, p1: Short): Unit = underlying.setShort(p0, p1)
+    override def setString(p0: Int, p1: String): Unit = underlying.setString(p0, p1)
+    override def setTime(p0: Int, p1: Time, p2: java.util.Calendar): Unit = underlying.setTime(p0, p1, p2)
+    override def setTime(p0: Int, p1: Time): Unit = underlying.setTime(p0, p1)
+    override def setTimestamp(p0: Int, p1: Timestamp, p2: java.util.Calendar): Unit =
+      underlying.setTimestamp(p0, p1, p2)
+    override def setTimestamp(p0: Int, p1: Timestamp): Unit = underlying.setTimestamp(p0, p1)
+    override def setURL(p0: Int, p1: java.net.URL): Unit = underlying.setURL(p0, p1)
+    @nowarn("cat=deprecation")
+    override def setUnicodeStream(p0: Int, p1: java.io.InputStream, p2: Int): Unit =
+      underlying.setUnicodeStream(p0, p1, p2)
+  }
+}
