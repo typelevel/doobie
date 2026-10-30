@@ -5,6 +5,7 @@
 package org.typelevel.doobie.util
 
 import cats.effect.IO
+import java.lang.reflect.{InvocationHandler, Method, Proxy}
 import java.sql.{Connection, PreparedStatement, SQLException, Statement}
 import org.h2.jdbc.JdbcPreparedStatement
 import org.h2.jdbcx.JdbcDataSource
@@ -175,6 +176,102 @@ class PreparedStatementCacheSuite extends munit.CatsEffectSuite {
     assert(a.isClosed())
     assert(b.isClosed())
   }
+
+  test("does not reuse statements across schema changes") {
+    cached(maxSize = 8) { c =>
+      val setup = c.createStatement()
+      try
+        List(
+          "create schema a",
+          "create schema b",
+          "create table a.t (x int)",
+          "create table b.t (x int)",
+          "insert into a.t values (1)",
+          "insert into b.t values (2)"
+        ).foreach(setup.execute)
+      finally setup.close()
+      val sql = "select x from t where x > ?"
+      def x(): Int = {
+        val ps = c.prepareStatement(sql)
+        try {
+          ps.setInt(1, 0)
+          selectInt(ps)
+        } finally ps.close()
+      }
+
+      c.setSchema("A")
+      assertEquals(x(), 1)
+      val idle = prepareAndClose(c, "select 1")
+      val inUse = c.prepareStatement(sql)
+      val inUseDriver = driverStatement(inUse)
+      c.setSchema("B")
+      assert(idle.isClosed())
+      inUse.close()
+      assert(inUseDriver.isClosed()) // prepared for schema A, so not kept
+      assertEquals(x(), 2)
+      c.setSchema("A")
+      assertEquals(x(), 1)
+    }
+  }
+
+  test("closes a result set of execute() that was never read") {
+    cached(maxSize = 8) { c =>
+      val ps = c.prepareStatement(select)
+      val d = driverStatement(ps)
+      ps.setInt(1, 1)
+      assert(ps.execute())
+      // bypass the wrapper, so that the result set is not tracked
+      val rs = d.getResultSet()
+      ps.close()
+      assert(rs.isClosed())
+      assert(prepareAndClose(c, select) eq d)
+    }
+  }
+
+  test("does not reuse a statement that was closed through its result set") {
+    cached(maxSize = 8) { c =>
+      val ps = c.prepareStatement(select)
+      val d = driverStatement(ps)
+      ps.setInt(1, 1)
+      val rs = ps.executeQuery()
+      rs.getStatement().close()
+      ps.close()
+      assert(d.isClosed())
+      assert(prepareAndClose(c, select) ne d)
+    }
+  }
+
+  test("closes a statement that fails to reset with a non-SQL exception") {
+    var closed = false
+    // a driver statement whose `clearParameters` throws
+    val statement = proxy(classOf[PreparedStatement]) { (method, _) =>
+      method.getName match {
+        case "clearParameters" => throw new IllegalStateException("boom")
+        case "close"           => closed = true; null
+        case "isClosed"        => Boolean.box(closed)
+        case _                 => null
+      }
+    }
+    val connection = proxy(classOf[Connection]) { (method, _) =>
+      method.getName match {
+        case "prepareStatement" => statement
+        case _                  => null
+      }
+    }
+    val c = PreparedStatementCache.wrap(connection, maxSize = 8)
+    c.prepareStatement(select).close()
+    assert(closed)
+  }
+
+  private def proxy[A](iface: Class[A])(f: (Method, Array[AnyRef]) => AnyRef): A =
+    iface.cast(
+      Proxy.newProxyInstance(
+        getClass.getClassLoader,
+        Array[Class[?]](iface),
+        new InvocationHandler {
+          override def invoke(p: AnyRef, method: Method, args: Array[AnyRef]): AnyRef = f(method, args)
+        }
+      ))
 
   test("rejects a statement that was given back") {
     cached(maxSize = 8) { c =>

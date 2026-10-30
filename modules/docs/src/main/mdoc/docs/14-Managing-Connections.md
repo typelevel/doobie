@@ -163,6 +163,11 @@ By default **doobie** prepares the SQL of each query or update every time it run
 
 `PreparedStatementCache` is an opt-in cache of prepared statements per connection. It wraps a `Connection` (or a `DataSource`, so that it wraps each connection it opens). When **doobie** closes a statement, the wrapper resets it and keeps it for the next use of the same SQL on the same connection. At most `maxSize` idle statements are kept per connection; the least recently used one is closed when the cache is full. The cached statements are closed when the connection is closed.
 
+Things to know before you enable the cache:
+
+- A statement is bound to the schema and catalog that were current when it was prepared. The cache drops all statements when `setSchema` or `setCatalog` is called, but it cannot see changes made with SQL (for example `SET search_path`). Do not use the cache if you change the schema that way.
+- Statements stay prepared across transactions, so DDL can make a cached statement stale. Most drivers prepare it again, but some report an error. For example, pgjdbc can fail with "cached plan must not change result type" after a table that a server-prepared statement uses was altered.
+
 The cache lives in the connection, so it helps only when the same physical connection is used for many transactions. With HikariCP, wrap the `DataSource` that the pool uses to open its connections:
 
 ```scala mdoc:silent

@@ -32,6 +32,7 @@ import java.sql.{
 import java.util.logging.Logger
 import javax.sql.DataSource
 import scala.annotation.nowarn
+import scala.util.control.NonFatal
 
 /** Opt-in, per-connection cache of `PreparedStatement`s.
   *
@@ -51,6 +52,19 @@ import scala.annotation.nowarn
   * statement is still open (for example in a nested query), a new statement is prepared.
   *
   * `CallableStatement`s and plain `Statement`s are not cached.
+  *
+  * A statement is bound to the schema and catalog that were current when it was prepared. All cached statements are
+  * dropped when `setSchema` or `setCatalog` is called on the connection (HikariCP does this when it resets a
+  * connection). The cache cannot see changes made with SQL (for example `SET search_path` or `USE`), so do not use the
+  * cache if you change the schema that way.
+  *
+  * Statements stay prepared across transactions, so DDL can make a cached statement stale. Most drivers prepare the
+  * statement again if necessary, but some report an error instead. For example, pgjdbc can fail with "cached plan must
+  * not change result type" after a table that a server-prepared statement uses was altered. A long-lived cached
+  * statement reaches the `prepareThreshold` of pgjdbc sooner, so it is server-prepared sooner than without the cache.
+  *
+  * `ResultSet.getStatement` returns the statement of the driver, not the wrapper. If that statement is closed, it is
+  * not used again.
   *
   * Because the cache lives in the connection, it helps only when the same physical connection is used for many
   * transactions. Wrap the `DataSource` that a connection pool uses to open its physical connections, for example with
@@ -126,20 +140,23 @@ object PreparedStatementCache {
 
   private[util] final class CachingConnection(underlying: Connection, maxSize: Int) extends Connection {
 
-    // Idle statements, least recently used first. All access is guarded by `idle.synchronized`.
+    // Idle statements, least recently used first. All access to `idle`, `closed` and `generation` is guarded by
+    // `idle.synchronized`.
     private val idle = new java.util.LinkedHashMap[Key, PreparedStatement](16, 0.75f, true)
     private var closed = false
+    // incremented when the schema or catalog changes, so that statements prepared before are not used again
+    private var generation = 0L
 
     private def checkout(key: Key)(prepare: => PreparedStatement): PreparedStatement = {
-      val cached = idle.synchronized(idle.remove(key))
+      val (cached, gen) = idle.synchronized((idle.remove(key), generation))
       val statement = if (cached eq null) prepare else cached
-      new CachedPreparedStatement(this, key, statement)
+      new CachedPreparedStatement(this, key, gen, statement)
     }
 
     /** Give back a statement that was reset and can be used again. */
-    private[util] def checkin(key: Key, statement: PreparedStatement): Unit = {
+    private[util] def checkin(key: Key, gen: Long, statement: PreparedStatement): Unit = {
       val toClose = idle.synchronized {
-        if (closed || idle.containsKey(key)) Some(statement)
+        if (closed || gen != generation || idle.containsKey(key)) Some(statement)
         else {
           idle.put(key, statement)
           if (idle.size > maxSize) {
@@ -156,11 +173,27 @@ object PreparedStatementCache {
     private def evictAll(): List[PreparedStatement] =
       idle.synchronized {
         closed = true
-        val statements = List.newBuilder[PreparedStatement]
-        idle.values.forEach(s => statements += s)
-        idle.clear()
-        statements.result()
+        drain()
       }
+
+    /** Close the idle statements, and make sure that the statements in use are not cached when they are closed. They
+      * were prepared for the old schema or catalog.
+      */
+    private def invalidate(): Unit = {
+      val statements = idle.synchronized {
+        generation += 1
+        drain()
+      }
+      statements.foreach(closeQuietly)
+    }
+
+    // must be called inside `idle.synchronized`
+    private def drain(): List[PreparedStatement] = {
+      val statements = List.newBuilder[PreparedStatement]
+      idle.values.forEach(s => statements += s)
+      idle.clear()
+      statements.result()
+    }
 
     override def close(): Unit = {
       val statements = evictAll()
@@ -175,6 +208,16 @@ object PreparedStatementCache {
     }
 
     override def isClosed(): Boolean = underlying.isClosed()
+
+    override def setSchema(schema: String): Unit = {
+      underlying.setSchema(schema)
+      invalidate()
+    }
+
+    override def setCatalog(catalog: String): Unit = {
+      underlying.setCatalog(catalog)
+      invalidate()
+    }
 
     override def prepareStatement(sql: String): PreparedStatement =
       checkout(Key(sql, Variant.Default))(underlying.prepareStatement(sql))
@@ -242,7 +285,6 @@ object PreparedStatementCache {
     override def rollback(): Unit = underlying.rollback()
     override def rollback(p0: Savepoint): Unit = underlying.rollback(p0)
     override def setAutoCommit(p0: Boolean): Unit = underlying.setAutoCommit(p0)
-    override def setCatalog(p0: String): Unit = underlying.setCatalog(p0)
     override def setClientInfo(p0: String, p1: String): Unit = underlying.setClientInfo(p0, p1)
     override def setClientInfo(p0: java.util.Properties): Unit = underlying.setClientInfo(p0)
     override def setHoldability(p0: Int): Unit = underlying.setHoldability(p0)
@@ -251,7 +293,6 @@ object PreparedStatementCache {
     override def setReadOnly(p0: Boolean): Unit = underlying.setReadOnly(p0)
     override def setSavepoint(): Savepoint = underlying.setSavepoint()
     override def setSavepoint(p0: String): Savepoint = underlying.setSavepoint(p0)
-    override def setSchema(p0: String): Unit = underlying.setSchema(p0)
     override def setTransactionIsolation(p0: Int): Unit = underlying.setTransactionIsolation(p0)
     override def setTypeMap(p0: java.util.Map[String, Class[?]]): Unit = underlying.setTypeMap(p0)
   }
@@ -268,6 +309,7 @@ object PreparedStatementCache {
   private[util] final class CachedPreparedStatement(
       owner: CachingConnection,
       key: Key,
+      generation: Long,
       delegate: PreparedStatement
   ) extends PreparedStatement {
 
@@ -275,6 +317,8 @@ object PreparedStatementCache {
     // true if the statement has state that cannot be reset, so it must not be used again
     private var discard = false
     private var batched = false
+    // true if `execute` or `getMoreResults` returned a result set, which may not have been read
+    private var pendingResult = false
     // bit set of the settings that were changed, so that they are restored only once
     private var changed = 0
     private var restores: List[() => Unit] = Nil
@@ -299,20 +343,24 @@ object PreparedStatementCache {
       resultSet
     }
 
+    private def closeResultSet(rs: ResultSet): Unit =
+      if ((rs ne null) && !rs.isClosed()) rs.close()
+
     private def reset(): Boolean =
       try {
-        resultSets.foreach(rs => if (!rs.isClosed()) rs.close())
+        resultSets.foreach(closeResultSet)
+        if (pendingResult) closeResultSet(delegate.getResultSet())
         delegate.clearParameters()
         if (batched) delegate.clearBatch()
         delegate.clearWarnings()
         restores.foreach(_())
         !delegate.isClosed()
-      } catch { case _: SQLException => false }
+      } catch { case NonFatal(_) => false }
 
     override def close(): Unit =
       if (!closed) {
         closed = true
-        if (!discard && reset()) owner.checkin(key, delegate) else delegate.close()
+        if (!discard && reset()) owner.checkin(key, generation, delegate) else delegate.close()
       }
 
     override def isClosed(): Boolean = closed || delegate.isClosed()
@@ -326,6 +374,22 @@ object PreparedStatementCache {
     override def executeQuery(sql: String): ResultSet = track(underlying.executeQuery(sql))
     override def getResultSet(): ResultSet = track(underlying.getResultSet())
     override def getGeneratedKeys(): ResultSet = track(underlying.getGeneratedKeys())
+
+    private def result(isResultSet: Boolean): Boolean = {
+      if (isResultSet) pendingResult = true
+      isResultSet
+    }
+
+    override def execute(): Boolean = result(underlying.execute())
+    override def execute(sql: String): Boolean = result(underlying.execute(sql))
+    override def execute(sql: String, autoGeneratedKeys: Int): Boolean =
+      result(underlying.execute(sql, autoGeneratedKeys))
+    override def execute(sql: String, columnIndexes: Array[Int]): Boolean =
+      result(underlying.execute(sql, columnIndexes))
+    override def execute(sql: String, columnNames: Array[String]): Boolean =
+      result(underlying.execute(sql, columnNames))
+    override def getMoreResults(): Boolean = result(underlying.getMoreResults())
+    override def getMoreResults(current: Int): Boolean = result(underlying.getMoreResults(current))
 
     override def addBatch(): Unit = {
       underlying.addBatch()
@@ -389,11 +453,6 @@ object PreparedStatementCache {
     override def clearBatch(): Unit = underlying.clearBatch()
     override def clearParameters(): Unit = underlying.clearParameters()
     override def clearWarnings(): Unit = underlying.clearWarnings()
-    override def execute(): Boolean = underlying.execute()
-    override def execute(p0: String, p1: Array[Int]): Boolean = underlying.execute(p0, p1)
-    override def execute(p0: String, p1: Array[String]): Boolean = underlying.execute(p0, p1)
-    override def execute(p0: String, p1: Int): Boolean = underlying.execute(p0, p1)
-    override def execute(p0: String): Boolean = underlying.execute(p0)
     override def executeBatch(): Array[Int] = underlying.executeBatch()
     override def executeLargeBatch(): Array[Long] = underlying.executeLargeBatch()
     override def executeLargeUpdate(): Long = underlying.executeLargeUpdate()
@@ -413,8 +472,6 @@ object PreparedStatementCache {
     override def getMaxFieldSize(): Int = underlying.getMaxFieldSize()
     override def getMaxRows(): Int = underlying.getMaxRows()
     override def getMetaData(): ResultSetMetaData = underlying.getMetaData()
-    override def getMoreResults(): Boolean = underlying.getMoreResults()
-    override def getMoreResults(p0: Int): Boolean = underlying.getMoreResults(p0)
     override def getParameterMetaData(): ParameterMetaData = underlying.getParameterMetaData()
     override def getQueryTimeout(): Int = underlying.getQueryTimeout()
     override def getResultSetConcurrency(): Int = underlying.getResultSetConcurrency()
