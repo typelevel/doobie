@@ -13,7 +13,7 @@ import org.typelevel.doobie.util.PreparedStatementCache
 import org.openjdk.jmh.annotations.*
 
 /** Runs the same parameterized query (or insert) many times on one connection, with and without
-  * [[PreparedStatementCache]].
+  * `PreparedStatementCache`.
   *
   * sqlite-jdbc does not cache prepared statements, so each prepare compiles the SQL again. H2 caches parsed commands
   * per session, so it shows the effect when the driver caches too.
