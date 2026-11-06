@@ -45,7 +45,7 @@ lazy val doobieGithubWorkflowPermissions =
 // scala-steward:off
 lazy val slf4jVersion = "1.7.36"
 // scala-steward:on
-lazy val weaverVersion = "0.13.0"
+lazy val weaverVersion = "0.13.1"
 
 // Basic versioning and publishing stuff
 ThisBuild / tlBaseVersion := "1.0"
