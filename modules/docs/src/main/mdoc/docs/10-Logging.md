@@ -109,43 +109,56 @@ You can find the `label` in the LogEvent.
 
 ### Passing additional context to your LogHandler
 
-You can use cats-effect's `IOLocal` to pass additional context to the LogHandler (e.g. tracing context), as the following example shows:
+You can attach additional context (e.g. the current user or a request ID) to a query or update by calling `.withMetadata`.
+Metadata is stored in a [`Vault`](https://typelevel.org/vault/), which is a type-safe map keyed by `org.typelevel.vault.Key`.
+Every `LogEvent` carries the metadata of the statement that produced it, so your `LogHandler` can read it back using the same key:
 
 ```scala mdoc
-import cats.effect.{IOLocal, Ref}
-import org.typelevel.doobie.util.log.Success
+import org.typelevel.vault.Key
 
-def users = List.range(0, 4).map(n => s"user-$n")
+// (user, tenantId) pairs
+def users = List.range(0, 4).map(n => (s"user-$n", n % 2))
 
 def program: IO[List[String]] =
   for {
-    // define an IOLocal where we store the user which caused the query to be run  
-    currentUser <- IOLocal("")
-    // store all successful sql here, for all users
-    successLogsRef <- Ref[IO].of(List.empty[String])
+    // create keys used to attach the user and tenant which caused the query to be run.
+    // Key creation is effectful, so typically you'd create them once at startup and share them.
+    userKey <- Key.newKey[IO, String]
+    tenantIdKey <- Key.newKey[IO, Int]
+    
+    // All output logs are stored here (demo purposes)
+    logsRef <- Ref[IO].of(List.empty[String])
+    
     xa = Transactor.fromDriverManager[IO](
         driver = "org.h2.Driver",
         url = "jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1",
         user = "sa", 
         password = "",
         logHandler = Some(new LogHandler[IO] {
-          def run(logEvent: LogEvent): IO[Unit] =
-            currentUser.get.flatMap(user => successLogsRef.update(logs => s"sql for user $user: '${logEvent.sql}'" :: logs))
+          def run(logEvent: LogEvent): IO[Unit] = {
+            val user = logEvent.metadata.lookup(userKey).getOrElse("unknown")
+            val tenantId = logEvent.metadata.lookup(tenantIdKey).fold("unknown")(_.toString)
+            logsRef.update(logs => s"sql for user $user (tenant $tenantId): '${logEvent.sql}'" :: logs)
+          }
         })
       )
-    // run a bunch of queries
-    _ <- users.parTraverse(user =>
-      for {
-        _ <- currentUser.set(user)
-        _ <- sql"select 1".query[Int].unique.transact(xa)
-      } yield ()
-    )
+    // run a bunch of queries, attaching the user and tenant to each one
+    _ <- users.parTraverse { case (user, tenantId) =>
+      sql"select 1".query[Int]
+        .withMetadata(userKey, user)
+        .withMetadata(tenantIdKey, tenantId)
+        .unique
+        .transact(xa)
+    }
     // return collected log messages
-    logs <- successLogsRef.get
+    logs <- logsRef.get
   } yield logs
 
 program.unsafeRunSync().sorted
 ```
+
+`Query`, `Query0`, `Update` and `Update0` all provide `withMetadata(key, value)` to insert or replace a single entry,
+and `withMetadata(vault)` to replace the whole `Vault`.
 
 ### Caveats
 
