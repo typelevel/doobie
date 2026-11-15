@@ -32,7 +32,7 @@
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-1.0.0-RC13
+1.0.0-RC14
 </div>
 </div>
 <div class="nav-toc">
@@ -93,7 +93,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-1.0.0-RC13
+1.0.0-RC14
 </div>
 </div>
 <div class="nav-toc">
@@ -180,7 +180,7 @@ import y._
 </code></pre>
 <h3><a href="#data-definition" name="data-definition" class="anchor"><span class="anchor-link"></span></a>Data Definition</h3>
 <p>It is uncommon to define database structures at runtime, but <strong>doobie</strong> handles it just fine and treats such operations like any other kind of update. And it happens to be useful here!</p>
-<p>Let&rsquo;s create a new table, which we will use for the examples to follow. This looks a lot like our prior usage of the <code>sql</code> interpolator, but this time we&rsquo;re using <code>update</code> rather than <code>query</code>. The <code>.run</code> method gives a <code>ConnectionIO[Int]</code> that yields the total number of rows modified, and the YOLO-mode <code>.quick</code> gives a <code>IO[Unit]</code> that prints out the row count.</p>
+<p>Let&rsquo;s create a new table, which we will use for the examples to follow. This looks a lot like our prior usage of the <code>sql</code> interpolator, but this time we&rsquo;re using <code>update</code> rather than <code>query</code>. The <code>.run</code> method gives a <code>ConnectionIO[Int]</code> that yields the total number of rows modified, and the YOLO-mode <code>.quick</code> gives a <code>IO[Unit]</code> that prints out the row count. If an update may affect more than <code>Int.MaxValue</code> rows, use <code>.runLarge</code> instead, which gives a <code>ConnectionIO[Long]</code> (via JDBC&rsquo;s <code>executeLargeUpdate</code>).</p>
 <pre class="prettyprint"><code class="language-scala">val drop =
   sql&quot;&quot;&quot;
     DROP TABLE IF EXISTS person
@@ -292,6 +292,7 @@ val data = List[PersonInfo](
 <p>Running this program yields the number of updated rows.</p>
 <pre class="prettyprint"><code class="language-scala">insertMany(data).quick.unsafeRunSync()
 </code></pre>
+<p>As with <code>.run</code>, there is an <code>updateManyLarge</code> variant which yields the total as a <code>Long</code> (via JDBC&rsquo;s <code>executeLargeBatch</code>).</p>
 <p>For databases that support it (such as PostgreSQL) we can use <code>updateManyWithGeneratedKeys</code> to return a stream of updated rows.</p>
 <pre class="prettyprint"><code class="language-scala">import fs2.Stream
 
@@ -310,7 +311,7 @@ val data2 = List[PersonInfo](
 <pre class="prettyprint"><code class="language-scala">insertMany2(data2).quick.unsafeRunSync()
 </code></pre>
 <div class="source-github">
-The source code for this page can be found <a href="https://github.com/typelevel/doobie/tree/master/modules/docs/target/jvm-2.13/mdoc/docs/07-Updating.md">here</a>.
+The source code for this page can be found <a href="https://github.com/typelevel/doobie/tree/v1.0.0-RC14/modules/docs/target/jvm-2.13/mdoc/docs/07-Updating.md">here</a>.
 </div>
 
 <div class="nav-next">
@@ -398,7 +399,7 @@ The source code for this page can be found <a href="https://github.com/typelevel
 <script type="text/javascript" src="../lib/prettify/prettify.js"></script>
 <script type="text/javascript" src="../lib/prettify/lang-scala.js"></script>
 <script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
-<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.0.0-RC13', 'https://github.com/typelevel/doobie')});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.0.0-RC14', 'https://github.com/typelevel/doobie')});</script>
 
 
 </html>

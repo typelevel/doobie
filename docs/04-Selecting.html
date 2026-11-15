@@ -32,7 +32,7 @@
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-1.0.0-RC13
+1.0.0-RC14
 </div>
 </div>
 <div class="nav-toc">
@@ -93,7 +93,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-1.0.0-RC13
+1.0.0-RC14
 </div>
 </div>
 <div class="nav-toc">
@@ -332,6 +332,7 @@ p.take(5).compile.toVector.unsafeRunSync().foreach(println)
 <pre class="prettyprint"><code class="language-scala">import org.typelevel.doobie.hi.HC
 import org.typelevel.doobie.free.{FC, FPS}
 import org.typelevel.doobie.util.log.{LoggingInfo, Parameters}
+import org.typelevel.vault.Vault
 
 val sql = &quot;select code, name, population, gnp from country&quot;
 // sql: String = &quot;select code, name, population, gnp from country&quot;
@@ -343,7 +344,8 @@ val proc = HC.stream[(Code, Country2)](
   loggingInfo = LoggingInfo(
     sql = sql,
     params = Parameters.NonBatch(List.empty), // No parameters
-    label = &quot;unlabeled&quot;
+    label = &quot;unlabeled&quot;,
+    metadata = Vault.empty
   )
 )
 // proc: Stream[ConnectionIO, (Code, Country2)] = Stream(..)
@@ -356,7 +358,7 @@ proc.take(5)        // Stream[ConnectionIO, (Code, Country2)]
 </code></pre>
 <p>The <code>stream</code> combinator is parameterized on the element type and consumes a statement and a program in <code>PreparedStatementIO</code> that sets input parameters and any other pre-execution configuration. In this case the &ldquo;prepare&rdquo; program is a no-op.</p>
 <div class="source-github">
-The source code for this page can be found <a href="https://github.com/typelevel/doobie/tree/master/modules/docs/target/jvm-2.13/mdoc/docs/04-Selecting.md">here</a>.
+The source code for this page can be found <a href="https://github.com/typelevel/doobie/tree/v1.0.0-RC14/modules/docs/target/jvm-2.13/mdoc/docs/04-Selecting.md">here</a>.
 </div>
 
 <div class="nav-next">
@@ -445,7 +447,7 @@ The source code for this page can be found <a href="https://github.com/typelevel
 <script type="text/javascript" src="../lib/prettify/prettify.js"></script>
 <script type="text/javascript" src="../lib/prettify/lang-scala.js"></script>
 <script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
-<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.0.0-RC13', 'https://github.com/typelevel/doobie')});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.0.0-RC14', 'https://github.com/typelevel/doobie')});</script>
 
 
 </html>

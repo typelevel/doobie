@@ -32,7 +32,7 @@
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-1.0.0-RC13
+1.0.0-RC14
 </div>
 </div>
 <div class="nav-toc">
@@ -93,7 +93,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-1.0.0-RC13
+1.0.0-RC14
 </div>
 </div>
 <div class="nav-toc">
@@ -150,11 +150,11 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <div class="small-12 large-9 column" id="docs">
 <h2><a href="#extensions-for-postgresql" name="extensions-for-postgresql" class="anchor"><span class="anchor-link"></span></a>Extensions for PostgreSQL</h2>
 <p>In this chapter we discuss the extended support that <strong>doobie</strong> offers for users of <a href="http://www.postgresql.org/">PostgreSQL</a>. To use these extensions you must add an additional dependency to your project:</p>
-<pre class="prettyprint"><code class="language-scala">libraryDependencies += &quot;org.typelevel&quot; %% &quot;doobie-postgres&quot; % &quot;1.0.0-RC13&quot;
+<pre class="prettyprint"><code class="language-scala">libraryDependencies += &quot;org.typelevel&quot; %% &quot;doobie-postgres&quot; % &quot;1.0.0-RC14&quot;
 </code></pre>
 <p>This library pulls in <a href="https://jdbc.postgresql.org">PostgreSQL JDBC Driver</a> as a transitive dependency.</p>
 <p>There are extensions available for dealing with JSON by using Circe, if you like to use those, include this dependency:</p>
-<pre class="prettyprint"><code class="language-scala">libraryDependencies += &quot;org.typelevel&quot; %% &quot;doobie-postgres-circe&quot; % &quot;1.0.0-RC13&quot;
+<pre class="prettyprint"><code class="language-scala">libraryDependencies += &quot;org.typelevel&quot; %% &quot;doobie-postgres-circe&quot; % &quot;1.0.0-RC14&quot;
 </code></pre>
 <p>Then, you will be able to import the implicits for dealing with JSON:</p>
 <pre class="prettyprint"><code class="language-scala">import org.typelevel.doobie.postgres.circe.json.implicits._
@@ -463,13 +463,13 @@ val foods = List(
   .transact(xa)
   .unsafeRunSync()
   .foreach(println)
-// Seq Scan on country  (cost=0.00..7.39 rows=239 width=11) (actual time=0.009..0.031 rows=239 loops=1)
-// Planning Time: 0.151 ms
-// Execution Time: 0.084 ms
+// Seq Scan on country  (cost=0.00..7.39 rows=239 width=11) (actual time=0.007..0.047 rows=239 loops=1)
+// Planning Time: 0.241 ms
+// Execution Time: 0.116 ms
 </code></pre>
 <p><code>explain</code> and <code>explainAnalyze</code> both return a <code>ConnectinIO[List[String]]</code> result, where each member of the list is one row of the query planner&rsquo;s output.</p>
 <div class="source-github">
-The source code for this page can be found <a href="https://github.com/typelevel/doobie/tree/master/modules/docs/target/jvm-2.13/mdoc/docs/15-Extensions-PostgreSQL.md">here</a>.
+The source code for this page can be found <a href="https://github.com/typelevel/doobie/tree/v1.0.0-RC14/modules/docs/target/jvm-2.13/mdoc/docs/15-Extensions-PostgreSQL.md">here</a>.
 </div>
 
 <div class="nav-next">
@@ -566,7 +566,7 @@ The source code for this page can be found <a href="https://github.com/typelevel
 <script type="text/javascript" src="../lib/prettify/prettify.js"></script>
 <script type="text/javascript" src="../lib/prettify/lang-scala.js"></script>
 <script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
-<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.0.0-RC13', 'https://github.com/typelevel/doobie')});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.0.0-RC14', 'https://github.com/typelevel/doobie')});</script>
 
 
 </html>

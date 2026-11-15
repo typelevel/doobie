@@ -32,7 +32,7 @@
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-1.0.0-RC13
+1.0.0-RC14
 </div>
 </div>
 <div class="nav-toc">
@@ -93,7 +93,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-1.0.0-RC13
+1.0.0-RC14
 </div>
 </div>
 <div class="nav-toc">
@@ -151,7 +151,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <h1><a href="#tracing-with-otel4s" name="tracing-with-otel4s" class="anchor"><span class="anchor-link"></span></a>Tracing with otel4s</h1>
 <p>In this chapter we discuss the <code>doobie-otel4s</code> module, which adds OpenTelemetry tracing to doobie through <a href="https://github.com/typelevel/otel4s">otel4s</a>.</p>
 <h2><a href="#adding-the-dependency" name="adding-the-dependency" class="anchor"><span class="anchor-link"></span></a>Adding the Dependency</h2>
-<pre class="prettyprint"><code class="language-scala">libraryDependencies += &quot;org.typelevel&quot; %% &quot;doobie-otel4s&quot; % &quot;1.0.0-RC13&quot;
+<pre class="prettyprint"><code class="language-scala">libraryDependencies += &quot;org.typelevel&quot; %% &quot;doobie-otel4s&quot; % &quot;1.0.0-RC14&quot;
 </code></pre>
 <p>In addition to <code>doobie-otel4s</code> you will need:</p>
 <ul>
@@ -214,14 +214,13 @@ object Main {
       <li><code>db.operation.batch.size</code></li>
     </ul>
   </li>
-  <li>Read the doobie label, if there is one, and pass it to <code>TracingConfig.attributesExtractor</code>.</li>
+  <li>Read tracing attributes attached to the final statement&rsquo;s metadata.</li>
   <li>Analyze the raw SQL with <code>TracingConfig.queryAnalyzer</code>.</li>
   <li>Compute an optional custom span name with <code>TracingConfig.spanNamer</code>.</li>
   <li>If no custom name is produced, fall back to JDBC operation names.</li>
 </ol>
 <p>The main extension points are:</p>
 <ul>
-  <li><code>AttributesExtractor</code>, which reads doobie labels</li>
   <li><code>QueryAnalyzer</code>, which reads SQL text</li>
   <li><code>SpanNamer</code>, which chooses the final span name</li>
 </ul>
@@ -233,7 +232,6 @@ object Main {
   <li><code>defaultSpanName = &quot;doobie:exec&quot;</code></li>
   <li><code>constAttributes = db.system.name + db.namespace</code></li>
   <li><code>captureQuery = QueryCaptureConfig.recommended</code></li>
-  <li><code>attributesExtractor = AttributesExtractor.json</code></li>
   <li><code>queryAnalyzer = QueryAnalyzer.noop</code></li>
   <li><code>spanNamer = SpanNamer.fromAttribute(DbAttributes.DbQuerySummary)</code></li>
 </ul>
@@ -263,7 +261,7 @@ def insertPerson(name: String, age: Int) =
       Attribute(&quot;app.operation&quot;, &quot;create-person&quot;)
     )
 </code></pre>
-<p>These helpers encode attributes into the doobie label. The default extractor, <code>AttributesExtractor.json</code>, decodes that label back into <code>Attributes</code> during tracing.</p>
+<p>These helpers store attributes directly in the final query or update&rsquo;s <code>Vault</code> metadata. The label remains available for human-readable text and span naming with <code>SpanNamer.fromQueryLabel</code>.</p>
 <p>The available helpers are:</p>
 <ul>
   <li><code>queryWithSummary</code> - attaches <code>db.query.summary</code> attribute</li>
@@ -271,15 +269,30 @@ def insertPerson(name: String, age: Int) =
   <li><code>queryWithAttributes</code> - attaches one or more tracing attributes</li>
   <li><code>updateWithAttributes</code> - attaches one or more tracing attributes</li>
 </ul>
-<h2><a href="#attributesextractor-json" name="attributesextractor-json" class="anchor"><span class="anchor-link"></span></a><code>AttributesExtractor.json</code></h2>
-<p>The syntax helpers above rely on <code>AttributesExtractor.json</code>.</p>
-<p>If you replace the extractor with something incompatible, for example <code>AttributesExtractor.plain(...)</code>, the helpers still compile, but their encoded label payload is no longer decoded, so:</p>
-<ul>
-  <li><code>db.query.summary</code> is not recovered from the label</li>
-  <li><code>SpanNamer.fromAttribute(...)</code> will not find it</li>
-  <li>span naming falls back to whatever other strategy you configured</li>
-</ul>
-<p>This can be useful, but it should be explicit.</p>
+<p>To add attributes at later stages, import <code>org.typelevel.doobie.otel4s.syntax.statement._</code> and call <code>withAttributes(...)</code> on a <code>Query</code>, <code>Query0</code>, <code>Update</code>, or <code>Update0</code>. Each call merges with the attributes already attached; the later value wins if an attribute key is repeated. Other Vault entries remain intact. A raw <code>withMetadata(AttributesMetadata.key, attributes)</code> replaces the full attribute set instead.</p>
+<pre class="prettyprint"><code class="language-scala">import org.typelevel.doobie.otel4s.syntax.statement._
+
+val enriched = sql&quot;select name from person&quot;
+  .queryWithAttributes[String](Attribute(&quot;app.stage&quot;, &quot;created&quot;))
+  .withAttributes(
+    Attribute(&quot;app.stage&quot;, &quot;enriched&quot;),
+    Attribute(&quot;app.owner&quot;, &quot;people&quot;)
+  )
+</code></pre>
+<h2><a href="#raw-statement-metadata" name="raw-statement-metadata" class="anchor"><span class="anchor-link"></span></a>Raw statement metadata</h2>
+<p>Queries and updates expose a raw <code>org.typelevel.vault.Vault</code>. Create a key once, then use the same key to read the value in a log handler. Key creation is effectful; application code can also allocate a long-lived key at startup.</p>
+<pre class="prettyprint"><code class="language-scala">import cats.effect.SyncIO
+import cats.effect.unsafe.implicits.global
+import org.typelevel.vault.Key
+
+val requestIdKey = Key.newKey[SyncIO, String].unsafeRunSync()
+
+val query = sql&quot;select name from person&quot;.query[String]
+  .withMetadata(requestIdKey, &quot;request-123&quot;)
+
+val requestId = query.metadata.lookup(requestIdKey)
+</code></pre>
+<p><code>Query</code>, <code>Query0</code>, <code>Update</code>, and <code>Update0</code> provide both <code>withMetadata(vault)</code> to replace the whole vault and <code>withMetadata(key, value)</code> to insert or replace one entry. Metadata reaches tracing and all log event variants. It is not attached to fragments or merged during fragment composition.</p>
 <h2><a href="#query-capture-policies" name="query-capture-policies" class="anchor"><span class="anchor-link"></span></a>Query Capture Policies</h2>
 <p>Query capture is controlled by <code>QueryCaptureConfig</code>.</p>
 <pre class="prettyprint"><code class="language-scala">import org.typelevel.doobie.otel4s.QueryCaptureConfig
@@ -319,7 +332,7 @@ val captureEverything =
 <ul>
   <li><code>SpanNamer.noop</code> - does not provide a custom span name</li>
   <li><code>SpanNamer.fromQueryLabel</code> - uses the raw doobie label as the span name</li>
-  <li><code>SpanNamer.fromAttribute(key)</code> - uses the value of the given extracted attribute as the span name</li>
+  <li><code>SpanNamer.fromAttribute(key)</code> - uses the value of the given attached attribute as the span name</li>
   <li><code>SpanNamer.fromQueryMetadata</code> - builds the span name from <a href="#sql-analysis-with-queryanalyzer">QueryAnalyzer.QueryMetadata</a></li>
 </ul>
 <h3><a href="#spannamer-fromattribute" name="spannamer-fromattribute" class="anchor"><span class="anchor-link"></span></a><code>SpanNamer.fromAttribute</code></h3>
@@ -329,11 +342,10 @@ import org.typelevel.otel4s.semconv.attributes.DbAttributes
 
 val namer = SpanNamer.fromAttribute(DbAttributes.DbQuerySummary)
 </code></pre>
-<p>It checks extracted attributes for the given key.</p>
+<p>It checks attributes attached to the statement for the given key.</p>
 <ul>
   <li>if the attribute exists, its value becomes the span name</li>
   <li>if it does not exist, it returns <code>None</code></li>
-  <li>if attribute extraction failed, it also returns <code>None</code></li>
 </ul>
 <p>When it returns <code>None</code>, the interpreter falls back to JDBC operation names.</p>
 <h3><a href="#spannamer-fromquerymetadata" name="spannamer-fromquerymetadata" class="anchor"><span class="anchor-link"></span></a><code>SpanNamer.fromQueryMetadata</code></h3>
@@ -350,55 +362,15 @@ val namer = SpanNamer.fromAttribute(DbAttributes.DbQuerySummary)
 <h3><a href="#composing-naming-strategies" name="composing-naming-strategies" class="anchor"><span class="anchor-link"></span></a>Composing Naming Strategies</h3>
 <p><code>SpanNamer</code> instances compose with <code>orElse</code>.</p>
 <pre class="prettyprint"><code class="language-scala">import org.typelevel.doobie.otel4s.SpanNamer
-import org.typelevel.otel4s.AttributeKey
 import org.typelevel.otel4s.semconv.attributes.DbAttributes
-
-val legacyLabelKey = AttributeKey[String](&quot;db.query.legacy_label&quot;)
 
 val namer =
   SpanNamer
     .fromAttribute(DbAttributes.DbQuerySummary)
     .orElse(SpanNamer.fromQueryMetadata)
-    .orElse(SpanNamer.fromAttribute(legacyLabelKey))
     .orElse(SpanNamer.fromQueryLabel)
 </code></pre>
 <p>This lets you define naming precedence explicitly.</p>
-<h2><a href="#customizing-the-extractor" name="customizing-the-extractor" class="anchor"><span class="anchor-link"></span></a>Customizing the Extractor</h2>
-<p><code>AttributesExtractor</code> turns the raw doobie label into typed attributes.</p>
-<p>The built-ins are:</p>
-<ul>
-  <li><code>AttributesExtractor.json</code></li>
-  <li><code>AttributesExtractor.plain(key)</code></li>
-</ul>
-<p><code>plain(key)</code> stores the label as a single string attribute:</p>
-<pre class="prettyprint"><code class="language-scala">import org.typelevel.doobie.otel4s.AttributesExtractor
-import org.typelevel.otel4s.AttributeKey
-
-val extractor =
-  AttributesExtractor.plain(AttributeKey[String](&quot;db.query.label&quot;))
-</code></pre>
-<p>This is useful when:</p>
-<ul>
-  <li>you already use human-readable labels</li>
-  <li>you want labels preserved as attributes</li>
-  <li>you do not use the JSON-encoded helper syntax</li>
-</ul>
-<p>Like <code>SpanNamer</code>, extractors compose with <code>orElse</code>.</p>
-<pre class="prettyprint"><code class="language-scala">import org.typelevel.doobie.otel4s.AttributesExtractor
-import org.typelevel.otel4s.AttributeKey
-
-val legacyLabelKey = AttributeKey[String](&quot;db.query.legacy_label&quot;)
-
-val extractor =
-  AttributesExtractor
-    .json
-    .orElse(AttributesExtractor.plain(legacyLabelKey))
-</code></pre>
-<p>This means:</p>
-<ul>
-  <li>first try to decode a helper-produced JSON payload</li>
-  <li>if that fails, keep the raw label as a fallback attribute</li>
-</ul>
 <h2><a href="#customizing-tracingconfig" name="customizing-tracingconfig" class="anchor"><span class="anchor-link"></span></a>Customizing <code>TracingConfig</code></h2>
 <p>All behavior is configured through <code>TracingConfig</code>.</p>
 <pre class="prettyprint"><code class="language-scala">import org.typelevel.doobie.otel4s._
@@ -414,7 +386,6 @@ val config =
     .withTracerScopeName(&quot;com.example.doobie&quot;)
     .withDefaultSpanName(&quot;db.exec&quot;)
     .withCaptureQuery(QueryCaptureConfig.disabled)
-    .withAttributesExtractor(AttributesExtractor.json)
     .withQueryAnalyzer(QueryAnalyzer.noop)
     .withSpanNamer(SpanNamer.fromAttribute(DbAttributes.DbQuerySummary))
     .addConstAttributes(Attributes(Attribute(&quot;system.module&quot;, &quot;payments&quot;)))
@@ -426,22 +397,18 @@ val config =
   <li><code>withConstAttributes</code> - replaces the set of attributes added to every span</li>
   <li><code>addConstAttributes</code> - appends more attributes to the existing constant attributes</li>
   <li><code>withCaptureQuery</code> - changes how SQL text and parameters are recorded</li>
-  <li><code>withAttributesExtractor</code> - changes how doobie labels are decoded into attributes</li>
   <li><code>withQueryAnalyzer</code> - changes how SQL text is analyzed into query metadata</li>
   <li><code>withSpanNamer</code> - changes how the final span name is chosen</li>
 </ul>
-<h2><a href="#new-syntax-and-legacy-labels-together" name="new-syntax-and-legacy-labels-together" class="anchor"><span class="anchor-link"></span></a>New Syntax and Legacy Labels Together</h2>
+<h2><a href="#statement-attributes-and-labels-together" name="statement-attributes-and-labels-together" class="anchor"><span class="anchor-link"></span></a>Statement Attributes and Labels Together</h2>
 <p>When migrating existing code it is common to have both of these:</p>
 <ul>
   <li>new code using <code>queryWithSummary</code> or <code>queryWithAttributes</code></li>
-  <li>old code using raw doobie labels such as <code>queryWithLabel(&quot;find-user&quot;)</code></li>
+  <li>code using raw doobie labels such as <code>queryWithLabel(&quot;find-user&quot;)</code></li>
 </ul>
-<p>In this case, use a composed extractor and a composed namer.</p>
+<p>Use a composed namer to prefer attached summaries and fall back to raw labels.</p>
 <pre class="prettyprint"><code class="language-scala">import org.typelevel.doobie.otel4s._
-import org.typelevel.otel4s.AttributeKey
 import org.typelevel.otel4s.semconv.attributes.DbAttributes
-
-val legacyLabelKey = AttributeKey[String](&quot;db.query.legacy_label&quot;)
 
 val config =
   TracingConfig
@@ -449,21 +416,16 @@ val config =
       dbSystemName = DbAttributes.DbSystemNameValue.Postgresql,
       dbNamespace = &quot;app&quot;
     )
-    .withAttributesExtractor(
-      AttributesExtractor
-        .json
-        .orElse(AttributesExtractor.plain(legacyLabelKey))
-    )
     .withSpanNamer(
       SpanNamer
         .fromAttribute(DbAttributes.DbQuerySummary)
-        .orElse(SpanNamer.fromAttribute(legacyLabelKey))
+        .orElse(SpanNamer.fromQueryLabel)
     )
 </code></pre>
 <p>With this setup:</p>
 <ul>
   <li>helper-generated summaries still win</li>
-  <li>raw legacy labels remain visible</li>
+  <li>raw labels are used as fallback span names</li>
   <li>unlabeled queries still fall back to JDBC operation names</li>
 </ul>
 <h2><a href="#sql-analysis-with-queryanalyzer" name="sql-analysis-with-queryanalyzer" class="anchor"><span class="anchor-link"></span></a>SQL Analysis with <code>QueryAnalyzer</code></h2>
@@ -476,7 +438,7 @@ val config =
   <li><code>storedProcedureName</code></li>
   <li><code>querySummary</code></li>
 </ul>
-<p>Unlike <code>AttributesExtractor</code>, which works from labels, <code>QueryAnalyzer</code> works from the SQL statement itself.</p>
+<p><code>QueryAnalyzer</code> works from the SQL statement itself; attached attributes and labels are handled separately.</p>
 <pre class="prettyprint"><code class="language-scala">import org.typelevel.doobie.otel4s.QueryAnalyzer
 
 val simpleAnalyzer =
@@ -520,7 +482,7 @@ val config =
 <p>With this configuration:</p>
 <ul>
   <li>SQL-derived metadata is used first</li>
-  <li>then label-derived <code>db.query.summary</code></li>
+  <li>then the attached <code>db.query.summary</code></li>
   <li>finally JDBC operation names</li>
 </ul>
 <h2><a href="#opentelemetry-java-instrumentation" name="opentelemetry-java-instrumentation" class="anchor"><span class="anchor-link"></span></a>OpenTelemetry Java Instrumentation</h2>
@@ -582,13 +544,12 @@ val config: TracingConfig =
 <h2><a href="#caveats" name="caveats" class="anchor"><span class="anchor-link"></span></a>Caveats</h2>
 <ul>
   <li>unlabeled queries are still traced; they just rely on SQL analysis or JDBC fallback naming</li>
-  <li><code>AttributesExtractor.json</code> only works for labels encoded as JSON attributes</li>
   <li><code>QueryAnalyzer</code> does not currently add analyzed fields as span attributes by itself; it feeds naming through  <code>SpanNamer</code></li>
   <li>capturing parameters can expose secrets, tokens, emails, IDs, or other sensitive values</li>
   <li>high-cardinality span names are usually a bad idea; prefer summaries such as <code>SELECT users</code> over raw SQL</li>
 </ul>
 <div class="source-github">
-The source code for this page can be found <a href="https://github.com/typelevel/doobie/tree/master/modules/docs/target/jvm-2.13/mdoc/docs/20-Otel4s-Tracing.md">here</a>.
+The source code for this page can be found <a href="https://github.com/typelevel/doobie/tree/v1.0.0-RC14/modules/docs/target/jvm-2.13/mdoc/docs/20-Otel4s-Tracing.md">here</a>.
 </div>
 
 <div class="nav-next">
@@ -608,12 +569,11 @@ The source code for this page can be found <a href="https://github.com/typelevel
     <li><a href="../docs/20-Otel4s-Tracing.html#how-it-works" class="header">How It Works</a></li>
     <li><a href="../docs/20-Otel4s-Tracing.html#recommended-configuration" class="header">Recommended Configuration</a></li>
     <li><a href="../docs/20-Otel4s-Tracing.html#query-annotations" class="header">Query Annotations</a></li>
-    <li><a href="../docs/20-Otel4s-Tracing.html#attributesextractor-json" class="header"><code>AttributesExtractor.json</code></a></li>
+    <li><a href="../docs/20-Otel4s-Tracing.html#raw-statement-metadata" class="header">Raw statement metadata</a></li>
     <li><a href="../docs/20-Otel4s-Tracing.html#query-capture-policies" class="header">Query Capture Policies</a></li>
     <li><a href="../docs/20-Otel4s-Tracing.html#span-naming" class="header">Span Naming</a></li>
-    <li><a href="../docs/20-Otel4s-Tracing.html#customizing-the-extractor" class="header">Customizing the Extractor</a></li>
     <li><a href="../docs/20-Otel4s-Tracing.html#customizing-tracingconfig" class="header">Customizing <code>TracingConfig</code></a></li>
-    <li><a href="../docs/20-Otel4s-Tracing.html#new-syntax-and-legacy-labels-together" class="header">New Syntax and Legacy Labels Together</a></li>
+    <li><a href="../docs/20-Otel4s-Tracing.html#statement-attributes-and-labels-together" class="header">Statement Attributes and Labels Together</a></li>
     <li><a href="../docs/20-Otel4s-Tracing.html#sql-analysis-with-queryanalyzer" class="header">SQL Analysis with <code>QueryAnalyzer</code></a></li>
     <li><a href="../docs/20-Otel4s-Tracing.html#using-queryanalyzer-for-span-naming" class="header">Using <code>QueryAnalyzer</code> for Span Naming</a></li>
     <li><a href="../docs/20-Otel4s-Tracing.html#opentelemetry-java-instrumentation" class="header">OpenTelemetry Java Instrumentation</a></li>
@@ -685,7 +645,7 @@ The source code for this page can be found <a href="https://github.com/typelevel
 <script type="text/javascript" src="../lib/prettify/prettify.js"></script>
 <script type="text/javascript" src="../lib/prettify/lang-scala.js"></script>
 <script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
-<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.0.0-RC13', 'https://github.com/typelevel/doobie')});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.0.0-RC14', 'https://github.com/typelevel/doobie')});</script>
 
 
 </html>

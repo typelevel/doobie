@@ -32,7 +32,7 @@
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-1.0.0-RC13
+1.0.0-RC14
 </div>
 </div>
 <div class="nav-toc">
@@ -93,7 +93,7 @@ C16.952,7,17,6.553,17,6c0-0.553-0.048-1-0.6-1H3.6C3.048,5,3,5.447,3,6C3,6.553,3.
 <span class="home-icon">⌂</span>doobie
 </a>
 <div class="version-number">
-1.0.0-RC13
+1.0.0-RC14
 </div>
 </div>
 <div class="nav-toc">
@@ -169,24 +169,24 @@ def find(n: String): ConnectionIO[Option[Country]] =
 </code></pre>
 <p><strong>doobie</strong> is a <a href="http://typelevel.org/"><strong>Typelevel</strong></a> project. This means we embrace pure, typeful, functional programming, and provide a safe and friendly environment for teaching, learning, and contributing as described in the Scala <a href="http://scala-lang.org/conduct.html"><strong>Code of Conduct</strong></a>.</p>
 <h2><a href="#quick-start" name="quick-start" class="anchor"><span class="anchor-link"></span></a>Quick Start</h2>
-<p>The current version is <strong>1.0.0-RC13</strong> for <strong>Scala 2.12/13 and 3</strong> with</p>
+<p>The current version is <strong>1.0.0-RC14</strong> for <strong>Scala 2.12/13 and 3</strong> with</p>
 <ul>
   <li><a href="http://typelevel.org/cats/"><strong>cats</strong></a> 2.13.0</li>
-  <li><a href="https://github.com/functional-streams-for-scala/fs2"><strong>fs2</strong></a> 3.13.0</li>
+  <li><a href="https://github.com/functional-streams-for-scala/fs2"><strong>fs2</strong></a> 3.14.0</li>
   <li><a href="https://github.com/milessabin/shapeless"><strong>shapeless</strong></a> 2.3.13</li>
 </ul>
 <p>To use <strong>doobie</strong> you need to add the following to your <code>build.sbt</code>. If you&rsquo;re not using the Postgres or H2 add-ons you&rsquo;ll also need to provide a JDBC driver for the database you&rsquo;re using.</p>
 <pre class="prettyprint"><code class="language-scala">libraryDependencies ++= Seq(
 
   // Start with this one
-  &quot;org.typelevel&quot; %% &quot;doobie-core&quot;      % &quot;1.0.0-RC13&quot;,
+  &quot;org.typelevel&quot; %% &quot;doobie-core&quot;      % &quot;1.0.0-RC14&quot;,
 
   // And add any of these as needed
-  &quot;org.typelevel&quot; %% &quot;doobie-h2&quot;        % &quot;1.0.0-RC13&quot;,          // H2 driver 2.4.240 + type mappings.
-  &quot;org.typelevel&quot; %% &quot;doobie-hikari&quot;    % &quot;1.0.0-RC13&quot;,          // HikariCP transactor.
-  &quot;org.typelevel&quot; %% &quot;doobie-postgres&quot;  % &quot;1.0.0-RC13&quot;,          // Postgres driver 42.7.10 + type mappings.
-  &quot;org.typelevel&quot; %% &quot;doobie-specs2&quot;    % &quot;1.0.0-RC13&quot; % &quot;test&quot;, // Specs2 support for typechecking statements.
-  &quot;org.typelevel&quot; %% &quot;doobie-scalatest&quot; % &quot;1.0.0-RC13&quot; % &quot;test&quot;  // ScalaTest support for typechecking statements.
+  &quot;org.typelevel&quot; %% &quot;doobie-h2&quot;        % &quot;1.0.0-RC14&quot;,          // H2 driver 2.5.252 + type mappings.
+  &quot;org.typelevel&quot; %% &quot;doobie-hikari&quot;    % &quot;1.0.0-RC14&quot;,          // HikariCP transactor.
+  &quot;org.typelevel&quot; %% &quot;doobie-postgres&quot;  % &quot;1.0.0-RC14&quot;,          // Postgres driver 42.7.14 + type mappings.
+  &quot;org.typelevel&quot; %% &quot;doobie-specs2&quot;    % &quot;1.0.0-RC14&quot; % &quot;test&quot;, // Specs2 support for typechecking statements.
+  &quot;org.typelevel&quot; %% &quot;doobie-scalatest&quot; % &quot;1.0.0-RC14&quot; % &quot;test&quot;  // ScalaTest support for typechecking statements.
 
 )
 </code></pre>
@@ -261,7 +261,7 @@ sbt:doce&gt; ghpagesPushSite
   <li><a href="https://www.xing.com/">Xing</a></li>
 </ul>
 <div class="source-github">
-The source code for this page can be found <a href="https://github.com/typelevel/doobie/tree/master/modules/docs/target/jvm-2.13/mdoc/index.md">here</a>.
+The source code for this page can be found <a href="https://github.com/typelevel/doobie/tree/v1.0.0-RC14/modules/docs/target/jvm-2.13/mdoc/index.md">here</a>.
 </div>
 
 <div class="nav-next">
@@ -350,7 +350,7 @@ The source code for this page can be found <a href="https://github.com/typelevel
 <script type="text/javascript" src="lib/prettify/prettify.js"></script>
 <script type="text/javascript" src="lib/prettify/lang-scala.js"></script>
 <script type="text/javascript">jQuery(function(){window.prettyPrint && prettyPrint()});</script>
-<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.0.0-RC13', 'https://github.com/typelevel/doobie')});</script>
+<script type="text/javascript">jQuery(function(jq){initOldVersionWarnings(jq, '1.0.0-RC14', 'https://github.com/typelevel/doobie')});</script>
 
 
 </html>
