@@ -189,7 +189,7 @@ val xa = Transactor.fromDriverManager[IO](
 <p>And here we go.</p>
 <pre class="prettyprint"><code class="language-scala">val io = program1.transact(xa)
 // io: IO[Int] = Uncancelable(
-//   body = cats.effect.IO$$$Lambda$9324/0x00000008029af040@35481c02,
+//   body = cats.effect.IO$$$Lambda$13086/0x00000008037f3840@617b15b6,
 //   event = cats.effect.tracing.TracingEvent$StackTrace
 // )
 io.unsafeRunSync()
@@ -205,12 +205,12 @@ io.unsafeRunSync()
 <pre class="prettyprint"><code class="language-scala">val program2 = sql&quot;select 42&quot;.query[Int].unique
 // program2: ConnectionIO[Int] = Suspend(
 //   a = Uncancelable(
-//     body = cats.effect.kernel.MonadCancel$$Lambda$9433/0x0000000802a54840@5dbae1a2
+//     body = cats.effect.kernel.MonadCancel$$Lambda$13195/0x000000080389a840@3bc63ec1
 //   )
 // )
 val io2 = program2.transact(xa)
 // io2: IO[Int] = Uncancelable(
-//   body = cats.effect.IO$$$Lambda$9324/0x00000008029af040@68daf00c,
+//   body = cats.effect.IO$$$Lambda$13086/0x00000008037f3840@62b2c6f7,
 //   event = cats.effect.tracing.TracingEvent$StackTrace
 // )
 io2.unsafeRunSync()
@@ -227,7 +227,7 @@ io2.unsafeRunSync()
 </code></pre>
 <p>And behold!</p>
 <pre class="prettyprint"><code class="language-scala">program3.transact(xa).unsafeRunSync()
-// res2: (Int, Double) = (42, 0.6861298298620802)
+// res2: (Int, Double) = (42, 0.9816277503357183)
 </code></pre>
 <p>The astute among you will note that we don&rsquo;t actually need a monad to do this; an applicative functor is all we need here. So we could also write <code>program3</code> as:</p>
 <pre class="prettyprint"><code class="language-scala">val program3a = {
@@ -238,7 +238,7 @@ io2.unsafeRunSync()
 </code></pre>
 <p>And lo, it was good:</p>
 <pre class="prettyprint"><code class="language-scala">program3a.transact(xa).unsafeRunSync()
-// res3: (Int, Double) = (42, 0.1120909907562817)
+// res3: (Int, Double) = (42, 0.13334330062875832)
 </code></pre>
 <p>And of course this composition can continue indefinitely.</p>
 <pre class="prettyprint"><code class="language-scala">val valuesList = program3a.replicateA(5)
@@ -251,34 +251,34 @@ io2.unsafeRunSync()
 //             c = FlatMapped(
 //               c = Suspend(
 //                 a = Uncancelable(
-//                   body = cats.effect.kernel.MonadCancel$$Lambda$9433/0x0000000802a54840@7e21e2ba
+//                   body = cats.effect.kernel.MonadCancel$$Lambda$13195/0x000000080389a840@a0c0227
 //                 )
 //               ),
-//               f = cats.FlatMap$$Lambda$9479/0x0000000802a97040@2d05eb0a
+//               f = cats.FlatMap$$Lambda$13241/0x00000008038d3840@7fe08c1e
 //             ),
-//             f = cats.Monad$$Lambda$9308/0x000000080299e840@76c71417
+//             f = cats.Monad$$Lambda$13070/0x00000008037e1840@7305126c
 //           ),
-//           f = cats.Monad$$Lambda$9308/0x000000080299e840@2ac33aef
+//           f = cats.Monad$$Lambda$13070/0x00000008037e1840@7fe8f4e2
 //         ),
-//         f = cats.FlatMap$$Lambda$9540/0x0000000802ad8840@177fdd03
+//         f = cats.FlatMap$$Lambda$13302/0x0000000803915040@24e97b60
 //       ),
-//       f = cats.FlatMap$$Lambda$9540/0x0000000802ad8840@763f390d
+//       f = cats.FlatMap$$Lambda$13302/0x0000000803915040@4d7a1f37
 //     ),
-//     f = cats.FlatMap$$Lambda$9540/0x0000000802ad8840@713724a8
+//     f = cats.FlatMap$$Lambda$13302/0x0000000803915040@48976a0b
 //   ),
-//   f = cats.Monad$$Lambda$9308/0x000000080299e840@42107c23
+//   f = cats.Monad$$Lambda$13070/0x00000008037e1840@7060c81f
 // )
 val result = valuesList.transact(xa)
 // result: IO[List[(Int, Double)]] = Uncancelable(
-//   body = cats.effect.IO$$$Lambda$9324/0x00000008029af040@2b6e26a7,
+//   body = cats.effect.IO$$$Lambda$13086/0x00000008037f3840@1f3d9f08,
 //   event = cats.effect.tracing.TracingEvent$StackTrace
 // )
 result.unsafeRunSync().foreach(println)
-// (42,0.9244109130870879)
-// (42,0.929716708551662)
-// (42,0.3459695991827303)
-// (42,0.690581748941618)
-// (42,0.932220388616863)
+// (42,0.34176557653323414)
+// (42,0.5064088686210368)
+// (42,0.8713840028490096)
+// (42,0.11546629120560192)
+// (42,0.9368942167485452)
 </code></pre>
 <h3><a href="#diving-deeper" name="diving-deeper" class="anchor"><span class="anchor-link"></span></a>Diving Deeper</h3>
 <p>All of the <strong>doobie</strong> monads are implemented via <code>Free</code> and have no operational semantics; we can only &ldquo;run&rdquo; a <strong>doobie</strong> program by transforming <code>FooIO</code> (for some carrier type <code>java.sql.Foo</code>) to a monad that actually has some meaning.</p>
@@ -289,10 +289,10 @@ import org.typelevel.doobie.free.connection.ConnectionOp
 import java.sql.Connection
 
 val interpreter = KleisliInterpreter[IO](LogHandler.noop).ConnectionInterpreter
-// interpreter: ConnectionOp ~&gt; [γ$9$]Kleisli[IO, Connection, γ$9$] = org.typelevel.doobie.free.KleisliInterpreter$$anon$10@2d7c6f06
+// interpreter: ConnectionOp ~&gt; [γ$9$]Kleisli[IO, Connection, γ$9$] = org.typelevel.doobie.free.KleisliInterpreter$$anon$10@7c1530f
 val kleisli = program1.foldMap(interpreter)
 // kleisli: Kleisli[IO, Connection, Int] = Kleisli(
-//   run = cats.data.KleisliFlatMap$$Lambda$9435/0x0000000802a53040@77fd3f10
+//   run = cats.data.KleisliFlatMap$$Lambda$13197/0x000000080389e840@74774920
 // )
 val io3 = IO(null: java.sql.Connection) &gt;&gt;= kleisli.run
 // io3: IO[Int] = FlatMap(
@@ -300,7 +300,7 @@ val io3 = IO(null: java.sql.Connection) &gt;&gt;= kleisli.run
 //     thunk = &lt;function0&gt;,
 //     event = cats.effect.tracing.TracingEvent$StackTrace
 //   ),
-//   f = cats.data.KleisliFlatMap$$Lambda$9435/0x0000000802a53040@77fd3f10,
+//   f = cats.data.KleisliFlatMap$$Lambda$13197/0x000000080389e840@74774920,
 //   event = cats.effect.tracing.TracingEvent$StackTrace
 // )
 io3.unsafeRunSync() // sneaky; program1 never looks at the connection
@@ -312,7 +312,7 @@ io3.unsafeRunSync() // sneaky; program1 never looks at the connection
 <h4><a href="#using-your-own-target-monad" name="using-your-own-target-monad" class="anchor"><span class="anchor-link"></span></a>Using Your Own Target Monad</h4>
 <p>As mentioned earlier, you can use any monad <code>M[_]</code> given <code>cats.effect.Async[M]</code>.</p>
 <div class="source-github">
-The source code for this page can be found <a href="https://github.com/typelevel/doobie/tree/v1.0.0-RC14/modules/docs/target/jvm-2.13/mdoc/docs/03-Connecting.md">here</a>.
+The source code for this page can be found <a href="https://github.com/typelevel/doobie/tree/master/modules/docs/target/jvm-2.13/mdoc/docs/03-Connecting.md">here</a>.
 </div>
 
 <div class="nav-next">

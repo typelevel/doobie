@@ -224,53 +224,62 @@ sql&quot;select name, code from country where name like $pattern&quot;
 </code></pre>
 <p>You can find the <code>label</code> in the LogEvent.</p>
 <h3><a href="#passing-additional-context-to-your-loghandler" name="passing-additional-context-to-your-loghandler" class="anchor"><span class="anchor-link"></span></a>Passing additional context to your LogHandler</h3>
-<p>You can use cats-effect&rsquo;s <code>IOLocal</code> to pass additional context to the LogHandler (e.g. tracing context), as the following example shows:</p>
-<pre class="prettyprint"><code class="language-scala">import cats.effect.{IOLocal, Ref}
-import org.typelevel.doobie.util.log.Success
+<p>You can attach additional context (e.g. the current user or a request ID) to a query or update by calling <code>.withMetadata</code>. Metadata is stored in a <a href="https://typelevel.org/vault/"><code>Vault</code></a>, which is a type-safe map keyed by <code>org.typelevel.vault.Key</code>. Every <code>LogEvent</code> carries the metadata of the statement that produced it, so your <code>LogHandler</code> can read it back using the same key:</p>
+<pre class="prettyprint"><code class="language-scala">import org.typelevel.vault.Key
 
-def users = List.range(0, 4).map(n =&gt; s&quot;user-$n&quot;)
+// (user, tenantId) pairs
+def users = List.range(0, 4).map(n =&gt; (s&quot;user-$n&quot;, n % 2))
 
 def program: IO[List[String]] =
   for {
-    // define an IOLocal where we store the user which caused the query to be run  
-    currentUser &lt;- IOLocal(&quot;&quot;)
-    // store all successful sql here, for all users
-    successLogsRef &lt;- Ref[IO].of(List.empty[String])
+    // create keys used to attach the user and tenant which caused the query to be run.
+    // Key creation is effectful, so typically you&#39;d create them once at startup and share them.
+    userKey &lt;- Key.newKey[IO, String]
+    tenantIdKey &lt;- Key.newKey[IO, Int]
+    
+    // All output logs are stored here (demo purposes)
+    logsRef &lt;- Ref[IO].of(List.empty[String])
+    
     xa = Transactor.fromDriverManager[IO](
         driver = &quot;org.h2.Driver&quot;,
         url = &quot;jdbc:h2:mem:queryspec;DB_CLOSE_DELAY=-1&quot;,
         user = &quot;sa&quot;, 
         password = &quot;&quot;,
         logHandler = Some(new LogHandler[IO] {
-          def run(logEvent: LogEvent): IO[Unit] =
-            currentUser.get.flatMap(user =&gt; successLogsRef.update(logs =&gt; s&quot;sql for user $user: &#39;${logEvent.sql}&#39;&quot; :: logs))
+          def run(logEvent: LogEvent): IO[Unit] = {
+            val user = logEvent.metadata.lookup(userKey).getOrElse(&quot;unknown&quot;)
+            val tenantId = logEvent.metadata.lookup(tenantIdKey).fold(&quot;unknown&quot;)(_.toString)
+            logsRef.update(logs =&gt; s&quot;sql for user $user (tenant $tenantId): &#39;${logEvent.sql}&#39;&quot; :: logs)
+          }
         })
       )
-    // run a bunch of queries
-    _ &lt;- users.parTraverse(user =&gt;
-      for {
-        _ &lt;- currentUser.set(user)
-        _ &lt;- sql&quot;select 1&quot;.query[Int].unique.transact(xa)
-      } yield ()
-    )
+    // run a bunch of queries, attaching the user and tenant to each one
+    _ &lt;- users.parTraverse { case (user, tenantId) =&gt;
+      sql&quot;select 1&quot;.query[Int]
+        .withMetadata(userKey, user)
+        .withMetadata(tenantIdKey, tenantId)
+        .unique
+        .transact(xa)
+    }
     // return collected log messages
-    logs &lt;- successLogsRef.get
+    logs &lt;- logsRef.get
   } yield logs
 
 program.unsafeRunSync().sorted
 // res1: List[String] = List(
-//   &quot;sql for user user-0: &#39;select 1&#39;&quot;,
-//   &quot;sql for user user-1: &#39;select 1&#39;&quot;,
-//   &quot;sql for user user-2: &#39;select 1&#39;&quot;,
-//   &quot;sql for user user-3: &#39;select 1&#39;&quot;
+//   &quot;sql for user user-0 (tenant 0): &#39;select 1&#39;&quot;,
+//   &quot;sql for user user-1 (tenant 1): &#39;select 1&#39;&quot;,
+//   &quot;sql for user user-2 (tenant 0): &#39;select 1&#39;&quot;,
+//   &quot;sql for user user-3 (tenant 1): &#39;select 1&#39;&quot;
 // )
 </code></pre>
+<p><code>Query</code>, <code>Query0</code>, <code>Update</code> and <code>Update0</code> all provide <code>withMetadata(key, value)</code> to insert or replace a single entry, and <code>withMetadata(vault)</code> to replace the whole <code>Vault</code>.</p>
 <h3><a href="#caveats" name="caveats" class="anchor"><span class="anchor-link"></span></a>Caveats</h3>
 <p>Logging is not yet supported for streaming (<code>.stream</code> or YOLO mode&rsquo;s <code>.quick</code>).</p>
 <p>Note that the <code>LogHandler#run</code> invocation is part of your <code>ConnectionIO</code> program, and it is called synchronously. Most back-end loggers are asynchronous so this is unlikely to be an issue, but do take care not to spend too much time in your handler.</p>
 <p>Further note that the handler is not transactional; anything your logger does stays done, even if the transaction is rolled back. This is only for diagnostics, not for business logic.</p>
 <div class="source-github">
-The source code for this page can be found <a href="https://github.com/typelevel/doobie/tree/v1.0.0-RC14/modules/docs/target/jvm-2.13/mdoc/docs/10-Logging.md">here</a>.
+The source code for this page can be found <a href="https://github.com/typelevel/doobie/tree/master/modules/docs/target/jvm-2.13/mdoc/docs/10-Logging.md">here</a>.
 </div>
 
 <div class="nav-next">
