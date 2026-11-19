@@ -175,10 +175,10 @@ private class TracedInterpreter[F[_]: Async: Tracer] private (
 
     builder.addAll(config.constAttributes)
 
-    recordQuery(info, builder)
-
     val queryMetadata =
       config.queryAnalyzer.analyze(info.sql)
+
+    recordQuery(info, queryMetadata, builder)
 
     queryMetadata.foreach(metadata => recordQueryMetadata(metadata, builder))
 
@@ -195,7 +195,11 @@ private class TracedInterpreter[F[_]: Async: Tracer] private (
     SpanParams(customSpanName, builder.result())
   }
 
-  private def recordQuery(info: LoggingInfo, builder: Attributes.Builder): Unit = {
+  private def recordQuery(
+      info: LoggingInfo,
+      queryMetadata: Option[QueryAnalyzer.QueryMetadata],
+      builder: Attributes.Builder
+  ): Unit = {
 
     def addParams(batch: List[Any], prefix: String): Unit =
       batch.zipWithIndex.foreach { case (param, idx) =>
@@ -207,13 +211,15 @@ private class TracedInterpreter[F[_]: Async: Tracer] private (
     if (info.params.allParams.sizeIs > 1)
       builder.addOne(DbAttributes.DbOperationBatchSize(info.params.allParams.size.toLong))
 
+    val queryText = queryMetadata.flatMap(_.queryText).getOrElse(info.sql).trim
+
     config.captureQuery.queryTextPolicy match {
       case QueryCaptureConfig.QueryTextPolicy.Always =>
-        builder.addOne(DbAttributes.DbQueryText(info.sql.trim))
+        builder.addOne(DbAttributes.DbQueryText(queryText))
 
       case QueryCaptureConfig.QueryTextPolicy.ParameterizedOnly =>
         if (isParameterized)
-          builder.addOne(DbAttributes.DbQueryText(info.sql.trim))
+          builder.addOne(DbAttributes.DbQueryText(queryText))
 
       case QueryCaptureConfig.QueryTextPolicy.None =>
     }
