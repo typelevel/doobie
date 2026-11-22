@@ -18,7 +18,8 @@ object PosPlatform {
 
   def originImpl(using ctx: Quotes): Expr[Pos] = {
     val rootPosition = ctx.reflect.Position.ofMacroExpansion
-    val file = Expr(rootPosition.sourceFile.path)
+    val sourceFile = rootPosition.sourceFile
+    val file = Expr(Pos.relativePath(sourceFile.path, sourceFile.name))
     val line = Expr(rootPosition.startLine + 1)
     '{ Pos($file, $line) }
   }

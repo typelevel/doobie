@@ -8,7 +8,7 @@ lazy val catsVersion = "2.13.0"
 lazy val catsEffectVersion = "3.7.1"
 lazy val vaultVersion = "3.7.0"
 lazy val circeVersion = "0.14.17"
-lazy val fs2Version = "3.14.0"
+lazy val fs2Version = "3.16.0"
 lazy val h2Version = "2.5.252"
 lazy val hikariVersion = "7.1.0" // N.B. Hikari v4 introduces a breaking change via slf4j v2
 lazy val kindProjectorVersion = "0.11.2"
@@ -20,7 +20,7 @@ lazy val refinedVersion = "0.11.4"
 lazy val scalaCheckVersion = "1.15.4"
 lazy val scalatestVersion = "3.2.20"
 lazy val munitVersion = "1.3.6"
-lazy val otel4sVersion = "1.1.0"
+lazy val otel4sVersion = "1.2.0"
 lazy val otelInstrumentationVersion = "2.26.1-alpha"
 lazy val shapelessVersion = "2.3.13"
 lazy val silencerVersion = "1.7.1"
@@ -43,7 +43,7 @@ lazy val doobieGithubWorkflowPermissions =
 // scala-steward:off
 lazy val slf4jVersion = "1.7.36"
 // scala-steward:on
-lazy val weaverVersion = "0.13.0"
+lazy val weaverVersion = "0.13.1"
 
 // Basic versioning and publishing stuff
 ThisBuild / tlBaseVersion := "1.0"

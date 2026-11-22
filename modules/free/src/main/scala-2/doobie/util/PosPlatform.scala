@@ -20,7 +20,8 @@ object PosPlatform {
   class PosMacros(val c: blackbox.Context) {
     import c.universe.*
     def instance_impl: Tree = {
-      val file = c.enclosingPosition.source.path
+      val source = c.enclosingPosition.source
+      val file = Pos.relativePath(source.path, source.file.name)
       val line = c.enclosingPosition.line
       q"_root_.org.typelevel.doobie.util.pos.Pos($file, $line)"
     }

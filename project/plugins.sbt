@@ -5,13 +5,13 @@ addSbtPlugin("com.github.sbt" % "sbt-ghpages" % "0.10.0")
 addSbtPlugin("org.typelevel" % "sbt-typelevel-ci-release" % "0.8.7")
 addSbtPlugin("org.typelevel" % "sbt-typelevel-mergify" % "0.8.7")
 addSbtPlugin("org.scoverage" % "sbt-scoverage" % "2.4.4")
-addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.4.8")
+addSbtPlugin("com.github.sbt" % "sbt-jmh" % "0.4.9")
 addSbtPlugin("com.github.sbt" % "sbt-header" % "5.11.0")
 addSbtPlugin("org.typelevel" % "sbt-tpolecat" % "0.5.7")
 addSbtPlugin("org.scalameta" % "sbt-mdoc" % "2.9.2")
 addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.6.2")
 addSbtPlugin("com.eed3si9n" % "sbt-projectmatrix" % "0.11.0")
-addSbtPlugin("ch.epfl.scala" % "sbt-scalafix" % "0.14.9")
+addSbtPlugin("ch.epfl.scala" % "sbt-scalafix" % "0.14.10")
 addDependencyTreePlugin
 
 // Setting semanticdbVersion explicitly as the version is defaulting to 4.12.3
