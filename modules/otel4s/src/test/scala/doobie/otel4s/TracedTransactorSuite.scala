@@ -457,6 +457,82 @@ class TracedTransactorSuite extends munit.CatsEffectSuite {
     } yield ()
   }
 
+  testkitTest("capture query text from the query analyzer metadata") { testkit =>
+    val analyzer = new QueryAnalyzer {
+      def analyze(sql: String): Option[QueryAnalyzer.QueryMetadata] =
+        Some(
+          QueryAnalyzer.QueryMetadata(
+            queryText = Some("select ?"),
+            operationName = None,
+            collectionName = None,
+            storedProcedureName = None,
+            querySummary = None
+          )
+        )
+    }
+
+    val config = tracedConfig(
+      captureQuery = QueryCaptureConfig(
+        queryTextPolicy = QueryTextPolicy.Always,
+        queryParametersPolicy = QueryParametersPolicy.None
+      )
+    ).withQueryAnalyzer(analyzer)
+
+    val expected = expectedSpans(
+      span(
+        name = "executeQuery",
+        attributes = Attributes(
+          DbAttributes.DbQueryText("select ?"),
+          DbAttributes.DbOperationName("executeQuery")
+        )
+      )
+    )
+
+    for {
+      tx <- testkit.tracedTransactor(config)
+      _ <- sql"select 1".query[Int].unique.transact(tx)
+      _ <- testkit.assertFinishedSpans(expected)
+    } yield ()
+  }
+
+  testkitTest("fall back to raw query text when the query analyzer provides none") { testkit =>
+    val analyzer = new QueryAnalyzer {
+      def analyze(sql: String): Option[QueryAnalyzer.QueryMetadata] =
+        Some(
+          QueryAnalyzer.QueryMetadata(
+            queryText = None,
+            operationName = None,
+            collectionName = None,
+            storedProcedureName = None,
+            querySummary = None
+          )
+        )
+    }
+
+    val config = tracedConfig(
+      captureQuery = QueryCaptureConfig(
+        queryTextPolicy = QueryTextPolicy.Always,
+        queryParametersPolicy = QueryParametersPolicy.None
+      )
+    ).withQueryAnalyzer(analyzer)
+
+    val expected = expectedSpans(
+      span(
+        name = "executeQuery",
+        attributes = Attributes(
+          DbAttributes.DbQueryText("select 1"),
+          DbAttributes.DbOperationName("executeQuery")
+        )
+      )
+    )
+
+    for {
+      tx <- testkit.tracedTransactor(config)
+      _ <- sql"select 1".query[Int].unique.transact(tx)
+      _ <- testkit.assertFinishedSpans(expected)
+    } yield ()
+  }
+
   testkitTest("ignore plain fragment labels by default") { testkit =>
     val label = "some label"
 
